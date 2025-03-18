@@ -7,7 +7,11 @@ protein sequences, and preparing model data for kinetic analysis.
 
 import logging
 import os
+import random
 import re
+import time
+import urllib
+import urllib.error
 from urllib.parse import quote
 from urllib.request import urlopen
 
@@ -18,7 +22,6 @@ from cobra.util.solver import set_objective
 import numpy as np
 import pandas as pd
 import pubchempy as pcp
-import urllib
 
 from .config import (
     CHEBI_COMPOUNDS,
@@ -199,20 +202,33 @@ def map_metabolites(substrate_df, external_db_dir=None):
     df['BiGG Name'] = np.nan
     df['DB Name'] = np.nan
 
+    # Clean substrate names before processing
+    df['Cleaned Substrate'] = df['Substrate partner'].apply(clean_metabolite_names)
+
+    # Get unique substrates with their details
+    unique_substrates_df = df[['Substrate partner', 'Cleaned Substrate']].drop_duplicates()
+    print(f"There are {len(unique_substrates_df)} substrates in the GEM.")
+
+    # Prepare for tracking SMILES and names
+    smiles_mapping = {}
+    bigg_name_mapping = {}
+    db_name_mapping = {}
+
+    # Expand old_bigg_ids to create a list for comparison
+    BiGG_comps['old_bigg_ids_list'] = BiGG_comps['old_bigg_ids'].str.split(';')
+    BiGG_comps_expl = BiGG_comps.explode('old_bigg_ids_list')
+    BiGG_comps_unique = BiGG_comps.reset_index(drop=True)
+    BiGG_comps_expl_unique = BiGG_comps_expl.reset_index(drop=True)
+
     # Iterate through each unique substrate
-    unique_substrates = df['Substrate partner'].unique()
-    for substrate in unique_substrates:
+    for _, row in unique_substrates_df.iterrows():
+        substrate = row['Substrate partner']
+        cleaned_substrate = row['Cleaned Substrate']
         print('-----------------------------')
         print('Mapping substrate:', substrate)
 
-        # Expand old_bigg_ids to create a list for comparison
-        BiGG_comps['old_bigg_ids_list'] = BiGG_comps['old_bigg_ids'].str.split(';')
-        BiGG_comps_expl = BiGG_comps.explode('old_bigg_ids_list')
-        BiGG_comps_unique = BiGG_comps.reset_index(drop=True)
-        BiGG_comps_expl_unique = BiGG_comps_expl.reset_index(drop=True)
-
         # Search in BiGG database
-        bigg_hit = BiGG_comps_unique[
+        bigg_hit = BiGG_comps_unique.loc[
             BiGG_comps_unique['bigg_id'].str.contains(fr'\b{re.escape(substrate)}\b', regex=True, case=False) |
             BiGG_comps_unique['universal_bigg_id'].str.contains(fr'\b{re.escape(substrate)}\b', regex=True, case=False) |
             BiGG_comps_expl_unique['old_bigg_ids_list'].str.contains(fr'\b{re.escape(substrate)}\b', regex=True, case=False)
@@ -220,8 +236,8 @@ def map_metabolites(substrate_df, external_db_dir=None):
 
         if not bigg_hit.empty:
             name = bigg_hit['name'].values[0]
+            bigg_name_mapping[substrate] = name
             print("BiGG Name:", name)
-            df.loc[df['Substrate partner'] == substrate, 'BiGG Name'] = name
 
             # Check MetaNetX for SMILES
             if not bigg_hit['MetaNetX'].isna().all():
@@ -229,9 +245,9 @@ def map_metabolites(substrate_df, external_db_dir=None):
                 if not metanetx_hit.empty:
                     smiles = metanetx_hit['SMILES'].values[0]
                     if pd.notna(smiles):
+                        smiles_mapping[substrate] = smiles
+                        db_name_mapping[substrate] = metanetx_hit['name'].values[0]
                         print("SMILES found in MetaNetX:", smiles)
-                        df.loc[df['Substrate partner'] == substrate, 'SMILES'] = smiles
-                        df.loc[df['Substrate partner'] == substrate, 'DB Name'] = metanetx_hit['name'].values[0]
                         continue
             
             # Check SEED database
@@ -240,10 +256,11 @@ def map_metabolites(substrate_df, external_db_dir=None):
                 if not seed_hit.empty:
                     smiles = seed_hit['smiles'].values[0] if 'smiles' in seed_hit else np.nan
                     name = seed_hit['name'].values[0]
-                    df.loc[df['Substrate partner'] == substrate, 'SMILES'] = smiles
-                    df.loc[df['Substrate partner'] == substrate, 'DB Name'] = name
-                    print("SMILES found in SEED:", smiles)
-                    continue
+                    if pd.notna(smiles):
+                        smiles_mapping[substrate] = smiles
+                        db_name_mapping[substrate] = name
+                        print("SMILES found in SEED:", smiles)
+                        continue
             
             # Check CHEBI database
             if not bigg_hit['CHEBI'].isna().all():
@@ -262,10 +279,11 @@ def map_metabolites(substrate_df, external_db_dir=None):
                     if not inchi_hit.empty:
                         smiles = inchi_hit['SMILES'].values[0]
                         name = inchi_hit['name'].values[0]
-                        df.loc[df['Substrate partner'] == substrate, 'SMILES'] = smiles
-                        df.loc[df['Substrate partner'] == substrate, 'DB Name'] = name
-                        print("SMILES found in ChEBI:", smiles)
-                        continue
+                        if pd.notna(smiles):
+                            smiles_mapping[substrate] = smiles
+                            db_name_mapping[substrate] = name
+                            print("SMILES found in ChEBI:", smiles)
+                            continue
         
         # If no BiGG hit, check other databases directly
         else:
@@ -277,9 +295,11 @@ def map_metabolites(substrate_df, external_db_dir=None):
             if not metanetx_hit.empty:
                 name = metanetx_hit['name'].values[0]
                 smiles = metanetx_hit['SMILES'].values[0] if 'SMILES' in metanetx_hit.columns else np.nan
-                df.loc[df['Substrate partner'] == substrate, ['DB Name', 'SMILES']] = name, smiles
-                print("MetaNetX match:", name)
-                continue
+                if pd.notna(smiles):
+                    smiles_mapping[substrate] = smiles
+                    db_name_mapping[substrate] = name
+                    print("MetaNetX match:", name)
+                    continue
             
             # Check SEED
             seed_hit = SEED_comps[SEED_comps['id'].str.contains(
@@ -287,26 +307,70 @@ def map_metabolites(substrate_df, external_db_dir=None):
             if not seed_hit.empty:
                 name = seed_hit['name'].values[0]
                 smiles = seed_hit['smiles'].values[0] if 'smiles' in seed_hit.columns else np.nan
-                df.loc[df['Substrate partner'] == substrate, ['DB Name', 'SMILES']] = name, smiles
-                print("SEED match:", name)
-                continue
+                if pd.notna(smiles):
+                    smiles_mapping[substrate] = smiles
+                    db_name_mapping[substrate] = name
+                    print("SEED match:", name)
+                    continue
 
     # If SMILES is still missing, try to get from web services
-    missing_smiles = df[df['SMILES'].isna() & ~df['BiGG Name'].isna()]
-    for index, row in missing_smiles.iterrows():
-        name = row['BiGG Name']
-        if pd.notna(name):
-            # Try CIR
-            smiles = get_SMILES_from_cactus(name)
-            if smiles:
-                df.at[index, 'SMILES'] = smiles
-                print(f"Found SMILES via Cactus for {name}: {smiles}")
-            else:
-                # Try PubChem
-                smiles_list = get_PubChem_SMILES(name)
-                if smiles_list and len(smiles_list) > 0:
-                    df.at[index, 'SMILES'] = smiles_list[0]
-                    print(f"Found SMILES via PubChem for {name}: {smiles_list[0]}")
+    missing_substrates = df[df['SMILES'].isna()]['Substrate partner'].unique()
+    
+    for substrate in missing_substrates:
+        # First, check alternative databases directly
+        metanetx_hit = MetaNetX_comps[MetaNetX_comps['ID'].str.contains(
+            fr'\b{re.escape(substrate)}\b', regex=True, case=False)]
+        if not metanetx_hit.empty:
+            smiles = metanetx_hit['SMILES'].values[0] if 'SMILES' in metanetx_hit.columns else np.nan
+            if pd.notna(smiles):
+                smiles_mapping[substrate] = smiles
+                db_name_mapping[substrate] = metanetx_hit['name'].values[0]
+                print(f"Found SMILES in MetaNetX for {substrate}: {smiles}")
+                continue
+
+        seed_hit = SEED_comps[SEED_comps['id'].str.contains(
+            fr'\b{re.escape(substrate)}\b', regex=True, case=False)]
+        if not seed_hit.empty:
+            smiles = seed_hit['smiles'].values[0] if 'smiles' in seed_hit.columns else np.nan
+            if pd.notna(smiles):
+                smiles_mapping[substrate] = smiles
+                db_name_mapping[substrate] = seed_hit['name'].values[0]
+                print(f"Found SMILES in SEED for {substrate}: {smiles}")
+                continue
+
+        # Prepare for web service search
+        cleaned_substrate = df.loc[df['Substrate partner'] == substrate, 'Cleaned Substrate'].iloc[0]
+        print('-----------------------------')
+        print('Mapping substrate:', substrate)
+        
+        # Try searches with both original and cleaned names
+        names_to_try = [cleaned_substrate, substrate]
+        
+        for name in names_to_try:
+            if pd.notna(name):
+                # Try CIR
+                smiles = get_SMILES_from_cactus(name)
+                if smiles:
+                    smiles_mapping[substrate] = smiles
+                    print(f"Found SMILES via Cactus for {name}: {smiles}")
+                    break
+                else:
+                    # Try PubChem
+                    smiles_list = get_PubChem_SMILES(name)
+                    if smiles_list and len(smiles_list) > 0:
+                        smiles_mapping[substrate] = smiles_list[0]
+                        print(f"Found SMILES via PubChem for {name}: {smiles_list[0]}")
+                        break
+
+    # Apply mappings back to the dataframe
+    for substrate, smiles in smiles_mapping.items():
+        df.loc[df['Substrate partner'] == substrate, 'SMILES'] = smiles
+    
+    for substrate, bigg_name in bigg_name_mapping.items():
+        df.loc[df['Substrate partner'] == substrate, 'BiGG Name'] = bigg_name
+    
+    for substrate, db_name in db_name_mapping.items():
+        df.loc[df['Substrate partner'] == substrate, 'DB Name'] = db_name
     
     return df
 
@@ -356,7 +420,7 @@ def clean_metabolite_names(string):
     else:
         # General cleaning
         string = string.replace("", "")
-        string = string.replace(" ", None)
+        string = string.replace(" ", "")
         string = string.replace(";", "")
         string = string.replace("H2O H2O", "H2O")
         string = re.sub(r'(\d) (\d) (\w)', r'\1,\2-\3', string)
@@ -364,6 +428,10 @@ def clean_metabolite_names(string):
         string = re.sub(r'[CHNPO]\d+', '', string)
         string = string.replace("1,2-Diacylglycerol  L major  ", "1,2-diacylglycerol")
         string = string.replace("AMP P", "AMP")
+        string = string.replace("coa_c", "Coenzyme A")
+        string = string.replace("coa_e", "Coenzyme A")
+        string = string.replace("h2o_c", "h2o")
+        string = string.replace("h2o_e", "h2o")
         string = string.replace('A DASH ', 'alpha-')
         string = string.replace('D DASH ', 'D-')
         string = string.replace('B DASH ', 'beta-')
@@ -373,7 +441,7 @@ def clean_metabolite_names(string):
     
     return string
 
-def get_SMILES_from_cactus(name):
+def get_SMILES_from_cactus(name, max_retries=1):
     """
     Get SMILES from NIH Chemical Identifier Resolver web service.
     
@@ -381,6 +449,8 @@ def get_SMILES_from_cactus(name):
     ----------
     name : str
         Compound name to query
+    max_retries : int, optional
+        Number of times to retry the request
         
     Returns
     -------
@@ -389,17 +459,54 @@ def get_SMILES_from_cactus(name):
     """
     if not name or pd.isna(name):
         return None
+    
+    for attempt in range(max_retries):
+        try: 
+            url = 'http://cactus.nci.nih.gov/chemical/structure/' + quote(name) + '/smiles' 
+            
+            # Add random delay between retries
+            if attempt > 0:
+                time.sleep(random.uniform(1, 3))
+            
+            # Set a timeout to prevent hanging
+            cmpd_smiles = urlopen(url, timeout=10).read().decode('utf8').strip()
+            
+            # Validate SMILES (basic check)
+            if cmpd_smiles and len(cmpd_smiles) > 3:
+                return cmpd_smiles 
+            
+            logging.warning(f"Invalid SMILES for {name}: {cmpd_smiles}")
+            return None
         
-    try: 
-        url = 'http://cactus.nci.nih.gov/chemical/structure/' + quote(name) + '/smiles' 
-        cmpd_smiles = urlopen(url).read().decode('utf8') 
-        return cmpd_smiles 
-    except Exception as e: 
-        # Logging is crucial for debugging
-        logging.warning(f"Failed to retrieve SMILES for {name}: {e}")
-        return None
+        except urllib.error.HTTPError as http_err:
+            # Log specific HTTP errors
+            logging.warning(f"HTTP error retrieving SMILES for {name} (Attempt {attempt+1}/{max_retries}): {http_err}")
+            
+            # Specific handling for 504 Gateway Timeout
+            if http_err.code == 504:
+                if attempt == max_retries - 1:
+                    logging.error(f"Failed to retrieve SMILES for {name} after {max_retries} attempts")
+                continue
+            
+            return None
+        
+        except urllib.error.URLError as url_err:
+            # Network-related errors
+            logging.warning(f"URL error retrieving SMILES for {name} (Attempt {attempt+1}/{max_retries}): {url_err}")
+            
+            if attempt == max_retries - 1:
+                logging.error(f"Failed to retrieve SMILES for {name} after {max_retries} attempts")
+            
+            continue
+        
+        except Exception as e: 
+            # Catch any other unexpected errors
+            logging.error(f"Unexpected error retrieving SMILES for {name}: {e}", exc_info=True)
+            return None
+    
+    return None
 
-def get_PubChem_SMILES(name):
+def get_PubChem_SMILES(name, max_retries=3):
     """
     Get SMILES from PubChem web service.
     
@@ -407,6 +514,8 @@ def get_PubChem_SMILES(name):
     ----------
     name : str
         Compound name to query
+    max_retries : int, optional
+        Number of times to retry the request
         
     Returns
     -------
@@ -415,23 +524,45 @@ def get_PubChem_SMILES(name):
     """
     if not name or pd.isna(name):
         return None
+    
+    for attempt in range(max_retries):
+        try:
+            # Add random delay between retries
+            if attempt > 0:
+                time.sleep(random.uniform(1, 3))
+            
+            compounds = pcp.get_compounds(name, 'name')
+            
+            # Validate SMILES
+            smiles = [
+                compound.isomeric_smiles 
+                for compound in compounds 
+                if hasattr(compound, 'isomeric_smiles') and compound.isomeric_smiles
+            ]
+            
+            return smiles if smiles else None
         
-    try:
-        compounds = pcp.get_compounds(name, 'name')
-        smiles = [compound.isomeric_smiles for compound in compounds]
-        return smiles
-    except pcp.PubChemHTTPError as http_err:
-        # Handle specific PubChem HTTP errors
-        logging.warning(f"PubChem HTTP error for {name}: {http_err}")
-        return None
-    except pcp.PubChemTypeError as type_err:
-        # Handle errors related to incorrect input type
-        logging.warning(f"PubChem type error for {name}: {type_err}")
-        return None
-    except Exception as e:
-        # Catch any other unexpected errors
-        logging.error(f"Unexpected error retrieving SMILES for {name}: {e}", exc_info=True)
-        return None
+        except pcp.PubChemHTTPError as http_err:
+            # Handle specific PubChem HTTP errors
+            logging.warning(f"PubChem HTTP error for {name} (Attempt {attempt+1}/{max_retries}): {http_err}")
+            
+            # Check if it's the last retry
+            if attempt == max_retries - 1:
+                logging.error(f"Failed to retrieve SMILES for {name} after {max_retries} attempts")
+            
+            continue
+        
+        except pcp.PubChemTypeError as type_err:
+            # Errors related to incorrect input type
+            logging.warning(f"PubChem type error for {name}: {type_err}")
+            return None
+        
+        except Exception as e:
+            # Catch any other unexpected errors
+            logging.error(f"Unexpected error retrieving SMILES for {name}: {e}", exc_info=True)
+            return None
+    
+    return None
 
 def retrieve_sequences(model, organism, output_path=None):
     """
