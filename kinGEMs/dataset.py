@@ -374,6 +374,8 @@ def map_metabolites(substrate_df, external_db_dir=None):
     
     return df
 
+import re
+
 def clean_metabolite_names(string):
     """
     Clean metabolite names for improved mapping.
@@ -413,9 +415,8 @@ def clean_metabolite_names(string):
         string = re.sub(r'(\d) (\w)', r'\1-\2', string)
         string = re.sub(r'[CHNPO]\d+', '', string)
     
-    elif 'S  3 Methylbutanoyl  dihydrolipoamide' in string:
-        string = string.replace("S  3 Methylbutanoyl  dihydrolipoamide C13H25NO2S2", 
-                              "S-(3-methylbutanoyl)-dihydrolipoamide")
+    elif 'S 3 Methylbutanoyl dihydrolipoamide' in string:
+        string = string.replace("S 3 Methylbutanoyl dihydrolipoamide C13H25NO2S2", "S-(3-methylbutanoyl)-dihydrolipoamide")
     
     else:
         # General cleaning
@@ -426,7 +427,7 @@ def clean_metabolite_names(string):
         string = re.sub(r'(\d) (\d) (\w)', r'\1,\2-\3', string)
         string = re.sub(r'(\d) (\w)', r'\1-\2', string)
         string = re.sub(r'[CHNPO]\d+', '', string)
-        string = string.replace("1,2-Diacylglycerol  L major  ", "1,2-diacylglycerol")
+        string = string.replace("1,2-Diacylglycerol L major ", "1,2-diacylglycerol")
         string = string.replace("AMP P", "AMP")
         string = string.replace("coa_c", "Coenzyme A")
         string = string.replace("coa_e", "Coenzyme A")
@@ -438,6 +439,9 @@ def clean_metabolite_names(string):
         string = string.replace(' c', '')
         string = re.sub(r'\(.*?\)', '', string)
         string = string.replace('C04051', '5-Amino-4-imidazolecarboxyamid')
+    
+    # NEW: Clean up strings with '*e' or '*{any letter}' pattern
+    string = re.sub(r'\*[a-zA-Z].*$', '', string)
     
     return string
 
