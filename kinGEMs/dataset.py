@@ -168,7 +168,7 @@ def get_substrate_metabolites(reaction):
     substrates = [met.id for met in reaction.reactants]
     return substrates
 
-def map_metabolites(substrate_df, external_db_dir=None):
+def map_metabolites(substrate_df, external_db_dir=None, max_retries=3, retry_delay=2):
     """
     Map metabolites to SMILES structures using external databases.
     
@@ -178,12 +178,29 @@ def map_metabolites(substrate_df, external_db_dir=None):
         DataFrame with substrate information
     external_db_dir : str, optional
         Directory containing external database files. If None, uses default.
+    max_retries : int, optional
+        Maximum number of retries for web service requests. Default is 3.
+    retry_delay : int, optional
+        Delay between retries in seconds. Default is 2.
         
     Returns
     -------
     pandas.DataFrame
         DataFrame with added SMILES information
     """
+    import os
+    import re
+    import time
+    import numpy as np
+    import pandas as pd
+    import logging
+    from urllib.error import HTTPError
+    
+    # Configure logging
+    logging.basicConfig(level=logging.INFO, 
+                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logger = logging.getLogger(__name__)
+    
     # Load database files
     if external_db_dir is None:
         external_db_dir = os.path.dirname(BiGG_MAPPING)
@@ -207,7 +224,7 @@ def map_metabolites(substrate_df, external_db_dir=None):
 
     # Get unique substrates with their details
     unique_substrates_df = df[['Substrate partner', 'Cleaned Substrate']].drop_duplicates()
-    print(f"There are {len(unique_substrates_df)} substrates in the GEM.")
+    logger.info(f"There are {len(unique_substrates_df)} substrates in the GEM.")
 
     # Prepare for tracking SMILES and names
     smiles_mapping = {}
@@ -224,8 +241,8 @@ def map_metabolites(substrate_df, external_db_dir=None):
     for _, row in unique_substrates_df.iterrows():
         substrate = row['Substrate partner']
         cleaned_substrate = row['Cleaned Substrate']
-        print('-----------------------------')
-        print('Mapping substrate:', substrate)
+        logger.info('-----------------------------')
+        logger.info(f'Mapping substrate: {substrate}')
 
         # Search in BiGG database
         bigg_hit = BiGG_comps_unique.loc[
@@ -237,7 +254,7 @@ def map_metabolites(substrate_df, external_db_dir=None):
         if not bigg_hit.empty:
             name = bigg_hit['name'].values[0]
             bigg_name_mapping[substrate] = name
-            print("BiGG Name:", name)
+            logger.info(f"BiGG Name: {name}")
 
             # Check MetaNetX for SMILES
             if not bigg_hit['MetaNetX'].isna().all():
@@ -247,7 +264,7 @@ def map_metabolites(substrate_df, external_db_dir=None):
                     if pd.notna(smiles):
                         smiles_mapping[substrate] = smiles
                         db_name_mapping[substrate] = metanetx_hit['name'].values[0]
-                        print("SMILES found in MetaNetX:", smiles)
+                        logger.info(f"SMILES found in MetaNetX: {smiles}")
                         continue
             
             # Check SEED database
@@ -259,7 +276,7 @@ def map_metabolites(substrate_df, external_db_dir=None):
                     if pd.notna(smiles):
                         smiles_mapping[substrate] = smiles
                         db_name_mapping[substrate] = name
-                        print("SMILES found in SEED:", smiles)
+                        logger.info(f"SMILES found in SEED: {smiles}")
                         continue
             
             # Check CHEBI database
@@ -282,12 +299,12 @@ def map_metabolites(substrate_df, external_db_dir=None):
                         if pd.notna(smiles):
                             smiles_mapping[substrate] = smiles
                             db_name_mapping[substrate] = name
-                            print("SMILES found in ChEBI:", smiles)
+                            logger.info(f"SMILES found in ChEBI: {smiles}")
                             continue
         
         # If no BiGG hit, check other databases directly
         else:
-            print("No BiGG match found, checking other databases...")
+            logger.info("No BiGG match found, checking other databases...")
             
             # Check MetaNetX directly
             metanetx_hit = MetaNetX_comps[MetaNetX_comps['ID'].str.contains(
@@ -298,7 +315,7 @@ def map_metabolites(substrate_df, external_db_dir=None):
                 if pd.notna(smiles):
                     smiles_mapping[substrate] = smiles
                     db_name_mapping[substrate] = name
-                    print("MetaNetX match:", name)
+                    logger.info(f"MetaNetX match: {name}")
                     continue
             
             # Check SEED
@@ -310,11 +327,11 @@ def map_metabolites(substrate_df, external_db_dir=None):
                 if pd.notna(smiles):
                     smiles_mapping[substrate] = smiles
                     db_name_mapping[substrate] = name
-                    print("SEED match:", name)
+                    logger.info(f"SEED match: {name}")
                     continue
 
     # If SMILES is still missing, try to get from web services
-    missing_substrates = df[df['SMILES'].isna()]['Substrate partner'].unique()
+    missing_substrates = [sub for sub in df['Substrate partner'].unique() if sub not in smiles_mapping]
     
     for substrate in missing_substrates:
         # First, check alternative databases directly
@@ -325,7 +342,7 @@ def map_metabolites(substrate_df, external_db_dir=None):
             if pd.notna(smiles):
                 smiles_mapping[substrate] = smiles
                 db_name_mapping[substrate] = metanetx_hit['name'].values[0]
-                print(f"Found SMILES in MetaNetX for {substrate}: {smiles}")
+                logger.info(f"Found SMILES in MetaNetX for {substrate}: {smiles}")
                 continue
 
         seed_hit = SEED_comps[SEED_comps['id'].str.contains(
@@ -335,31 +352,31 @@ def map_metabolites(substrate_df, external_db_dir=None):
             if pd.notna(smiles):
                 smiles_mapping[substrate] = smiles
                 db_name_mapping[substrate] = seed_hit['name'].values[0]
-                print(f"Found SMILES in SEED for {substrate}: {smiles}")
+                logger.info(f"Found SMILES in SEED for {substrate}: {smiles}")
                 continue
 
         # Prepare for web service search
         cleaned_substrate = df.loc[df['Substrate partner'] == substrate, 'Cleaned Substrate'].iloc[0]
-        print('-----------------------------')
-        print('Mapping substrate:', substrate)
+        logger.info('-----------------------------')
+        logger.info(f'Mapping substrate: {substrate}')
         
         # Try searches with both original and cleaned names
         names_to_try = [cleaned_substrate, substrate]
         
         for name in names_to_try:
             if pd.notna(name):
-                # Try CIR
-                smiles = get_SMILES_from_cactus(name)
+                # Try CIR with retries
+                smiles = get_SMILES_with_retries(name, service='cactus', max_retries=max_retries, retry_delay=retry_delay)
                 if smiles:
                     smiles_mapping[substrate] = smiles
-                    print(f"Found SMILES via Cactus for {name}: {smiles}")
+                    logger.info(f"Found SMILES via Cactus for {name}: {smiles}")
                     break
                 else:
-                    # Try PubChem
-                    smiles_list = get_PubChem_SMILES(name)
+                    # Try PubChem with retries
+                    smiles_list = get_SMILES_with_retries(name, service='pubchem', max_retries=max_retries, retry_delay=retry_delay)
                     if smiles_list and len(smiles_list) > 0:
                         smiles_mapping[substrate] = smiles_list[0]
-                        print(f"Found SMILES via PubChem for {name}: {smiles_list[0]}")
+                        logger.info(f"Found SMILES via PubChem for {name}: {smiles_list[0]}")
                         break
 
     # Apply mappings back to the dataframe
@@ -374,199 +391,198 @@ def map_metabolites(substrate_df, external_db_dir=None):
     
     return df
 
-import re
 
-def clean_metabolite_names(string):
+def get_SMILES_with_retries(name, service='cactus', max_retries=3, retry_delay=2):
     """
-    Clean metabolite names for improved mapping.
+    Get SMILES from various services with retry logic.
     
     Parameters
     ----------
-    string : str
-        The metabolite name to clean
+    name : str
+        Compound name to search
+    service : str
+        Service to use ('cactus' or 'pubchem')
+    max_retries : int
+        Maximum number of retries
+    retry_delay : int
+        Delay between retries in seconds
+        
+    Returns
+    -------
+    str or list
+        SMILES string or list of SMILES strings
+    """
+    import time
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    for attempt in range(1, max_retries + 1):
+        try:
+            if service == 'cactus':
+                smiles = get_SMILES_from_cactus(name)
+                return smiles
+            elif service == 'pubchem':
+                smiles_list = get_PubChem_SMILES(name)
+                return smiles_list
+        except Exception as e:
+            logger.warning(f"Error retrieving SMILES for {name} from {service} (Attempt {attempt}/{max_retries}): {str(e)}")
+            if attempt < max_retries:
+                logger.info(f"Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+            else:
+                logger.error(f"Failed to retrieve SMILES for {name} after {max_retries} attempts")
+                return None
+    
+    return None
+
+
+def get_SMILES_from_cactus(name):
+    """
+    Get SMILES from Chemical Identifier Resolver (CIR) with improved error handling.
+    
+    Parameters
+    ----------
+    name : str
+        Compound name to search
         
     Returns
     -------
     str
-        The cleaned metabolite name
+        SMILES string
     """
-    if not isinstance(string, str):
-        string = str(string)  # Convert to string if not already
+    import urllib.request
+    import urllib.parse
+    import urllib.error
+    import logging
     
-    # Handle specific cases
-    if 'L Major' in string:
-        string = string.split(' L major')[0]
-        string = re.sub(r'(\d) (\d) (\w)', r'\1,\2-\3', string)
-        string = re.sub(r'(\d) (\w)', r'\1-\2', string)
-        string = re.sub(r'[CHNPO]\d+', '', string)
+    logger = logging.getLogger(__name__)
     
-    elif 'CoA' in string:
-        string = string.split('CoA', 1)[0]
-        string = re.sub(r'(\d) (\d) (\w)', r'\1,\2-\3', string)
-        string = re.sub(r'(\d) (\w)', r'\1-\2', string)
-        string = re.sub(r'[CHNPO]\d+', '', string)
+    # Properly encode the name for URL
+    encoded_name = urllib.parse.quote(name)
+    url = f"https://cactus.nci.nih.gov/chemical/structure/{encoded_name}/smiles"
     
-    elif 'A DASH D DASH' in string:
-        string = string.replace('A DASH ', 'alpha-')
-        string = string.replace('D DASH ', 'D-')
-        string = string.replace('B DASH ', 'beta-')
-        string = string.replace(' c', '')
-        string = re.sub(r'(\d) (\d) (\w)', r'\1,\2-\3', string)
-        string = re.sub(r'(\d) (\w)', r'\1-\2', string)
-        string = re.sub(r'[CHNPO]\d+', '', string)
-    
-    elif 'S 3 Methylbutanoyl dihydrolipoamide' in string:
-        string = string.replace("S 3 Methylbutanoyl dihydrolipoamide C13H25NO2S2", "S-(3-methylbutanoyl)-dihydrolipoamide")
-    
-    else:
-        # General cleaning
-        string = string.replace("", "")
-        string = string.replace(" ", "")
-        string = string.replace(";", "")
-        string = string.replace("H2O H2O", "H2O")
-        string = re.sub(r'(\d) (\d) (\w)', r'\1,\2-\3', string)
-        string = re.sub(r'(\d) (\w)', r'\1-\2', string)
-        string = re.sub(r'[CHNPO]\d+', '', string)
-        string = string.replace("1,2-Diacylglycerol L major ", "1,2-diacylglycerol")
-        string = string.replace("AMP P", "AMP")
-        string = string.replace("coa_c", "Coenzyme A")
-        string = string.replace("coa_e", "Coenzyme A")
-        string = string.replace("h2o_c", "h2o")
-        string = string.replace("h2o_e", "h2o")
-        string = string.replace('A DASH ', 'alpha-')
-        string = string.replace('D DASH ', 'D-')
-        string = string.replace('B DASH ', 'beta-')
-        string = string.replace(' c', '')
-        string = re.sub(r'\(.*?\)', '', string)
-        string = string.replace('C04051', '5-Amino-4-imidazolecarboxyamid')
-    
-    # NEW: Clean up strings with '*e' or '*{any letter}' pattern
-    string = re.sub(r'\*[a-zA-Z].*$', '', string)
-    
-    return string
+    try:
+        with urllib.request.urlopen(url, timeout=10) as response:
+            smiles = response.read().decode('utf8')
+            return smiles.strip()
+    except urllib.error.HTTPError as e:
+        logger.warning(f"HTTP error retrieving SMILES for {name}: {e}")
+        return None
+    except urllib.error.URLError as e:
+        logger.warning(f"URL error retrieving SMILES for {name}: {e}")
+        return None
+    except Exception as e:
+        logger.warning(f"General error retrieving SMILES for {name}: {e}")
+        return None
 
-def get_SMILES_from_cactus(name, max_retries=1):
+
+def get_PubChem_SMILES(name):
     """
-    Get SMILES from NIH Chemical Identifier Resolver web service.
+    Get SMILES from PubChem with improved error handling.
     
     Parameters
     ----------
     name : str
-        Compound name to query
-    max_retries : int, optional
-        Number of times to retry the request
+        Compound name to search
         
     Returns
     -------
-    str or None
-        SMILES string if found, None otherwise
+    list
+        List of SMILES strings
     """
-    if not name or pd.isna(name):
-        return None
+    import requests
+    import json
+    import logging
+    import time
     
-    for attempt in range(max_retries):
-        try: 
-            url = 'http://cactus.nci.nih.gov/chemical/structure/' + quote(name) + '/smiles' 
-            
-            # Add random delay between retries
-            if attempt > 0:
-                time.sleep(random.uniform(1, 3))
-            
-            # Set a timeout to prevent hanging
-            cmpd_smiles = urlopen(url, timeout=10).read().decode('utf8').strip()
-            
-            # Validate SMILES (basic check)
-            if cmpd_smiles and len(cmpd_smiles) > 3:
-                return cmpd_smiles 
-            
-            logging.warning(f"Invalid SMILES for {name}: {cmpd_smiles}")
-            return None
-        
-        except urllib.error.HTTPError as http_err:
-            # Log specific HTTP errors
-            logging.warning(f"HTTP error retrieving SMILES for {name} (Attempt {attempt+1}/{max_retries}): {http_err}")
-            
-            # Specific handling for 504 Gateway Timeout
-            if http_err.code == 504:
-                if attempt == max_retries - 1:
-                    logging.error(f"Failed to retrieve SMILES for {name} after {max_retries} attempts")
-                continue
-            
-            return None
-        
-        except urllib.error.URLError as url_err:
-            # Network-related errors
-            logging.warning(f"URL error retrieving SMILES for {name} (Attempt {attempt+1}/{max_retries}): {url_err}")
-            
-            if attempt == max_retries - 1:
-                logging.error(f"Failed to retrieve SMILES for {name} after {max_retries} attempts")
-            
-            continue
-        
-        except Exception as e: 
-            # Catch any other unexpected errors
-            logging.error(f"Unexpected error retrieving SMILES for {name}: {e}", exc_info=True)
-            return None
+    logger = logging.getLogger(__name__)
     
-    return None
+    # First search for the compound to get CIDs
+    search_url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{urllib.parse.quote(name)}/cids/JSON"
+    smiles_list = []
+    
+    try:
+        search_response = requests.get(search_url, timeout=15)
+        search_response.raise_for_status()
+        search_data = search_response.json()
+        
+        if 'IdentifierList' in search_data and 'CID' in search_data['IdentifierList']:
+            cids = search_data['IdentifierList']['CID']
+            
+            # Limit to first 3 results to avoid too many requests
+            for cid in cids[:3]:
+                # Small delay to avoid rate limiting
+                time.sleep(0.5)
+                
+                # Get SMILES for each CID
+                property_url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{cid}/property/CanonicalSMILES/JSON"
+                try:
+                    prop_response = requests.get(property_url, timeout=15)
+                    prop_response.raise_for_status()
+                    prop_data = prop_response.json()
+                    
+                    if 'PropertyTable' in prop_data and 'Properties' in prop_data['PropertyTable']:
+                        for compound in prop_data['PropertyTable']['Properties']:
+                            if 'CanonicalSMILES' in compound:
+                                smiles_list.append(compound['CanonicalSMILES'])
+                except Exception as e:
+                    logger.warning(f"Error retrieving SMILES properties for CID {cid}: {e}")
+                    continue
+        
+        return smiles_list
+    except requests.exceptions.RequestException as e:
+        logger.warning(f"Request error retrieving PubChem data for {name}: {e}")
+        return []
+    except json.JSONDecodeError as e:
+        logger.warning(f"JSON parsing error for PubChem data for {name}: {e}")
+        return []
+    except Exception as e:
+        logger.warning(f"General error retrieving PubChem data for {name}: {e}")
+        return []
 
-def get_PubChem_SMILES(name, max_retries=3):
+
+def clean_metabolite_names(name):
     """
-    Get SMILES from PubChem web service.
+    Clean metabolite names for better matching in databases.
     
     Parameters
     ----------
     name : str
-        Compound name to query
-    max_retries : int, optional
-        Number of times to retry the request
+        Raw metabolite name
         
     Returns
     -------
-    list or None
-        List of SMILES strings if found, None otherwise
+    str
+        Cleaned metabolite name
     """
-    if not name or pd.isna(name):
-        return None
+    import re
     
-    for attempt in range(max_retries):
-        try:
-            # Add random delay between retries
-            if attempt > 0:
-                time.sleep(random.uniform(1, 3))
-            
-            compounds = pcp.get_compounds(name, 'name')
-            
-            # Validate SMILES
-            smiles = [
-                compound.isomeric_smiles 
-                for compound in compounds 
-                if hasattr(compound, 'isomeric_smiles') and compound.isomeric_smiles
-            ]
-            
-            return smiles if smiles else None
-        
-        except pcp.PubChemHTTPError as http_err:
-            # Handle specific PubChem HTTP errors
-            logging.warning(f"PubChem HTTP error for {name} (Attempt {attempt+1}/{max_retries}): {http_err}")
-            
-            # Check if it's the last retry
-            if attempt == max_retries - 1:
-                logging.error(f"Failed to retrieve SMILES for {name} after {max_retries} attempts")
-            
-            continue
-        
-        except pcp.PubChemTypeError as type_err:
-            # Errors related to incorrect input type
-            logging.warning(f"PubChem type error for {name}: {type_err}")
-            return None
-        
-        except Exception as e:
-            # Catch any other unexpected errors
-            logging.error(f"Unexpected error retrieving SMILES for {name}: {e}", exc_info=True)
-            return None
+    if pd.isna(name):
+        return name
     
-    return None
+    # Convert to string if not already
+    name = str(name)
+    
+    # Remove compartment suffix (e.g., _c, _e, _p)
+    name = re.sub(r'_[a-z]$', '', name)
+    
+    # Remove common prefixes/suffixes
+    name = re.sub(r'^(cpd|M_|m_)', '', name)
+    
+    # Replace underscores with spaces
+    name = name.replace('_', ' ')
+    
+    # Remove concentration indicators like (e) or [e]
+    name = re.sub(r'[\(\[].[^\)\]]*[\)\]]', '', name)
+    
+    # Remove charge indicators
+    name = re.sub(r'[+-]\d*', '', name)
+    
+    # Strip whitespace
+    name = name.strip()
+    
+    return name
 
 def retrieve_sequences(model, organism, output_path=None):
     """
