@@ -366,3 +366,179 @@ def run_optimization(model, kcat_dict, objective_reaction, gene_sequences_dict=N
         solution_value = None
             
     return solution_value, df_FBA, gene_sequences_dict
+
+def create_descriptive_filename(objective_reaction, enzyme_upper_bound, maximization, 
+                         multi_enzyme_off, isoenzymes_off, promiscuous_off, complexes_off,
+                         output_dir=None, extension='.csv'):
+    """
+    Create a descriptive filename based on optimization parameters.
+    
+    Parameters
+    ----------
+    objective_reaction : str
+        The reaction ID used as objective
+    enzyme_upper_bound : float
+        Upper bound for total enzyme concentration
+    maximization : bool
+        Whether maximization was used
+    multi_enzyme_off : bool
+        Whether multi-enzyme reactions were disabled
+    isoenzymes_off : bool
+        Whether isoenzyme handling was disabled
+    promiscuous_off : bool
+        Whether promiscuous enzyme handling was disabled
+    complexes_off : bool
+        Whether enzyme complex handling was disabled
+    output_dir : str, optional
+        Directory to save the file in
+    extension : str, optional
+        File extension to use
+        
+    Returns
+    -------
+    str
+        The complete filepath
+    """
+    import os
+    
+    # Shorten the objective reaction name if it's too long
+    if len(objective_reaction) > 20:
+        obj_short = objective_reaction[:20]
+    else:
+        obj_short = objective_reaction
+    
+    # Create descriptive part for optimization direction
+    opt_dir = "max" if maximization else "min"
+    
+    # Create descriptive parts for enzyme constraints
+    multi = "noMulti" if multi_enzyme_off else "Multi"
+    iso = "noIso" if isoenzymes_off else "Iso"
+    promis = "noPromis" if promiscuous_off else "Promis"
+    complex_str = "noComplex" if complexes_off else "Complex"
+    
+    # Create the filename
+    filename = f"FBA_{obj_short}_{opt_dir}_E{enzyme_upper_bound}_{multi}_{iso}_{promis}_{complex_str}{extension}"
+    
+    # Clean up any characters that might cause issues in filenames
+    filename = filename.replace(' ', '_').replace('/', '_').replace('\\', '_')
+    
+    # Join with output directory if provided
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
+        return os.path.join(output_dir, filename)
+    else:
+        return filename
+
+
+def run_optimization_with_dataframe(model, processed_df, objective_reaction, 
+                    enzyme_upper_bound=0.125, enzyme_ratio=True, maximization=True, 
+                    multi_enzyme_off=False, isoenzymes_off=False, 
+                    promiscuous_off=False, complexes_off=False,
+                    output_dir=None, save_results=True):
+    """
+    Run enzyme-constrained flux balance analysis using a processed dataframe.
+    
+    Parameters
+    ----------
+    model : cobra.Model or str
+        COBRA model object or path to model file
+    processed_df : pandas.DataFrame
+        DataFrame containing Reactions, Single_gene, SEQ, SMILES, and kcat_mean columns
+    objective_reaction : str
+        Reaction ID to maximize/minimize
+    enzyme_upper_bound : float, optional
+        Upper bound for total enzyme concentration
+    enzyme_ratio : bool, optional
+        Whether to use enzyme ratio constraint
+    maximization : bool, optional
+        Whether to maximize (True) or minimize (False) the objective
+    multi_enzyme_off : bool, optional
+        Whether to disable multi-enzyme reactions
+    isoenzymes_off : bool, optional
+        Whether to disable isoenzyme handling
+    promiscuous_off : bool, optional
+        Whether to disable promiscuous enzyme handling
+    complexes_off : bool, optional
+        Whether to disable enzyme complex handling
+    output_dir : str, optional
+        Directory to save results in
+    save_results : bool, optional
+        Whether to automatically save results to a file
+        
+    Returns
+    -------
+    tuple
+        (solution_value, df_FBA, gene_sequences_dict, output_filepath)
+    """
+    import math
+    import os
+    import re
+
+    from Bio.SeqUtils import molecular_weight
+    import cobra as cb
+    import numpy as np
+    import pandas as pd
+    import pyomo.environ as pyo
+    from pyomo.environ import *
+    from pyomo.opt import SolverFactory
+    
+    # Check if required columns exist in processed_df
+    required_cols = ['Reactions', 'Single_gene', 'SEQ', 'kcat_mean']
+    missing_cols = [col for col in required_cols if col not in processed_df.columns]
+    if missing_cols:
+        raise ValueError(f"Missing required columns in processed_df: {missing_cols}")
+
+    # Extract kcat dictionary and gene sequences from processed_df
+    kcat_dict = {}
+    gene_sequences_dict = {}
+    
+    # Create a dictionary mapping from (reaction_id, gene_id) to kcat value
+    for _, row in processed_df.iterrows():
+        if pd.notna(row['kcat_mean']) and pd.notna(row['SEQ']):
+            reaction_id = row['Reactions']
+            gene_id = row['Single_gene']
+            
+            # Store the kcat value as a list (to match the original function's format)
+            kcat_dict[(reaction_id, gene_id)] = [row['kcat_mean']]
+            
+            # Store gene sequence for molecular weight calculation
+            if gene_id not in gene_sequences_dict and pd.notna(row['SEQ']):
+                gene_sequences_dict[gene_id] = row['SEQ']
+    
+    # Call the original run_optimization function with the extracted kcat_dict
+    solution_value, df_FBA, gene_sequences_dict = run_optimization(
+        model=model, 
+        kcat_dict=kcat_dict, 
+        objective_reaction=objective_reaction,
+        gene_sequences_dict=gene_sequences_dict,
+        enzyme_upper_bound=enzyme_upper_bound, 
+        enzyme_ratio=enzyme_ratio, 
+        maximization=maximization,
+        multi_enzyme_off=multi_enzyme_off, 
+        isoenzymes_off=isoenzymes_off,
+        promiscuous_off=promiscuous_off, 
+        complexes_off=complexes_off
+    )
+    
+    # Create descriptive filename and save results if requested
+    output_filepath = create_descriptive_filename(
+        objective_reaction, 
+        enzyme_upper_bound, 
+        maximization,
+        multi_enzyme_off, 
+        isoenzymes_off, 
+        promiscuous_off, 
+        complexes_off,
+        output_dir=output_dir
+    )
+    
+    if save_results and solution_value is not None:
+        # Create directory if it doesn't exist
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+        
+        # Save the results
+        df_FBA.to_csv(output_filepath, index=False)
+        print(f"Results saved to: {output_filepath}")
+    
+    return solution_value, df_FBA, gene_sequences_dict, output_filepath
