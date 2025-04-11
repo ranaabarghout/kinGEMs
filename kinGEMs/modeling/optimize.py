@@ -5,20 +5,20 @@ This module provides functions for enzyme-constrained flux balance analysis,
 including core optimization functionality from the original KG03b module.
 """
 
-import os
-import pandas as pd
-import cobra as cb
-import pyomo.environ as pyo
-from pyomo.environ import *
-from pyomo.opt import SolverFactory
 import math
-import numpy as np
+import os
 import re
-from Bio.SeqUtils import molecular_weight
 
-from ..config import (
-    ensure_dir_exists
-)
+from Bio.SeqUtils import molecular_weight
+import cobra as cb
+import numpy as np
+import pandas as pd
+import pyomo.environ as pyo
+from pyomo.environ import *  # noqa: F403
+from pyomo.opt import SolverFactory
+
+from ..config import ensure_dir_exists
+
 
 def run_optimization(model, kcat_dict, objective_reaction, gene_sequences_dict=None, 
                     enzyme_upper_bound=0.125, enzyme_ratio=True, maximization=True, 
@@ -470,17 +470,7 @@ def run_optimization_with_dataframe(model, processed_df, objective_reaction,
     tuple
         (solution_value, df_FBA, gene_sequences_dict, output_filepath)
     """
-    import math
-    import os
-    import re
 
-    from Bio.SeqUtils import molecular_weight
-    import cobra as cb
-    import numpy as np
-    import pandas as pd
-    import pyomo.environ as pyo
-    from pyomo.environ import *
-    from pyomo.opt import SolverFactory
     
     # Check if required columns exist in processed_df
     required_cols = ['Reactions', 'Single_gene', 'SEQ', 'kcat_mean']
