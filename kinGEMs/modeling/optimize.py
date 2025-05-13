@@ -11,7 +11,6 @@ import re
 
 from Bio.SeqUtils import molecular_weight
 import cobra as cb
-import numpy as np
 
 # Troubleshooting infeasible optimization
 # Add this code before running your optimization to diagnose the issue
@@ -20,7 +19,7 @@ import pyomo.environ as pyo
 from pyomo.environ import *  # noqa: F403
 from pyomo.opt import SolverFactory
 
-from ..config import ensure_dir_exists
+from ..config import ensure_dir_exists  # noqa: F401
 
 
 def diagnose_infeasibility(model, processed_data, biomass_reaction):
@@ -45,7 +44,6 @@ def diagnose_infeasibility(model, processed_data, biomass_reaction):
     enzyme_upper_bound = 0.125  # gP/gDCW
     
     # Estimate minimum enzyme requirement for current biomass flux
-    total_enzyme_needed = 0
     genes_with_data = set()
     
     for _, row in processed_data.iterrows():
@@ -83,7 +81,7 @@ def diagnose_infeasibility(model, processed_data, biomass_reaction):
             ko_solution = model.optimize()
             if ko_solution.status == 'optimal' and ko_solution.objective_value < 0.01:
                 essential_reactions.append(reaction.id)
-        except:
+        except:  # noqa: E722
             pass
         
         reaction.bounds = original_bounds  # Restore
@@ -121,7 +119,7 @@ def diagnose_infeasibility(model, processed_data, biomass_reaction):
                 temp_solution = model.optimize()
                 if temp_solution.status != 'optimal':
                     blocked_metabolites.append(met_id)
-            except:
+            except:  # noqa: E722
                 blocked_metabolites.append(met_id)
             finally:
                 model.remove_reactions([temp_rxn])
@@ -176,7 +174,7 @@ def relaxed_optimization(model, processed_df, objective_reaction,
                 objective_reaction=objective_reaction,
                 enzyme_upper_bound=enzyme_bound,
                 enzyme_ratio=True,
-                output_dir=processed_data_dir
+                output_dir=None
             )
             
             if solution is not None:
@@ -219,7 +217,7 @@ def simplified_optimization(model, processed_df, objective_reaction):
             isoenzymes_off=True,
             promiscuous_off=True,
             complexes_off=True,
-            output_dir=processed_data_dir
+            output_dir=None
         )
         
         if solution is not None:
@@ -286,7 +284,7 @@ def run_optimization(model, kcat_dict, objective_reaction, gene_sequences_dict=N
             directory = os.path.dirname(__file__)
             GEM_file = os.path.join(directory, model)
             mod = cb.io.read_sbml_model(GEM_file)
-        except:
+        except:  # noqa: E722
             raise ValueError(f"Could not load model from path: {model}")
     else:
         mod = model
@@ -299,7 +297,7 @@ def run_optimization(model, kcat_dict, objective_reaction, gene_sequences_dict=N
             gene_seq_df = pd.read_csv(gene_seq_file)
             gene_sequences_dict = pd.Series(gene_seq_df.Sequence.values, 
                                          index=gene_seq_df.Single_gene).to_dict()
-        except:
+        except:  # noqa: E722
             raise ValueError(f"Could not load gene sequences from: {gene_sequences_dict}")
     
     # kcat_dict handling
@@ -307,7 +305,7 @@ def run_optimization(model, kcat_dict, objective_reaction, gene_sequences_dict=N
         try:
             df_kcat = pd.read_csv(kcat_dict)
             kcat_dict = df_kcat.set_index('Key').to_dict()['Value']
-        except:
+        except:  # noqa: E722
             raise ValueError(f"Could not load kcat dictionary from: {kcat_dict}")
     
     # ============================================================ #
@@ -360,7 +358,7 @@ def run_optimization(model, kcat_dict, objective_reaction, gene_sequences_dict=N
         for met in mod.metabolites:
             try:
                 reaction.get_coefficient(met.id)
-            except:
+            except:  # noqa: E722
                 pass
             else:
                 S_mat[met.id, reaction.id] = reaction.get_coefficient(met.id)
@@ -407,31 +405,31 @@ def run_optimization(model, kcat_dict, objective_reaction, gene_sequences_dict=N
     #                       PYOMO MODEL 
     # ============================================================ #
     # VARIABLES
-    Concretemodel = ConcreteModel()
-    Concretemodel.reaction = Var(reactions, within=NonNegativeReals, bounds=(0, 999)) # Flux - mmol/gDCW/hr
-    Concretemodel.enzyme = Var(genes, within=NonNegativeReals) # mmol/gDCW
-    Concretemodel.enzyme_set = Set(initialize=genes)
-    Concretemodel.enzyme_min = Var(reaction_gene_tuple, within=NonNegativeReals, initialize=0) # mmol/gDCW
+    Concretemodel = ConcreteModel()  # noqa: F405
+    Concretemodel.reaction = Var(reactions, within=NonNegativeReals, bounds=(0, 999)) # Flux - mmol/gDCW/hr  # noqa: F405
+    Concretemodel.enzyme = Var(genes, within=NonNegativeReals) # mmol/gDCW  # noqa: F405
+    Concretemodel.enzyme_set = Set(initialize=genes)  # noqa: F405
+    Concretemodel.enzyme_min = Var(reaction_gene_tuple, within=NonNegativeReals, initialize=0) # mmol/gDCW  # noqa: F405
 
     # OBJECTIVE FUNCTION: maximizing or minimizing reaction
     if maximization:
         def rule_obj(m, objective_var):
             return m.reaction[objective_var]
-        Concretemodel.objective = Objective(rule=rule_obj(Concretemodel, objective_reaction), sense=maximize)
+        Concretemodel.objective = Objective(rule=rule_obj(Concretemodel, objective_reaction), sense=maximize)  # noqa: F405
     else:
         def rule_obj(m, objective_var):
             return m.reaction[objective_var]
-        Concretemodel.objective = Objective(rule=rule_obj(Concretemodel, objective_reaction), sense=minimize)
+        Concretemodel.objective = Objective(rule=rule_obj(Concretemodel, objective_reaction), sense=minimize)  # noqa: F405
 
     # CONSTRAINT: steady state
     def rule_S_mat(m, t):
         return sum(S_mat[t, j] * m.reaction[j] for j in reactions if (t, j) in S_mat.keys()) == 0
-    Concretemodel.set_S_mat = Constraint(metabolites, rule=rule_S_mat)
+    Concretemodel.set_S_mat = Constraint(metabolites, rule=rule_S_mat)  # noqa: F405
 
     # CONSTRAINT: flux bounds
     def rule_bounds(m, j):
-        return inequality(lower_bounds[j], m.reaction[j], upper_bounds[j])
-    Concretemodel.rxn_bounds = Constraint(reactions, rule=rule_bounds)
+        return inequality(lower_bounds[j], m.reaction[j], upper_bounds[j])  # noqa: F405
+    Concretemodel.rxn_bounds = Constraint(reactions, rule=rule_bounds)  # noqa: F405
 
     # CONSTRAINT: minimum enzyme concentration
     def enzyme_min_constraint(m, j, i):
@@ -440,9 +438,9 @@ def run_optimization(model, kcat_dict, objective_reaction, gene_sequences_dict=N
             if 'and' in gpr_string:
                 return m.enzyme_min[j, i] <= m.enzyme[i]
             else:
-                return Constraint.Feasible
+                return Constraint.Feasible  # noqa: F405
         else:
-            return Constraint.Feasible
+            return Constraint.Feasible  # noqa: F405
     
     # FUNCTION for rule_kcat to handle parentheses in GPRs
     def evaluate_parentheses(m, j, i, gpr_string):
@@ -477,7 +475,7 @@ def run_optimization(model, kcat_dict, objective_reaction, gene_sequences_dict=N
             try:
                 # Convert each kcat from 1/s to 1/hr by multiplying by 3600
                 current_set.append(float(k) * 3600)
-            except:
+            except:  # noqa: E722
                 pass
             
         # isozymes
@@ -524,7 +522,7 @@ def run_optimization(model, kcat_dict, objective_reaction, gene_sequences_dict=N
         # If we're missing either kcat or sequence, treat as regular reaction
         if not reaction_has_kcat or not gene_has_sequence:
             no_enzyme_pass.append(j)
-            return Constraint.Feasible
+            return Constraint.Feasible  # noqa: F405
         
         # If we have both data, proceed with original logic
         if (j, i) in single_enzyme and j in kcat:
@@ -547,15 +545,15 @@ def run_optimization(model, kcat_dict, objective_reaction, gene_sequences_dict=N
         
         else:
             no_enzyme_pass.append(j)
-            return Constraint.Feasible
+            return Constraint.Feasible  # noqa: F405
 
-    Concretemodel.set_kcat = Constraint(reaction_gene_tuple, rule=rule_kcat)
+    Concretemodel.set_kcat = Constraint(reaction_gene_tuple, rule=rule_kcat)  # noqa: F405
 
     # MODIFIED: CONSTRAINT: promiscuous enzymes - Now handles missing data
     def rule_promiscuous_E(m, i):
         # Check if the gene has a sequence
         if i not in gene_sequences_dict or not gene_sequences_dict.get(i):
-            return Constraint.Feasible
+            return Constraint.Feasible  # noqa: F405
         
         # Get valid reactions for this gene (ones with kcat data)
         valid_reactions = []
@@ -565,16 +563,16 @@ def run_optimization(model, kcat_dict, objective_reaction, gene_sequences_dict=N
         
         # If no valid reactions, no constraint
         if not valid_reactions:
-            return Constraint.Feasible
+            return Constraint.Feasible  # noqa: F405
         
         try:
             # Now both flux and kcat are in 1/hr units
             return max(m.reaction[j] / kcat_dict[j, i][0] for j in valid_reactions) <= m.enzyme[i]
-        except:
-            return Constraint.Feasible
+        except:  # noqa: E722
+            return Constraint.Feasible  # noqa: F405
             
     if not promiscuous_off:  
-        Concretemodel.set_promiscuous_E = Constraint(genes, rule=rule_promiscuous_E)
+        Concretemodel.set_promiscuous_E = Constraint(genes, rule=rule_promiscuous_E)  # noqa: F405
     
     # FUNCTION for retrieving molecular weights from protein sequences
     def calculate_molecular_weight(sequence):
@@ -582,13 +580,13 @@ def run_optimization(model, kcat_dict, objective_reaction, gene_sequences_dict=N
             return 0
         try:
             return molecular_weight(sequence, seq_type='protein')
-        except:
+        except:  # noqa: E722
             return 0  # Return 0 for invalid sequences
     
     # MODIFIED: CONSTRAINT total enzyme - Now handles missing data
     if enzyme_ratio:  
         # VARIABLE
-        Concretemodel.E_ratio = Var(within=NonNegativeReals, bounds=(0, enzyme_upper_bound)) # gP/gDCW
+        Concretemodel.E_ratio = Var(within=NonNegativeReals, bounds=(0, enzyme_upper_bound)) # gP/gDCW  # noqa: F405
         
         # Handle missing sequences by using default molecular weight
         def get_molecular_weight(gene):
@@ -598,7 +596,7 @@ def run_optimization(model, kcat_dict, objective_reaction, gene_sequences_dict=N
             else:
                 return 100000  # Default molecular weight for missing sequences (in g/mol)
         
-        Concretemodel.enzyme_molecular_weights = Param(
+        Concretemodel.enzyme_molecular_weights = Param(  # noqa: F405
             Concretemodel.enzyme_set, 
             initialize={gene: get_molecular_weight(gene) for gene in genes}
         )
@@ -608,16 +606,16 @@ def run_optimization(model, kcat_dict, objective_reaction, gene_sequences_dict=N
             total_enzyme_weight_expr = sum(m.enzyme[i] * m.enzyme_molecular_weights[i] 
                                           for i in m.enzyme) * 0.001
             return total_enzyme_weight_expr <= m.E_ratio
-        Concretemodel.set_E_total = Constraint(rule=rule_E_total)
+        Concretemodel.set_E_total = Constraint(rule=rule_E_total)  # noqa: F405
         
     else:
         # VARIABLE
-        Concretemodel.E_total = Var(within=NonNegativeReals, bounds=(0, enzyme_upper_bound)) # mmol/gDCW
+        Concretemodel.E_total = Var(within=NonNegativeReals, bounds=(0, enzyme_upper_bound)) # mmol/gDCW  # noqa: F405
         
         # CONSTRAINT
         def rule_E_total(m):
             return sum(m.enzyme[i] for (j, i) in reaction_gene_tuple) <= m.E_total
-        Concretemodel.set_E_total = Constraint(rule=rule_E_total) 
+        Concretemodel.set_E_total = Constraint(rule=rule_E_total)  # noqa: F405
     
     # Solving
     solver = SolverFactory('ipopt')
@@ -937,7 +935,7 @@ def debug_enzyme_constraints_detailed(model, processed_data, objective_reaction)
         print(f"Enzyme requirement: {enzyme_g} g/gDCW")
         
         if enzyme_g > 1.0:
-            print(f"WARNING: This reaction requires more than cell mass!")
+            print("WARNING: This reaction requires more than cell mass!")
     
     # Test the enzyme constraint creation
     print("\n5. Testing enzyme constraint creation...")

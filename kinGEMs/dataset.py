@@ -7,13 +7,13 @@ protein sequences, and preparing model data for kinetic analysis.
 
 import logging
 import os
-import random
-import re
-import time
+import random  # noqa: F401
+import re  # noqa: F401
+import time  # noqa: F401
 import urllib
 import urllib.error
-from urllib.parse import quote
-from urllib.request import urlopen
+from urllib.parse import quote  # noqa: F401
+from urllib.request import urlopen  # noqa: F401
 
 from bioservices import UniProt
 import cobra
@@ -21,7 +21,7 @@ from cobra.core import Reaction
 from cobra.util.solver import set_objective
 import numpy as np
 import pandas as pd
-import pubchempy as pcp
+import pubchempy as pcp  # noqa: F401
 
 from .config import (
     CHEBI_COMPOUNDS,
@@ -190,9 +190,9 @@ def map_metabolites(substrate_df, external_db_dir=None, max_retries=3, retry_del
     """
     import logging
     import os
-    import re
-    import time
-    from urllib.error import HTTPError
+    import re  # noqa: F811
+    import time  # noqa: F401, F811
+    from urllib.error import HTTPError  # noqa: F401
 
     import numpy as np
     import pandas as pd
@@ -413,8 +413,8 @@ def get_SMILES_with_retries(name, service='cactus', max_retries=3, retry_delay=2
     str or list
         SMILES string or list of SMILES strings
     """
-    import time
     import logging
+    import time  # noqa: F811
     
     logger = logging.getLogger(__name__)
     
@@ -452,10 +452,10 @@ def get_SMILES_from_cactus(name):
     str
         SMILES string
     """
-    import urllib.request
-    import urllib.parse
-    import urllib.error
     import logging
+    import urllib.error
+    import urllib.parse
+    import urllib.request
     
     logger = logging.getLogger(__name__)
     
@@ -492,10 +492,11 @@ def get_PubChem_SMILES(name):
     list
         List of SMILES strings
     """
-    import requests
     import json
     import logging
-    import time
+    import time  # noqa: F811
+
+    import requests
     
     logger = logging.getLogger(__name__)
     
@@ -557,7 +558,7 @@ def clean_metabolite_names(name):
     str
         Cleaned metabolite name
     """
-    import re
+    import re  # noqa: F811
     
     if pd.isna(name):
         return name
@@ -894,7 +895,8 @@ def process_kcat_predictions(merged_df, predictions_csv_path, output_path=None):
         Processed dataframe with merged predictions and statistics
     """
     import os
-    import numpy as np
+
+    import numpy as np  # noqa: F401
     import pandas as pd
     
     # Validate inputs

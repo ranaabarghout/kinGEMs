@@ -5,9 +5,9 @@ This module provides simulated annealing functionality to tune kcat parameters
 and optimize the model's performance.
 """
 
-import math
+import math  # noqa: F401
 import os
-import random
+import random  # noqa: F401
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -53,10 +53,9 @@ def simulated_annealing(model, processed_data, biomass_reaction,
     tuple
         (kcat_dict, df_enzyme_sorted, df_new, iterations, biomasses, df_FBA)
     """
-    import math
-    import random
-    import os
-    import pandas as pd
+
+    import pandas as pd  # noqa: F401
+
     from .optimize import run_optimization_with_dataframe
     from .tuning import save_annealing_results  # Assuming this is in the same module
 
@@ -142,7 +141,7 @@ def simulated_annealing(model, processed_data, biomass_reaction,
             df_new = updated_df
 
             if new_biomass > best_biomass:
-                best_solution = current_solution
+                best_solution = current_solution  # noqa: F841
                 best_biomass = new_biomass
 
         print(f"Change in biomass: {change:.5f}")
