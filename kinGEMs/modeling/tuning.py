@@ -15,7 +15,7 @@ import pandas as pd
 from ..config import ensure_dir_exists
 
 
-def simulated_annealing(model, kcat_file, gene_seq_file, biomass_reaction, 
+def simulated_annealing(model, processed_data, biomass_reaction, 
                         output_dir=None, enzyme_fraction=0.125, 
                         temperature=1.0, cooling_rate=0.98, min_temperature=0.01, 
                         max_iterations=250, max_unchanged_iterations=3, 
@@ -25,12 +25,10 @@ def simulated_annealing(model, kcat_file, gene_seq_file, biomass_reaction,
     
     Parameters
     ----------
-    model : str or cobra.Model
-        Path to model file or COBRA model object
-    kcat_file : str
-        Path to kcat values file
-    gene_seq_file : str
-        Path to gene sequence file
+    model : cobra.Model
+        COBRA model object
+    processed_data : pandas.DataFrame
+        DataFrame from process_kcat_predictions (includes kcat_mean and std)
     biomass_reaction : str
         ID of biomass reaction to optimize
     output_dir : str, optional
@@ -55,121 +53,127 @@ def simulated_annealing(model, kcat_file, gene_seq_file, biomass_reaction,
     tuple
         (kcat_dict, df_enzyme_sorted, df_new, iterations, biomasses, df_FBA)
     """
-    # Import needed here to avoid circular imports
-    from ..dataset import prepare_model_data
-    from .optimize import run_optimization
-    
+    import math
+    import random
+    import os
+    import pandas as pd
+    from .optimize import run_optimization_with_dataframe
+    from .tuning import save_annealing_results  # Assuming this is in the same module
+
     print('____________________')
     print('Simulated Annealing for tuning kcat function')
-    
-    # Helper functions for simulated annealing
+
     def acceptance_probability(old_cost, new_cost, temperature):
-        """Calculate probability of accepting a new solution."""
         if new_cost > old_cost:
             return 1.0
         return math.exp((new_cost - old_cost) / temperature)
 
     def get_neighbor(kcat_value, std):
-        """Generate a new kcat value with random perturbation within STD range."""
         new_kcat = kcat_value * (1.5 + random.uniform(-1, 3.5))
-        
         if std == 0:
             std = kcat_value * 0.1
-        
         ub = kcat_value + std
         lb = kcat_value - std
-        
-        # Ensure new kcat value is within the specified range
         new_kcat = min(max(new_kcat, lb), ub)
-        
-        # Also limit the new kcat value to the maximum reported kcat
-        max_reported_kcat = 4.6 * 10**9  # Max reported kcat (carbonic anhydrase)
-        new_kcat = min(new_kcat, max_reported_kcat)
-        
-        return new_kcat
-    
+        return min(new_kcat, 4.6e9)
+
     def update_kcat(df, reaction_id, gene_id, new_kcat_value):
-        """Update a specific kcat value in the dataframe."""
         updated_df = df.copy()
         condition = (updated_df['Reactions'] == reaction_id) & (updated_df['Single_gene'] == gene_id)
-        updated_df.loc[condition, 'kcat (1/hr)'] = new_kcat_value
+        updated_df.loc[condition, 'kcat_mean'] = new_kcat_value
         return updated_df
-    
-    # Initial solution - prepare the model and run initial optimization
-    new_model_path, kcat_dict, df_data = prepare_model_data(
-        model, kcat_file, biomass_reaction, output_dir)
-        
-    largest_rxn_id, largest_gene_id, largest_kcat, largest_STD, biomass, df_new, _, df_enzyme_sorted, df_FBA = run_optimization(
-        new_model_path, kcat_dict, biomass_reaction, gene_seq_file, enzyme_fraction)
 
-    print('Initial working biomass: ', biomass)
-    
-    # Initialize tracking variables
+    # Select top targets for tuning (e.g., top 10 highest kcat values)
+    top_targets = processed_data.sort_values(by='kcat_mean', ascending=False).head(10)
+    largest_rxn_id = top_targets['Reactions'].tolist()
+    largest_gene_id = top_targets['Single_gene'].tolist()
+    largest_kcat = top_targets['kcat_mean'].tolist()
+    largest_STD = top_targets['kcat_std'].fillna(0.1).tolist()
+
+    # Initial optimization
+    biomass, df_FBA, _, _ = run_optimization_with_dataframe(
+        model=model,
+        processed_df=processed_data,
+        objective_reaction=biomass_reaction,
+        enzyme_upper_bound=enzyme_fraction,
+        output_dir=output_dir,
+        save_results=False
+    )
+
+    print('Initial working biomass:', biomass)
+
+    df_new = processed_data.copy()
     current_solution = largest_kcat
     current_biomass = biomass
     best_solution = current_solution
     best_biomass = current_biomass
     current_STD = largest_STD
-    
+
     iteration = 1
     no_change_counter = 0
-    
-    iterations = []
-    biomasses = []
-    biomasses.append(biomass)
-    iterations.append(0)
-    
-    # Main simulated annealing loop
+    iterations = [0]
+    biomasses = [biomass]
+
     while temperature > min_temperature and iteration < max_iterations:
-        print("Iteration number: ", iteration)
-        
-        # Update kcat values for the target reactions
+        print(f"Iteration {iteration}")
+
         for i in range(len(largest_rxn_id)):
             new_kcat = get_neighbor(current_solution[i], current_STD[i])
             if i == 0 and iteration == 1:
                 updated_df = update_kcat(df_new, largest_rxn_id[i], largest_gene_id[i], new_kcat)
             else:
                 updated_df = update_kcat(updated_df, largest_rxn_id[i], largest_gene_id[i], new_kcat)
-        
-        # Run optimization with updated kcats
-        largest_rxn_id, largest_gene_id, largest_kcat, largest_STD, new_biomass, df_new, t1, t2, df_FBA = run_optimization(
-            new_model_path, kcat_dict, biomass_reaction, gene_seq_file, enzyme_fraction, df=updated_df, data_available=True)
-        
-        # Determine whether to accept the new solution
+
+        new_biomass, df_FBA, _, _ = run_optimization_with_dataframe(
+            model=model,
+            processed_df=updated_df,
+            objective_reaction=biomass_reaction,
+            enzyme_upper_bound=enzyme_fraction,
+            output_dir=output_dir,
+            save_results=False
+        )
+
+        change = abs(new_biomass - current_biomass) / current_biomass if current_biomass > 0 else 0
         if acceptance_probability(current_biomass, new_biomass, temperature) > random.random():
-            change = abs(new_biomass - current_biomass) / current_biomass
-            current_solution = largest_kcat
+            current_solution = [updated_df[(updated_df['Reactions'] == largest_rxn_id[i]) & 
+                                           (updated_df['Single_gene'] == largest_gene_id[i])]['kcat_mean'].values[0]
+                                for i in range(len(largest_rxn_id))]
             current_biomass = new_biomass
-            
+            df_new = updated_df
+
             if new_biomass > best_biomass:
                 best_solution = current_solution
                 best_biomass = new_biomass
-        
+
+        print(f"Change in biomass: {change:.5f}")
         iterations.append(iteration)
         biomasses.append(new_biomass)
-        
-        # Check for significant change in biomass
-        print('Change in biomass from last iteration: ', change)
+
         if change < change_threshold:
             no_change_counter += 1
         else:
             no_change_counter = 0
-        
+
         if no_change_counter >= max_unchanged_iterations:
-            print(f"No significant change in biomass for {max_unchanged_iterations} iterations. Stopping early.")
+            print(f"No significant change for {max_unchanged_iterations} iterations. Stopping early.")
             break
-        
+
         temperature *= cooling_rate
         iteration += 1
-        
-        print(f'Biomass with tuned kcats: {new_biomass}')
-        print('------------')
-    
-    # If output_dir is provided, save results
+        print(f'Biomass with tuned kcats: {new_biomass}\n')
+
+    # Rebuild kcat_dict from final df_new
+    kcat_dict = {
+        f"{row['Reactions']}_{row['Single_gene']}": row['kcat_mean']
+        for _, row in df_new.iterrows()
+    }
+
     if output_dir:
-        save_annealing_results(output_dir, kcat_dict, df_enzyme_sorted, df_new, iterations, biomasses, df_FBA)
-    
-    return kcat_dict, df_enzyme_sorted, df_new, iterations, biomasses, df_FBA
+        save_annealing_results(output_dir, kcat_dict, top_targets, df_new, iterations, biomasses, df_FBA)
+
+    return kcat_dict, top_targets, df_new, iterations, biomasses, df_FBA
+
+
 
 def save_annealing_results(output_dir, kcat_dict, df_enzyme_sorted, df_new, iterations, biomasses, df_FBA, prefix=""):
     """
