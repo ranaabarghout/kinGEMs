@@ -12,7 +12,6 @@ import random  # noqa: F401
 
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 
 from ..config import ensure_dir_exists
@@ -128,7 +127,7 @@ def simulated_annealing(
             old_k = current_solution[i]
             new_k_hr = get_neighbor(old_k, stds[i])
             new_k = new_k_hr / 3600.0
-            # print(f"  {rxn}_{gene}: old kcat = {old_k:.3e}  →  new kcat = {new_k:.3e}")
+            print(f"  {rxn}_{gene}: old kcat = {old_k:.3e}  →  new kcat = {new_k:.3e}")
             updated_df = update_kcat(updated_df, rxn, gene, new_k_hr)
 
         # ANNOTATE & EVALUATE on a clone

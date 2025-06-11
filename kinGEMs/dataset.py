@@ -57,99 +57,124 @@ def load_model(model_path):
     except Exception as e:
         raise ValueError(f"Error loading model: {e}")
 
+# def convert_to_irreversible(model):
+#     """
+#     Convert a reversible COBRA model to irreversible form.
+#     Splits reversible and exchange reactions into forward and reverse.
+#     """
+#     model_irrev = model.copy()
+#     reactions_to_add = []
+
+#     # Process non-exchange reactions
+#     non_ex = [rxn for rxn in model_irrev.reactions if rxn not in model_irrev.exchanges]
+#     for rxn in non_ex:
+#         if rxn.reversibility:
+#             rev_id = rxn.id + '_reverse'
+#             if rev_id not in model_irrev.reactions:
+#                 orig_lb, orig_ub = rxn.lower_bound, rxn.upper_bound
+#                 # Make original irreversible
+#                 rxn.lower_bound = max(0, orig_lb)
+#                 rxn.upper_bound = max(0, orig_ub)
+#                 # Create reverse reaction
+#                 rev = Reaction(rev_id)
+#                 rev.lower_bound = 0
+#                 rev.upper_bound = max(0, -orig_lb)
+#                 rev.add_metabolites({m: -c for m,c in rxn.metabolites.items()})
+#                 rev.gene_reaction_rule = rxn.gene_reaction_rule
+#                 reactions_to_add.append(rev)
+
+#     # Process exchange reactions
+#     for ex in model_irrev.exchanges:
+#         rev_ex_id = ex.id + '_reverse'
+#         if rev_ex_id not in model_irrev.reactions:
+#             orig_lb = ex.lower_bound
+#             ex.lower_bound = max(0, orig_lb)
+#             rev_ex = Reaction(rev_ex_id)
+#             rev_ex.lower_bound = 0
+#             rev_ex.upper_bound = max(0, -orig_lb)
+#             rev_ex.add_metabolites({m: -c for m,c in ex.metabolites.items()})
+#             rev_ex.gene_reaction_rule = ex.gene_reaction_rule
+#             reactions_to_add.append(rev_ex)
+
+#     model_irrev.add_reactions(reactions_to_add)
+#     return model_irrev
+
 def convert_to_irreversible(model):
-    """
-    Convert all reversible reactions to irreversible reactions.
+        """
+        Convert all non-exchange reversible reactions to irreversible and ensure all exchange reactions
+        have a reversible counterpart (create reverse reactions if needed).
+        """
+        # List to hold reactions to add
+        reactions_to_add = []
+        coefficients = {}
     
-    Non-exchange reversible reactions are split into forward and reverse reactions.
-    Exchange reactions are made reversible by creating reverse reactions.
+        # Convert only non-exchange reversible reactions to irreversible
+        non_exchange_reactions = [rxn for rxn in model.reactions if rxn not in model.exchanges]
+        exchange_reactions = [rxn for rxn in model.exchanges]
+        print('Number of reactions that are non-exchange: ', len(non_exchange_reactions))
+        print('Number of reactions that are exchange: ', len(exchange_reactions))
     
-    Parameters
-    ----------
-    model : cobra.Model
-        The model to convert
+        for reaction in non_exchange_reactions:
+            if reaction.reversibility:
+                reverse_reaction_id = reaction.id + "_reverse"
+                
+                # Check if the reverse reaction already exists in the model
+                if reverse_reaction_id not in [rxn.id for rxn in model.reactions]:
+                    reverse_reaction = Reaction(reverse_reaction_id)
+                    reverse_reaction.lower_bound = max(0, -reaction.upper_bound)
+                    reverse_reaction.upper_bound = abs(reaction.lower_bound)
+                    coefficients[reverse_reaction] = reaction.objective_coefficient * -1
+    
+                    # Modify the original reaction to be irreversible
+                    reaction.lower_bound = max(0, reaction.lower_bound)
+                    reaction.upper_bound = max(0, reaction.upper_bound)
+    
+                    # Create the reverse reaction metabolites with reversed stoichiometry
+                    reaction_dict = {k: v * -1 for k, v in reaction._metabolites.items()}
+                    reverse_reaction.add_metabolites(reaction_dict)
+    
+                    # Copy genes and GPR rule from the original reaction
+                    reverse_reaction._model = reaction._model
+                    reverse_reaction._genes = reaction._genes
+                    reverse_reaction._gpr = reaction._gpr
+    
+                    for gene in reaction._genes:
+                        gene._reaction.add(reverse_reaction)
+    
+                    # Add reverse reaction to the list
+                    reactions_to_add.append(reverse_reaction)
         
-    Returns
-    -------
-    cobra.Model
-        The converted model with irreversible reactions
-    """
-    # Create a copy of the model to avoid modifying the original
-    model_irrev = model.copy()
-    
-    # List to hold reactions to add
-    reactions_to_add = []
-    coefficients = {}
-
-    # Convert only non-exchange reversible reactions to irreversible
-    non_exchange_reactions = [rxn for rxn in model_irrev.reactions if rxn not in model_irrev.exchanges]
-    exchange_reactions = [rxn for rxn in model_irrev.exchanges]
-    print('Number of reactions that are non-exchange: ', len(non_exchange_reactions))
-    print('Number of reactions that are exchange: ', len(exchange_reactions))
-
-    # Process non-exchange reactions
-    for reaction in non_exchange_reactions:
-        if reaction.reversibility:
-            reverse_reaction_id = reaction.id + "_reverse"
+        print('Number of reactions being added from non-exchange:', len(reactions_to_add))
+        # Ensure all exchange reactions are reversible by creating reverse reactions
+        for exchange_reaction in model.exchanges:
+            reverse_exchange_id = exchange_reaction.id + "_reverse"
             
             # Check if the reverse reaction already exists in the model
-            if reverse_reaction_id not in [rxn.id for rxn in model_irrev.reactions]:
-                reverse_reaction = Reaction(reverse_reaction_id)
-                reverse_reaction.lower_bound = max(0, -reaction.upper_bound)
-                reverse_reaction.upper_bound = abs(reaction.lower_bound)
-                coefficients[reverse_reaction] = reaction.objective_coefficient * -1
-
-                # Modify the original reaction to be irreversible
-                reaction.lower_bound = max(0, reaction.lower_bound)
-                reaction.upper_bound = max(0, reaction.upper_bound)
-
-                # Create the reverse reaction metabolites with reversed stoichiometry
-                reaction_dict = {k: v * -1 for k, v in reaction._metabolites.items()}
-                reverse_reaction.add_metabolites(reaction_dict)
-
-                # Copy genes and GPR rule from the original reaction
-                reverse_reaction._model = reaction._model
-                reverse_reaction._genes = reaction._genes
-                reverse_reaction._gpr = reaction._gpr
-
-                for gene in reaction._genes:
-                    gene._reaction.add(reverse_reaction)
-
-                # Add reverse reaction to the list
-                reactions_to_add.append(reverse_reaction)
+            if reverse_exchange_id not in [rxn.id for rxn in model.reactions]:
+                # Create a reverse reaction for exchange reactions without reversible behavior
+                reverse_exchange = Reaction(reverse_exchange_id)
+                reverse_exchange.lower_bound = 0
+                reverse_exchange.upper_bound = -exchange_reaction.lower_bound
     
-    print('Number of reactions being added from non-exchange:', len(reactions_to_add))
+                # Reverse the metabolites in the exchange reaction (flip stoichiometry)
+                reverse_metabolites = {met: -coeff for met, coeff in exchange_reaction.metabolites.items()}
+                reverse_exchange.add_metabolites(reverse_metabolites)
     
-    # Ensure all exchange reactions have reverse reactions
-    for exchange_reaction in model_irrev.exchanges:
-        reverse_exchange_id = exchange_reaction.id + "_reverse"
+                # Copy the GPR rule (if any) from the original exchange reaction
+                reverse_exchange.gene_reaction_rule = exchange_reaction.gene_reaction_rule
+    
+                # Add reverse exchange reaction to the list
+                reactions_to_add.append(reverse_exchange)
         
-        # Check if the reverse reaction already exists in the model
-        if reverse_exchange_id not in [rxn.id for rxn in model_irrev.reactions]:
-            # Create a reverse reaction for exchange reactions 
-            reverse_exchange = Reaction(reverse_exchange_id)
-            reverse_exchange.lower_bound = 0
-            reverse_exchange.upper_bound = -exchange_reaction.lower_bound
-
-            # Reverse the metabolites in the exchange reaction (flip stoichiometry)
-            reverse_metabolites = {met: -coeff for met, coeff in exchange_reaction.metabolites.items()}
-            reverse_exchange.add_metabolites(reverse_metabolites)
-
-            # Copy the GPR rule (if any) from the original exchange reaction
-            reverse_exchange.gene_reaction_rule = exchange_reaction.gene_reaction_rule
-
-            # Add reverse exchange reaction to the list
-            reactions_to_add.append(reverse_exchange)
+        print('Number of reactions being added from exchange:', len(reactions_to_add))
+        # Add the newly created reverse reactions to the model
+        model.add_reactions(reactions_to_add)
     
-    print('Number of reactions being added from exchange:', len(reactions_to_add))
+        # Set new objective with the added reverse reactions
+        set_objective(model, coefficients, additive=True)
     
-    # Add the newly created reverse reactions to the model
-    model_irrev.add_reactions(reactions_to_add)
+        return model
 
-    # Set new objective with the added reverse reactions
-    set_objective(model_irrev, coefficients, additive=True)
-
-    return model_irrev
 
 def get_substrate_metabolites(reaction):
     """
@@ -735,8 +760,8 @@ def prepare_model_data(model_path, substrates_output=None, sequences_output=None
     print(f"Loaded model with {len(model.reactions)} reactions and {len(model.metabolites)} metabolites")
     
     # Convert to irreversible
-    irrev_model = convert_to_irreversible(model)
-    print(f"Converted to irreversible model with {len(irrev_model.reactions)} reactions")
+    irrev_model = model #convert_to_irreversible(model)
+    # print(f"Converted to irreversible model with {len(irrev_model.reactions)} reactions")
     
     # Extract substrates
     rxn_data = []
