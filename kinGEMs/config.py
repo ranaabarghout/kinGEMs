@@ -40,7 +40,8 @@ TAXONOMY_IDS = {
     'S elongatus': 1140,  # Taxonomy ID for S. elongatus PCC 7942: https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=1140
     'P putida': 160488, # Taxonomy ID for P. putida KT2440: https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=160488
     'Helicobacter': 1287064, # Taxonomy ID for Helicobacter pylori UM034: https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?mode=Info&id=1287064&lvl=3&lin=f&keep=1&srchmode=1&unlock
-    # Add more organisms as needed
+    'B ovatus': 28116 , # Taxonomy ID for B. ovatus: https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?mode=Info&id=28116
+      # Add more organisms as needed
 }
 
 # Helper function to ensure a directory exists

@@ -590,7 +590,7 @@ def run_optimization4(
     enzyme_upper_bound=0.125,
     enzyme_ratio=True,
     maximization=True,
-    solver_name='glpk',
+    solver_name='gurobi',
     tee=False,
 ):
     """
@@ -601,7 +601,22 @@ def run_optimization4(
       - promiscuous enzymes
     Returns: sol_val, df_FBA, gene_sequences_dict, model
     """
+    import logging
+    import time  # Add this import
+
+    import gurobipy as gp
+
+    # 1) Silence the gurobipy Python logger
+    logging.getLogger('gurobipy').setLevel(logging.ERROR)
+
+    # 2) Globally mute Pyomo solver chatter
+    logging.getLogger('pyomo').setLevel(logging.WARNING)
+    
+    total_start = time.time()
+    
     # 1) Load COBRA model
+    # print("Step 1: Loading COBRA model...")
+    step_start = time.time()
     if isinstance(model, str):
         mod = (
             cb.io.read_sbml_model(model)
@@ -610,16 +625,20 @@ def run_optimization4(
         )
     else:
         mod = model
+    # print(f"Model loaded in {time.time() - step_start:.2f}s\n")
 
     # 2) Initial flux guess
-
+    # print("Step 2: Getting initial flux guess...")
+    step_start = time.time()
     mod.objective = objective_reaction
     print("Model objective:", mod.objective)
-
     cobra_sol = mod.optimize()
     flux0 = cobra_sol.fluxes.to_dict()
+    # print(f"Initial optimization completed in {time.time() - step_start:.2f}s\n")
 
     # 3) Load & normalize kcat_dict
+    # print("Step 3: Processing kcat dictionary...")
+    step_start = time.time()
     if isinstance(kcat_dict, str):
         df = pd.read_csv(kcat_dict)
         tmp = {}
@@ -629,8 +648,11 @@ def run_optimization4(
     # convert all values to hr^-1 lists
     for key, vals in list(kcat_dict.items()):
         kcat_dict[key] = [(v * 3600 if v < 1000 else v) for v in vals]
+    # print(f"kcat dictionary processed ({len(kcat_dict)} entries) in {time.time() - step_start:.2f}s\n")
 
     # 4) Build stoichiometry, bounds, objective
+    # print("Step 4: Building model data structures...")
+    step_start = time.time()
     S = create_stoichiometric_matrix(mod)
     mets = [m.id for m in mod.metabolites]
     rxns = [r.id for r in mod.reactions]
@@ -640,8 +662,11 @@ def run_optimization4(
     obj_coef = {r.id: (1.0 if r.id == objective_reaction else 0.0) for r in mod.reactions} #obj_coef = {r.id: r.objective_coefficient for r in mod.reactions}
     met_index = {m: i for i, m in enumerate(mets)}
     rxn_index = {r: j for j, r in enumerate(rxns)}
+    # print(f"Data structures built ({len(mets)} mets, {len(rxns)} rxns, {len(genes)} genes) in {time.time() - step_start:.2f}s\n")
 
     # 5) Generate DNF clauses
+    # print("Step 5: Parsing gene-protein-reaction rules...")
+    step_start = time.time()
     dnf_clauses = {}
     for r in mod.reactions:
         rule = (r.gene_reaction_rule or '').strip()
@@ -649,15 +674,20 @@ def run_optimization4(
             continue
         tokens = _tokenize_gpr(rule)
         dnf_clauses[r.id] = _parse_gpr_to_dnf(tokens)
+    # print(f"GPR rules parsed ({len(dnf_clauses)} reactions with GPRs) in {time.time() - step_start:.2f}s\n")
 
     # 6) Build Pyomo model
+    # print("Step 6: Building Pyomo optimization model...")
+    step_start = time.time()
     m = ConcreteModel()  # noqa: F405
     m.M = Set(initialize=mets)  # noqa: F405
     m.R = Set(initialize=rxns)  # noqa: F405
     m.G = Set(initialize=genes)  # noqa: F405
     m.K = Set(initialize=[(r, g) for r in rxns for g in genes], dimen=2)  # noqa: F405
+    # print(f"Sets created in {time.time() - step_start:.2f}s\n")
 
     # Variables
+    substep_start = time.time()
     m.v = Var(  # noqa: F405
         m.R,
         domain=Reals,  # noqa: F405
@@ -665,18 +695,47 @@ def run_optimization4(
         initialize=lambda mo, j: flux0.get(j, 0.0)
     )
     m.E = Var(m.G, domain=NonNegativeReals, initialize=0.01)  # noqa: F405
+    # print(f"Variables created in {time.time() - substep_start:.2f}s\n")
 
     # Mass balance
-    def mass_balance(mo, met):
-        i = met_index[met]
-        return sum(S[i, rxn_index[r]] * mo.v[r] for r in mo.R) == 0
-    m.mass_balance = Constraint(m.M, rule=mass_balance)  # noqa: F405
+    # substep_start = time.time()
+    # def mass_balance(mo, met):
+    #     i = met_index[met]
+    #     return sum(S[i, rxn_index[r]] * mo.v[r] for r in mo.R) == 0
+    # m.mass_balance = Constraint(m.M, rule=mass_balance)  # noqa: F405
+    # print(f"Mass balance constraints created in {time.time() - substep_start:.2f}s\n")
+    
+    # OPTIMIZED mass balance
+    substep_start = time.time()
+    
+    # Pre-compute which reactions involve each metabolite
+    met_reactions = {}
+    for met in mets:
+        met_reactions[met] = []
+        for rxn in rxns:
+            if S[met_index[met], rxn_index[rxn]] != 0:
+                met_reactions[met].append(rxn)
 
+    # print(f"Sparse matrix analysis: avg {sum(len(v) for v in met_reactions.values()) / len(mets):.1f} reactions per metabolite")
+
+    def mass_balance_sparse(mo, met):
+        # Only iterate over reactions that involve this metabolite
+        relevant_rxns = met_reactions[met]
+        if not relevant_rxns:
+            return Constraint.Feasible  # noqa: F405
+        
+        i = met_index[met]
+        return sum(S[i, rxn_index[r]] * mo.v[r] for r in relevant_rxns) == 0
+
+    m.mass_balance = Constraint(m.M, rule=mass_balance_sparse)  # noqa: F405
+    # print(f"Mass balance constraints created in {time.time() - substep_start:.2f}s\n")
+    
     # Objective
     sense = maximize if maximization else minimize  # noqa: F405
     m.obj = Objective(expr=sum(obj_coef[r] * m.v[r] for r in m.R), sense=sense)  # noqa: F405
 
     # 6a) AND‐GPR: single or complex
+    substep_start = time.time()
     def and_rule(mo, rxn_id, gene_id):
         clauses = dnf_clauses.get(rxn_id, [])
         if not clauses:
@@ -705,8 +764,10 @@ def run_optimization4(
             return mo.v[rxn_id] <= k_val * mo.E[gene_id]
         return Constraint.Skip  # noqa: F405
     m.kcat_and = Constraint(m.K, rule=and_rule)  # noqa: F405
+    # print(f"AND-GPR constraints created in {time.time() - substep_start:.2f}s\n")
 
     # 6b) OR‐GPR: isoenzymes
+    substep_start = time.time()
     def iso_rule(mo, rxn_id):
         clauses = dnf_clauses.get(rxn_id, [])
         if len(clauses) <= 1:
@@ -727,8 +788,10 @@ def run_optimization4(
             return Constraint.Skip  # noqa: F405
         return mo.v[rxn_id] <= sum(terms)
     m.kcat_iso = Constraint(m.R, rule=iso_rule)  # noqa: F405
+    # print(f"OR-GPR constraints created in {time.time() - substep_start:.2f}s\n")
 
     # 6c) Promiscuous enzymes
+    substep_start = time.time()
     def promis_rule(mo, g_id):
         usage = []
         for r_id, clauses in dnf_clauses.items():
@@ -741,8 +804,11 @@ def run_optimization4(
             return Constraint.Skip  # noqa: F405
         return sum(usage) <= mo.E[g_id]
     m.promiscuous = Constraint(m.G, rule=promis_rule)  # noqa: F405
+    # print(f"Promiscuous enzyme constraints created in {time.time() - substep_start:.2f}s\n")
 
     # 7) Total enzyme pool / ratio
+    # print("Step 7: Adding enzyme pool constraints...")
+    step_start = time.time()
     if enzyme_ratio:
         if gene_sequences_dict is None:
             gene_sequences_dict = {}
@@ -755,9 +821,19 @@ def run_optimization4(
     else:
         m.E_total = Var(domain=NonNegativeReals, bounds=(0, enzyme_upper_bound))  # noqa: F405
         m.total_enzyme = Constraint(expr=sum(m.E[g] for g in m.G) <= m.E_total)  # noqa: F405
+    # print(f"Enzyme pool constraints added in {time.time() - step_start:.2f}s\n")
+
+    # print(f"\nMODEL BUILDING COMPLETED in {time.time() - total_start:.2f}s")
 
     # 8) Solve
+    # print("Step 8: Setting up and running solver...")
     solver = SolverFactory(solver_name)
+    solver.options['LogToConsole'] = 0
+    solver.options['OutputFlag']   = 0
+    solver.options['LogFile']      = ''
+    #solver.options['threads'] = 4
+    # print("Solver:", solver)
+    # print(f"Solver options: {dict(solver.options)}")
     solver.solve(m, tee=tee, load_solutions=True)
 
     # 9) Post-process

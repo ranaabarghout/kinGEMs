@@ -12,6 +12,7 @@ import re  # noqa: F401
 import time  # noqa: F401
 import urllib
 import urllib.error
+from urllib.error import HTTPError
 from urllib.parse import quote  # noqa: F401
 from urllib.request import urlopen  # noqa: F401
 
@@ -22,6 +23,7 @@ from cobra.util.solver import set_objective
 import numpy as np
 import pandas as pd
 import pubchempy as pcp  # noqa: F401
+import requests
 
 from .config import (
     CHEBI_COMPOUNDS,
@@ -56,47 +58,6 @@ def load_model(model_path):
     except Exception as e:
         raise ValueError(f"Error loading model: {e}")
 
-# def convert_to_irreversible(model):
-#     """
-#     Convert a reversible COBRA model to irreversible form.
-#     Splits reversible and exchange reactions into forward and reverse.
-#     """
-#     model_irrev = model.copy()
-#     reactions_to_add = []
-
-#     # Process non-exchange reactions
-#     non_ex = [rxn for rxn in model_irrev.reactions if rxn not in model_irrev.exchanges]
-#     for rxn in non_ex:
-#         if rxn.reversibility:
-#             rev_id = rxn.id + '_reverse'
-#             if rev_id not in model_irrev.reactions:
-#                 orig_lb, orig_ub = rxn.lower_bound, rxn.upper_bound
-#                 # Make original irreversible
-#                 rxn.lower_bound = max(0, orig_lb)
-#                 rxn.upper_bound = max(0, orig_ub)
-#                 # Create reverse reaction
-#                 rev = Reaction(rev_id)
-#                 rev.lower_bound = 0
-#                 rev.upper_bound = max(0, -orig_lb)
-#                 rev.add_metabolites({m: -c for m,c in rxn.metabolites.items()})
-#                 rev.gene_reaction_rule = rxn.gene_reaction_rule
-#                 reactions_to_add.append(rev)
-
-#     # Process exchange reactions
-#     for ex in model_irrev.exchanges:
-#         rev_ex_id = ex.id + '_reverse'
-#         if rev_ex_id not in model_irrev.reactions:
-#             orig_lb = ex.lower_bound
-#             ex.lower_bound = max(0, orig_lb)
-#             rev_ex = Reaction(rev_ex_id)
-#             rev_ex.lower_bound = 0
-#             rev_ex.upper_bound = max(0, -orig_lb)
-#             rev_ex.add_metabolites({m: -c for m,c in ex.metabolites.items()})
-#             rev_ex.gene_reaction_rule = ex.gene_reaction_rule
-#             reactions_to_add.append(rev_ex)
-
-#     model_irrev.add_reactions(reactions_to_add)
-#     return model_irrev
 
 def convert_to_irreversible(model):
         """
@@ -192,228 +153,176 @@ def get_substrate_metabolites(reaction):
     substrates = [met.id for met in reaction.reactants]
     return substrates
 
+
+def get_smiles_from_modelseed(cmpd_id, seed_comps_df):
+    """
+    Retrieve SMILES for a ModelSEED compound ID from a local DataFrame,
+    falling back to the ModelSEED REST API if not found locally.
+    """
+    # 1) Local lookup
+    hit = seed_comps_df.loc[seed_comps_df['id'] == cmpd_id]
+    if not hit.empty:
+        return hit.iloc[0].get('smiles')
+    # 2) REST API fallback
+    try:
+        url = f"https://modelseed.org/biochem/compounds/{cmpd_id}.json"
+        resp = requests.get(url, timeout=5)
+        if resp.ok:
+            return resp.json().get('smiles')
+    except Exception:
+        pass
+    return None
+
 def map_metabolites(substrate_df, external_db_dir=None, max_retries=3, retry_delay=2):
     """
-    Map metabolites to SMILES structures using external databases.
+    Map metabolites to SMILES structures using external databases, including ModelSEED.
     
-    Parameters
-    ----------
-    substrate_df : pandas.DataFrame
-        DataFrame with substrate information
-    external_db_dir : str, optional
-        Directory containing external database files. If None, uses default.
-    max_retries : int, optional
-        Maximum number of retries for web service requests. Default is 3.
-    retry_delay : int, optional
-        Delay between retries in seconds. Default is 2.
-        
-    Returns
-    -------
-    pandas.DataFrame
-        DataFrame with added SMILES information
+    New in this version:
+    - Strips any "_c<digit>" compartment suffix before lookups.
+    - Uses low_memory=False when reading SEED_COMPOUNDS to avoid mixed-type warnings.
     """
-    import logging
-    import os
-    import re  # noqa: F811
-    import time  # noqa: F401, F811
-    from urllib.error import HTTPError  # noqa: F401
-
-    import numpy as np
-    import pandas as pd
-    
-    # Configure logging
-    logging.basicConfig(level=logging.INFO, 
+    # configure logger
+    logging.basicConfig(level=logging.INFO,
                         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     logger = logging.getLogger(__name__)
-    
-    # Load database files
+
+    # locate database files
     if external_db_dir is None:
         external_db_dir = os.path.dirname(BiGG_MAPPING)
-    
-    # Load database files
-    BiGG_comps = pd.read_csv(BiGG_MAPPING)
-    CHEBI_comps = pd.read_csv(CHEBI_COMPOUNDS, sep='\t')  # noqa: F841
-    CHEBIInChI_comps = pd.read_csv(CHEBI_INCHI, sep='\t')
-    MetaNetX_comps = pd.read_csv(METANETX_COMPOUNDS, sep='\t')
-    MetaNetX_refcomps = pd.read_csv(METANETX_XREF, sep='\t')  # noqa: F841
-    SEED_comps = pd.read_csv(SEED_COMPOUNDS, sep='\t')
-    
-    # Initialize new columns
+
+    BiGG_comps        = pd.read_csv(BiGG_MAPPING)
+    CHEBI_comps       = pd.read_csv(CHEBI_COMPOUNDS, sep='\t')
+    CHEBIInChI_comps  = pd.read_csv(CHEBI_INCHI, sep='\t')
+    MetaNetX_comps    = pd.read_csv(METANETX_COMPOUNDS, sep='\t')
+    MetaNetX_refcomps = pd.read_csv(METANETX_XREF, sep='\t')
+    SEED_comps        = pd.read_csv(SEED_COMPOUNDS, sep='\t', low_memory=False)
+
+    # initialize output
     df = substrate_df.copy()
-    df['SMILES'] = np.nan
-    df['BiGG Name'] = np.nan
-    df['DB Name'] = np.nan
+    df['SMILES']     = np.nan
+    df['BiGG Name']  = np.nan
+    df['DB Name']    = np.nan
+    df['Cleaned']    = df['Substrate partner'].apply(clean_metabolite_names)
 
-    # Clean substrate names before processing
-    df['Cleaned Substrate'] = df['Substrate partner'].apply(clean_metabolite_names)
-
-    # Get unique substrates with their details
-    unique_substrates_df = df[['Substrate partner', 'Cleaned Substrate']].drop_duplicates()
+    unique_substrates_df = df[['Substrate partner', 'Cleaned']].drop_duplicates()
     logger.info(f"There are {len(unique_substrates_df)} substrates in the GEM.")
 
-    # Prepare for tracking SMILES and names
-    smiles_mapping = {}
+    smiles_mapping    = {}
     bigg_name_mapping = {}
-    db_name_mapping = {}
+    db_name_mapping   = {}
 
-    # Expand old_bigg_ids to create a list for comparison
+    # preprocess BiGG old IDs
     BiGG_comps['old_bigg_ids_list'] = BiGG_comps['old_bigg_ids'].str.split(';')
-    BiGG_comps_expl = BiGG_comps.explode('old_bigg_ids_list')
-    BiGG_comps_unique = BiGG_comps.reset_index(drop=True)
-    BiGG_comps_expl_unique = BiGG_comps_expl.reset_index(drop=True)
+    BiGG_expl = BiGG_comps.explode('old_bigg_ids_list').reset_index(drop=True)
 
-    # Iterate through each unique substrate
     for _, row in unique_substrates_df.iterrows():
-        substrate = row['Substrate partner']
-        cleaned_substrate = row['Cleaned Substrate']
-        logger.info('-----------------------------')
-        logger.info(f'Mapping substrate: {substrate}')
+        raw_id   = row['Substrate partner']
+        cleaned  = row['Cleaned']
+        logger.info(f"Mapping substrate: {raw_id}")
 
-        # Search in BiGG database
-        bigg_hit = BiGG_comps_unique.loc[
-            BiGG_comps_unique['bigg_id'].str.contains(fr'\b{re.escape(substrate)}\b', regex=True, case=False) |
-            BiGG_comps_unique['universal_bigg_id'].str.contains(fr'\b{re.escape(substrate)}\b', regex=True, case=False) |
-            BiGG_comps_expl_unique['old_bigg_ids_list'].str.contains(fr'\b{re.escape(substrate)}\b', regex=True, case=False)
+        # strip trailing "_c<digit>" (e.g. compartment suffix)
+        base_id = re.sub(r'_[a-z]\d+$', '', raw_id)
+
+        # --- ModelSEED lookup on base_id first ---
+        if isinstance(base_id, str) and base_id.startswith('cpd'):
+            smiles = get_smiles_from_modelseed(base_id, SEED_comps)
+            if smiles:
+                smiles_mapping[raw_id]  = smiles
+                db_name_mapping[raw_id] = base_id
+                logger.info(f"Found SMILES in ModelSEED for {base_id}: {smiles}")
+                continue
+
+        # --- BiGG database lookup on base_id ---
+        pattern = fr'\b{re.escape(base_id)}\b'
+        bigg_hit = BiGG_comps.loc[
+            BiGG_comps['bigg_id'].str.contains(pattern, regex=True, case=False) |
+            BiGG_comps['universal_bigg_id'].str.contains(pattern, regex=True, case=False) |
+            BiGG_expl['old_bigg_ids_list'].str.contains(pattern, regex=True, case=False)
         ].head(1)
 
         if not bigg_hit.empty:
             name = bigg_hit['name'].values[0]
-            bigg_name_mapping[substrate] = name
+            bigg_name_mapping[raw_id] = name
             logger.info(f"BiGG Name: {name}")
 
-            # Check MetaNetX for SMILES
-            if not bigg_hit['MetaNetX'].isna().all():
-                metanetx_hit = MetaNetX_comps[MetaNetX_comps['ID'] == bigg_hit['MetaNetX'].values[0]]
-                if not metanetx_hit.empty:
-                    smiles = metanetx_hit['SMILES'].values[0]
-                    if pd.notna(smiles):
-                        smiles_mapping[substrate] = smiles
-                        db_name_mapping[substrate] = metanetx_hit['name'].values[0]
-                        logger.info(f"SMILES found in MetaNetX: {smiles}")
+            # MetaNetX via BiGG cross-ref
+            mnx_id = bigg_hit['MetaNetX'].values[0]
+            if pd.notna(mnx_id):
+                mnh = MetaNetX_comps[MetaNetX_comps['ID'] == mnx_id]
+                if not mnh.empty and pd.notna(mnh['SMILES'].values[0]):
+                    smiles_mapping[raw_id]  = mnh['SMILES'].values[0]
+                    db_name_mapping[raw_id] = mnh['name'].values[0]
+                    logger.info(f"SMILES found in MetaNetX: {mnh['SMILES'].values[0]}")
+                    continue
+
+            # SEED via BiGG cross-ref
+            seed_id = bigg_hit['SEED'].values[0]
+            if pd.notna(seed_id):
+                sh = SEED_comps.loc[SEED_comps['id'] == seed_id]
+                if not sh.empty and 'smiles' in sh.columns and pd.notna(sh['smiles'].values[0]):
+                    smiles_mapping[raw_id]  = sh['smiles'].values[0]
+                    db_name_mapping[raw_id] = sh['name'].values[0]
+                    logger.info(f"SMILES found in SEED: {sh['smiles'].values[0]}")
+                    continue
+
+            # ChEBI via BiGG cross-ref
+            chebi_ref = str(bigg_hit['CHEBI'].values[0])
+            if pd.notna(chebi_ref):
+                ch = CHEBIInChI_comps[CHEBIInChI_comps['CHEBI_ID'].astype(str)
+                                      .str.contains(fr'\b{re.escape(chebi_ref)}\b', case=False, regex=True)]
+                if not ch.empty:
+                    inchi = ch['InChI'].values[0]
+                    mh = MetaNetX_comps[MetaNetX_comps['InChI'] == inchi]
+                    if not mh.empty and pd.notna(mh['SMILES'].values[0]):
+                        smiles_mapping[raw_id]  = mh['SMILES'].values[0]
+                        db_name_mapping[raw_id] = mh['name'].values[0]
+                        logger.info(f"SMILES found in ChEBI: {mh['SMILES'].values[0]}")
                         continue
-            
-            # Check SEED database
-            if not bigg_hit['SEED'].isna().all():
-                seed_hit = SEED_comps[SEED_comps['id'] == bigg_hit['SEED'].values[0]]
-                if not seed_hit.empty:
-                    smiles = seed_hit['smiles'].values[0] if 'smiles' in seed_hit else np.nan
-                    name = seed_hit['name'].values[0]
-                    if pd.notna(smiles):
-                        smiles_mapping[substrate] = smiles
-                        db_name_mapping[substrate] = name
-                        logger.info(f"SMILES found in SEED: {smiles}")
-                        continue
-            
-            # Check CHEBI database
-            if not bigg_hit['CHEBI'].isna().all():
-                try:
-                    chebi_hit = CHEBIInChI_comps[CHEBIInChI_comps['CHEBI_ID'].str.contains(
-                        fr'\b{re.escape(bigg_hit["CHEBI"].values[0])}\b', regex=True, case=False)]
-                except AttributeError:
-                    # If string methods fail, convert to string first
-                    CHEBIInChI_comps['CHEBI_ID'] = CHEBIInChI_comps['CHEBI_ID'].astype(str)
-                    chebi_hit = CHEBIInChI_comps[CHEBIInChI_comps['CHEBI_ID'].str.contains(
-                        fr'\b{re.escape(bigg_hit["CHEBI"].values[0])}\b', regex=True, case=False)]
-                
-                if not chebi_hit.empty:
-                    inchi = chebi_hit['InChI'].values[0]
-                    inchi_hit = MetaNetX_comps[MetaNetX_comps['InChI'] == inchi]
-                    if not inchi_hit.empty:
-                        smiles = inchi_hit['SMILES'].values[0]
-                        name = inchi_hit['name'].values[0]
-                        if pd.notna(smiles):
-                            smiles_mapping[substrate] = smiles
-                            db_name_mapping[substrate] = name
-                            logger.info(f"SMILES found in ChEBI: {smiles}")
-                            continue
-        
-        # If no BiGG hit, check other databases directly
+
+        # --- Direct fallback if no BiGG hit ---
         else:
-            logger.info("No BiGG match found, checking other databases...")
-            
-            # Check MetaNetX directly
-            metanetx_hit = MetaNetX_comps[MetaNetX_comps['ID'].str.contains(
-                fr'\b{re.escape(substrate)}\b', regex=True, case=False)]
-            if not metanetx_hit.empty:
-                name = metanetx_hit['name'].values[0]
-                smiles = metanetx_hit['SMILES'].values[0] if 'SMILES' in metanetx_hit.columns else np.nan
-                if pd.notna(smiles):
-                    smiles_mapping[substrate] = smiles
-                    db_name_mapping[substrate] = name
-                    logger.info(f"MetaNetX match: {name}")
-                    continue
-            
-            # Check SEED
-            seed_hit = SEED_comps[SEED_comps['id'].str.contains(
-                fr'\b{re.escape(substrate)}\b', regex=True, case=False)]
-            if not seed_hit.empty:
-                name = seed_hit['name'].values[0]
-                smiles = seed_hit['smiles'].values[0] if 'smiles' in seed_hit.columns else np.nan
-                if pd.notna(smiles):
-                    smiles_mapping[substrate] = smiles
-                    db_name_mapping[substrate] = name
-                    logger.info(f"SEED match: {name}")
-                    continue
+            logger.info("No BiGG match; checking MetaNetX and SEED directly.")
+            pattern = fr'\b{re.escape(base_id)}\b'
 
-    # If SMILES is still missing, try to get from web services
-    missing_substrates = [sub for sub in df['Substrate partner'].unique() if sub not in smiles_mapping]
-    
-    for substrate in missing_substrates:
-        # First, check alternative databases directly
-        metanetx_hit = MetaNetX_comps[MetaNetX_comps['ID'].str.contains(
-            fr'\b{re.escape(substrate)}\b', regex=True, case=False)]
-        if not metanetx_hit.empty:
-            smiles = metanetx_hit['SMILES'].values[0] if 'SMILES' in metanetx_hit.columns else np.nan
-            if pd.notna(smiles):
-                smiles_mapping[substrate] = smiles
-                db_name_mapping[substrate] = metanetx_hit['name'].values[0]
-                logger.info(f"Found SMILES in MetaNetX for {substrate}: {smiles}")
+            mnx = MetaNetX_comps[MetaNetX_comps['ID'].str.contains(pattern, regex=True, case=False)]
+            if not mnx.empty and pd.notna(mnx['SMILES'].values[0]):
+                smiles_mapping[raw_id]  = mnx['SMILES'].values[0]
+                db_name_mapping[raw_id] = mnx['name'].values[0]
+                logger.info(f"MetaNetX match: {mnx['name'].values[0]}")
                 continue
 
-        seed_hit = SEED_comps[SEED_comps['id'].str.contains(
-            fr'\b{re.escape(substrate)}\b', regex=True, case=False)]
-        if not seed_hit.empty:
-            smiles = seed_hit['smiles'].values[0] if 'smiles' in seed_hit.columns else np.nan
-            if pd.notna(smiles):
-                smiles_mapping[substrate] = smiles
-                db_name_mapping[substrate] = seed_hit['name'].values[0]
-                logger.info(f"Found SMILES in SEED for {substrate}: {smiles}")
+            sd = SEED_comps[SEED_comps['id'].astype(str).str.contains(pattern, regex=True, case=False)]
+            if not sd.empty and 'smiles' in sd.columns and pd.notna(sd['smiles'].values[0]):
+                smiles_mapping[raw_id]  = sd['smiles'].values[0]
+                db_name_mapping[raw_id] = sd['name'].values[0]
+                logger.info(f"SEED match: {sd['name'].values[0]}")
                 continue
 
-        # Prepare for web service search
-        cleaned_substrate = df.loc[df['Substrate partner'] == substrate, 'Cleaned Substrate'].iloc[0]
-        logger.info('-----------------------------')
-        logger.info(f'Mapping substrate: {substrate}')
-        
-        # Try searches with both original and cleaned names
-        names_to_try = [cleaned_substrate, substrate]
-        
-        for name in names_to_try:
-            if pd.notna(name):
-                # Try CIR with retries
-                smiles = get_SMILES_with_retries(name, service='cactus', max_retries=max_retries, retry_delay=retry_delay)
-                if smiles:
-                    smiles_mapping[substrate] = smiles
-                    logger.info(f"Found SMILES via Cactus for {name}: {smiles}")
-                    break
-                else:
-                    # Try PubChem with retries
-                    smiles_list = get_SMILES_with_retries(name, service='pubchem', max_retries=max_retries, retry_delay=retry_delay)
-                    if smiles_list and len(smiles_list) > 0:
-                        smiles_mapping[substrate] = smiles_list[0]
-                        logger.info(f"Found SMILES via PubChem for {name}: {smiles_list[0]}")
-                        break
+        # --- Web services for anything still missing ---
+        for name in (cleaned, base_id, raw_id):
+            if not name or pd.isna(name):
+                continue
+            smiles = get_SMILES_with_retries(name, service='cactus',
+                                             max_retries=max_retries, retry_delay=retry_delay)
+            if smiles:
+                smiles_mapping[raw_id] = smiles
+                logger.info(f"Found SMILES via Cactus for {name}: {smiles}")
+                break
+            smiles_list = get_SMILES_with_retries(name, service='pubchem',
+                                                  max_retries=max_retries, retry_delay=retry_delay)
+            if smiles_list:
+                smiles_mapping[raw_id] = smiles_list[0]
+                logger.info(f"Found SMILES via PubChem for {name}: {smiles_list[0]}")
+                break
 
-    # Apply mappings back to the dataframe
-    for substrate, smiles in smiles_mapping.items():
-        df.loc[df['Substrate partner'] == substrate, 'SMILES'] = smiles
-    
-    for substrate, bigg_name in bigg_name_mapping.items():
-        df.loc[df['Substrate partner'] == substrate, 'BiGG Name'] = bigg_name
-    
-    for substrate, db_name in db_name_mapping.items():
-        df.loc[df['Substrate partner'] == substrate, 'DB Name'] = db_name
-    
+    # apply mappings back to DataFrame
+    for raw_id, smi in smiles_mapping.items():
+        df.loc[df['Substrate partner'] == raw_id, 'SMILES'] = smi
+    for raw_id, bn in bigg_name_mapping.items():
+        df.loc[df['Substrate partner'] == raw_id, 'BiGG Name'] = bn
+    for raw_id, dn in db_name_mapping.items():
+        df.loc[df['Substrate partner'] == raw_id, 'DB Name'] = dn
+
     return df
 
 
