@@ -34,7 +34,6 @@ from .config import (
     ensure_dir_exists,
 )
 
-
 def load_model(model_path):
     """
     Load a COBRA model from file.
@@ -630,6 +629,7 @@ def retrieve_sequences(model, organism, output_path=None):
         DataFrame with gene IDs and sequences
     """
     # Load model if string
+    failed_load = 0
     if isinstance(model, str):
         model = load_model(model)
     
@@ -666,7 +666,6 @@ def retrieve_sequences(model, organism, output_path=None):
         """
         if not gene:
             return None
-        
         try:
             query = f"gene_exact:({gene}) AND taxonomy_id:({taxon_ID})"
             result = service.search(query, frmt="fasta")
@@ -674,6 +673,7 @@ def retrieve_sequences(model, organism, output_path=None):
             # Validate result
             if not result:
                 logging.warning(f"No sequence found for gene {gene}")
+                failed_result += 1
                 return None
             
             # Extract sequence from FASTA format
@@ -722,6 +722,7 @@ def retrieve_sequences(model, organism, output_path=None):
     if output_path:
         ensure_dir_exists(os.path.dirname(output_path))
         df_genes.to_csv(output_path, index=False)
+    print (f"{failed_load} genes failed to load from UniProt")
     
     return df_genes
 
@@ -783,7 +784,6 @@ def prepare_model_data(model_path, substrates_output=None, sequences_output=None
     # Retrieve protein sequences
     sequences_df = retrieve_sequences(irrev_model, organism)
     print(f"Retrieved {sequences_df['Sequence'].notna().sum()} protein sequences")
-    
     # Save outputs if paths provided
     if substrates_output:
         ensure_dir_exists(os.path.dirname(substrates_output))
