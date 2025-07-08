@@ -43,6 +43,15 @@ TAXONOMY_IDS = {
       # Add more organisms as needed
 }
 
+# REST datasets/endpoints to try, in order
+REST_DATASETS = [
+    'uniprotkb',      # Swiss-Prot + TrEMBL
+    'uniref50',       # UniRef50 clusters
+    'uniref90',       # UniRef90 clusters
+    'uniref100',      # UniRef100 clusters
+    'tcdb'            # TC-DB FASTA
+]
+
 # Helper function to ensure a directory exists
 def ensure_dir_exists(directory):
     os.makedirs(directory, exist_ok=True)

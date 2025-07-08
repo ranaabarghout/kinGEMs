@@ -11,6 +11,7 @@ import math
 import os
 import re
 
+from Bio.Data.IUPACData import protein_letters
 from Bio.SeqUtils import molecular_weight
 import cobra as cb
 from cobra.util.array import create_stoichiometric_matrix
@@ -25,516 +26,6 @@ from pyomo.opt import SolverFactory, SolverStatus, TerminationCondition
 
 from ..config import ensure_dir_exists  # noqa: F401
 
-
-def run_optimization(model, kcat_dict, objective_reaction, gene_sequences_dict=None, 
-                    enzyme_upper_bound=0.125, enzyme_ratio=True, maximization=True, 
-                    multi_enzyme_off=False, isoenzymes_off=False, 
-                    promiscuous_off=False, complexes_off=False, print_reaction_conditions=False):
-    """
-    Run enzyme-constrained flux balance analysis.
-    
-    Modified to handle missing data gracefully by treating reactions with missing 
-    enzyme data as regular reactions without kcat constraints.
-    
-    FIXED: Convert kcat from 1/s to 1/hr to match flux units
-    - Flux is in mmol/gDCW/hr
-    - kcat is provided in 1/s and converted to 1/hr by multiplying by 3600
-    - Constraint: flux <= kcat * enzyme
-    
-    Parameters
-    ----------
-    model : cobra.Model or str
-        COBRA model object or path to model file
-    kcat_dict : dict or str
-        Dictionary of kcat values or path to kcat CSV file
-    objective_reaction : str
-        Reaction ID to maximize/minimize
-    gene_sequences_dict : dict, optional
-        Dictionary mapping gene IDs to sequences
-    enzyme_upper_bound : float, optional
-        Upper bound for total enzyme concentration
-    enzyme_ratio : bool, optional
-        Whether to use enzyme ratio constraint
-    maximization : bool, optional
-        Whether to maximize (True) or minimize (False) the objective
-    multi_enzyme_off : bool, optional
-        Whether to disable multi-enzyme reactions
-    isoenzymes_off : bool, optional
-        Whether to disable isoenzyme handling
-    promiscuous_off : bool, optional
-        Whether to disable promiscuous enzyme handling
-    complexes_off : bool, optional
-        Whether to disable enzyme complex handling
-        
-    Returns
-    -------
-    tuple
-        (solution_value, df_FBA, gene_sequences_dict)
-    """
-
-    from pyomo.environ import Suffix
-
-    # Model handling - load if string path provided
-    if isinstance(model, str):
-        try:
-            directory = os.path.dirname(__file__)
-            GEM_file = os.path.join(directory, model)
-            mod = cb.io.read_sbml_model(GEM_file)
-            print("Loaded model from GEM file")
-        except:  # noqa: E722
-            raise ValueError(f"Could not load model from path: {model}")
-    else:
-        mod = model
-        print("Loaded model from input irreversible model!")
-    
-    # Gene sequences handling
-    if gene_sequences_dict is None and isinstance(gene_sequences_dict, str):
-        try:
-            directory = os.path.dirname(__file__)
-            gene_seq_file = os.path.join(directory, gene_sequences_dict)
-            gene_seq_df = pd.read_csv(gene_seq_file)
-            gene_sequences_dict = pd.Series(gene_seq_df.Sequence.values, 
-                                         index=gene_seq_df.Single_gene).to_dict()
-        except:  # noqa: E722
-            raise ValueError(f"Could not load gene sequences from: {gene_sequences_dict}")
-    
-    # kcat_dict handling
-    if isinstance(kcat_dict, str):
-        try:
-            df_kcat = pd.read_csv(kcat_dict)
-            kcat_dict = df_kcat.set_index('Key').to_dict()['Value']
-        except:  # noqa: E722
-            raise ValueError(f"Could not load kcat dictionary from: {kcat_dict}")
-        
-    print("PRINT INITIAL KCAT DICT: ", kcat_dict)
-    
-    # ============================================================ #
-    #                         MODEL SET UP 
-    # ============================================================ #
-    # Indexes
-    metabolites = list(set(metabolite.id for metabolite in mod.metabolites))
-    reactions = list(set(reaction.id for reaction in mod.reactions))
-    genes = list(set(gene.id for reaction in mod.reactions for gene in reaction.genes))
-    
-    # DICTIONARIES for flux bounds, kcats, replaced GPRs and S matrix 
-    S_mat = {}
-    lower_bounds = {}
-    upper_bounds = {}
-    kcat = {}
-    gpr = {}
-    reaction_gene_tuple = set()
-
-    for reaction in mod.reactions:
-        # Flux bounds dict
-        lower_bounds[reaction.id] = reaction.lower_bound
-        upper_bounds[reaction.id] = reaction.upper_bound
-
-        # print(f"Reaction {reaction} has lower bound {reaction.lower_bound} and upper bound {reaction.upper_bound}")
-        
-        # kcat dict - FIXED: Convert kcat from 1/s to 1/hr
-        kcat_value = (reaction.annotation).get('kcat')
-        if kcat_value is not None:
-            if isinstance(kcat_value, list):  # For multiple kcat
-                # Convert each kcat from 1/s to 1/hr by multiplying by 3600
-                kcat_list = [float(value) * 3600 for value in kcat_value]
-                if kcat_list:
-                    kcat[reaction.id] = kcat_list
-            else:  # For single kcats
-                try: 
-                    # Convert kcat from 1/s to 1/hr by multiplying by 3600
-                    single_kcat = float(kcat_value) * 3600
-                    kcat[reaction.id] = [single_kcat]
-                except ValueError:
-                    pass
-        
-        # GPR with replaced kcats dict
-        gpr_value = (reaction.annotation).get('gpr_replaced')
-        if gpr_value is not None:
-            gpr[reaction.id] = gpr_value
-            
-        # Reaction ID - Gene ID tuple    
-        for gene in reaction.genes:
-            reaction_gene_tuple.add((reaction.id, gene.id))
-        
-        # S matrix dict
-        for met in mod.metabolites:
-            try:
-                reaction.get_coefficient(met.id)
-            except:  # noqa: E722
-                pass
-            else:
-                S_mat[met.id, reaction.id] = reaction.get_coefficient(met.id)
-
-    # Convert kcat_dict values from 1/s to 1/hr
-    kcat_dict_hr = {}
-    for key, value in kcat_dict.items():
-        if isinstance(value, list):
-            # Convert each kcat from 1/s to 1/hr by multiplying by 3600
-            kcat_dict_hr[key] = [v * 3600 for v in value]
-        else:
-            # Single kcat value
-            kcat_dict_hr[key] = value * 3600
-    kcat_dict = kcat_dict_hr  # Replace original with converted values
-
-    # LISTS used in rule_kcat
-    single_enzyme = []
-    multiple_enzyme = []
-    no_enzyme = []
-    
-    # CHECKPOINTS for rule_kcat
-    single_enzyme_pass = [] 
-    multiple_enzyme_pass = []
-    no_enzyme_pass = []
-
-    # CHECKPOINTS for evaluate_gpr & rule_promiscuous
-    isoenzymes_pass = []
-    enzyme_complexes_pass = [] 
-    promiscuous_pass = []
-
-
-    for reaction in mod.reactions:
-        gpr_tag = (reaction.annotation).get('gpr')
-        # Get the reaction object from the model
-        enzymes_for_reaction = [i for j, i in reaction_gene_tuple if j == reaction.id]
-        
-        if multi_enzyme_off:
-            if gpr_tag == '1' or gpr_tag == 'AND/OR':
-                single_enzyme.extend([(reaction.id, i) for i in enzymes_for_reaction])
-            else: 
-                no_enzyme.append(reaction.id)
-        else:
-            if gpr_tag == '1':
-                single_enzyme.extend([(reaction.id, i) for i in enzymes_for_reaction])
-            elif gpr_tag == 'AND/OR':
-                multiple_enzyme.extend([(reaction.id, i) for i in enzymes_for_reaction])
-            else:
-                no_enzyme.append(reaction.id)
-
-    # ============================================================ #
-    #                       PYOMO MODEL 
-    # ============================================================ #
-    # VARIABLES
-    Concretemodel = ConcreteModel()  # noqa: F405
-    Concretemodel.reaction = Var(reactions, within=Reals, bounds=(-999, 999)) # Flux - mmol/gDCW/hr  # noqa: F405
-    Concretemodel.enzyme = Var(genes, within=NonNegativeReals) # mmol/gDCW  # noqa: F405
-    Concretemodel.enzyme_set = Set(initialize=genes)  # noqa: F405
-    Concretemodel.enzyme_min = Var(reaction_gene_tuple, within=NonNegativeReals, initialize=0) # mmol/gDCW  # noqa: F405
-
-    # OBJECTIVE FUNCTION: maximizing or minimizing reaction
-    if maximization:
-        def rule_obj(m, objective_var):
-            print("OBJECTIVE FUNCTION IS: ", m.reaction[objective_var])
-            return m.reaction[objective_var]
-        Concretemodel.objective = Objective(rule=rule_obj(Concretemodel, objective_reaction), sense=maximize)  # noqa: F405
-    else:
-        def rule_obj(m, objective_var):
-            return m.reaction[objective_var]
-        Concretemodel.objective = Objective(rule=rule_obj(Concretemodel, objective_reaction), sense=minimize)  # noqa: F405
-
-    rxn = mod.reactions.get_by_id(objective_reaction)
-    print("BIOMASS bounds:", rxn.lower_bound, rxn.upper_bound)
-    
-    # CONSTRAINT: steady state
-    def rule_S_mat(m, t):
-        return sum(S_mat[t, j] * m.reaction[j] for j in reactions if (t, j) in S_mat.keys()) == 0
-    Concretemodel.set_S_mat = Constraint(metabolites, rule=rule_S_mat)  # noqa: F405
-
-    # CONSTRAINT: flux bounds
-    def rule_bounds(m, j):
-        return inequality(lower_bounds[j], m.reaction[j], upper_bounds[j])  # noqa: F405
-    Concretemodel.rxn_bounds = Constraint(reactions, rule=rule_bounds)  # noqa: F405
-
-    # CONSTRAINT: minimum enzyme concentration
-    def enzyme_min_constraint(m, j, i):
-        if j in gpr:
-            gpr_string = gpr[j]
-            if 'and' in gpr_string:
-                return m.enzyme_min[j, i] <= m.enzyme[i]
-            else:
-                return Constraint.Feasible  # noqa: F405
-        else:
-            return Constraint.Feasible  # noqa: F405
-    
-    # FUNCTION for rule_kcat to handle parentheses in GPRs
-    def evaluate_parentheses(m, j, i, gpr_string):
-        # Count the number of parentheses
-        num_parentheses = gpr_string.count('(')
-        
-        while num_parentheses > 0:
-            # Find most inner parentheses with rfind (begin from right)
-            start = gpr_string.rfind('(')
-            end = gpr_string.find(')', start) 
-
-            # Extract and evaluate the gpr inside
-            inner_gpr = gpr_string[start + 1:end]
-            inner_result = evaluate_gpr(m, j, i, inner_gpr)
-
-            # Replace gpr_string with new result
-            gpr_string = gpr_string[:start] + str(inner_result) + gpr_string[end + 1:]
-            
-            # Update the count of parentheses
-            num_parentheses = gpr_string.count('(')
-        
-        return evaluate_gpr(m, j, i, gpr_string)
-    
-    # FUNCTION for rule_kcat to optimize GPRs
-    sum_enzymes_check = []
-    gpr_string_check = []
-
-    def evaluate_gpr(m, j, i, gpr_string):
-        enzyme_kcats = re.findall(r'[0-9.]+', gpr_string)
-        current_set = []
-        for k in enzyme_kcats:
-            try:
-                current_set.append(float(k))
-            except:  # noqa: E722
-                pass
-            
-        # isozymes
-        if not isoenzymes_off: 
-            if 'or' in gpr_string:
-                isoenzymes_pass.append(j)
-                # Now both flux and kcat are in 1/hr units
-                # print(f"ISOENZYMES SCENARIO: kcat value {current_set} 1/hr")
-                return m.reaction[j] <= sum(k * m.enzyme[i] for k in current_set)
-        else:
-            if 'or' in gpr_string:
-                return m.reaction[j] <= 1000
-                
-        # complexes
-        if not complexes_off:
-            if 'and' in gpr_string:
-                enzyme_complexes_pass.append(j)
-                sum_enzymes_check.append([j, i])
-                gpr_string_check.append([j, gpr_string])
-                mean_kcat = max(current_set)  # Change to max or mean (min might be too small)
-                # Now both flux and kcat are in 1/hr units
-                # print(f"COMPLEX SCENARIO: kcat value {mean_kcat} 1/hr")
-                return m.reaction[j] <= mean_kcat * m.enzyme_min[j, i]
-        else:
-            if 'and' in gpr_string:
-                return m.reaction[j] <= 1000    
-
-    # MODIFIED: CONSTRAINT: enzyme kinetics - Now handles missing data gracefully
-    def rule_kcat(m, j, i):
-        # First, check if we have data for this reaction-gene pair
-        # This is the key modification - we check for missing data first
-        reaction_has_kcat = False
-        gene_has_sequence = False
-        
-        # Check if reaction has kcat data (either from model annotation or kcat_dict)
-        if j in kcat:
-            if kcat[j] and not (math.isnan(kcat[j][0]) or kcat[j][0] is None):
-                reaction_has_kcat = True
-                # print("REACTION SHOULD HAVE A KCAT HERE", reaction_has_kcat)
-                # print(f"reaction: {j} and kcat: {kcat[j][0]}")
-        # Also check in the provided kcat_dict
-        elif (j, i) in kcat_dict:
-            if kcat_dict[(j, i)] and not (math.isnan(kcat_dict[(j, i)][0]) or kcat_dict[(j, i)][0] is None):
-                reaction_has_kcat = True
-                # print("REACTION SHOULD HAVE A KCAT HERE", reaction_has_kcat)
-                # print(f"reaction: {j} and gene{i} and kcat: {kcat[j, i][0]}")
-
-
-        # print(f"CHECKING FOR KCAT DATA IN REACTION {j}: {reaction_has_kcat}")
-        # Check if gene has sequence data
-        if i in gene_sequences_dict and gene_sequences_dict[i]:
-            gene_has_sequence = True
-        # print(f"CHECKING FOR GENE DATA IN REACTION {j}: {gene_has_sequence}")
-        
-        # If we're missing either kcat or sequence, treat as regular reaction
-        if not reaction_has_kcat or not gene_has_sequence:
-            no_enzyme_pass.append(j)
-            return Constraint.Feasible  # noqa: F405
-        
-        if reaction_has_kcat is False or gene_has_sequence is False:
-            no_enzyme_pass.append(j)
-            return Constraint.Feasible  # noqa: F405
-        
-        # If we have both data, proceed with original logic
-        if (j, i) in single_enzyme and j in kcat:
-            single_enzyme_pass.append(j)
-            # Now both flux and kcat are in 1/hr units
-            # print(f"SINGLE ENZYME CASE, reaction: {j} and kcat {kcat[j][0]}")
-            return m.reaction[j] <= kcat[j][0] * m.enzyme[i]
-
-        if (j, i) in multiple_enzyme and j in gpr:
-            multiple_enzyme_pass.append(j)
-            
-            gpr_string = gpr[j]
-
-            # GPRs with parentheses
-            if '(' in gpr_string:
-                return evaluate_parentheses(m, j, i, gpr_string)
-            
-            # GPRs without parentheses
-            else:
-                return evaluate_gpr(m, j, i, gpr_string)
-        
-        else:
-            no_enzyme_pass.append(j)
-            return Constraint.Feasible  # noqa: F405
-
-    Concretemodel.set_kcat = Constraint(reaction_gene_tuple, rule=rule_kcat)  # noqa: F405
-
-    # MODIFIED: CONSTRAINT: promiscuous enzymes - Now handles missing data
-    def rule_promiscuous_E(m, i):
-        # Check if the gene has a sequence
-        if i not in gene_sequences_dict or not gene_sequences_dict.get(i):
-            return Constraint.Feasible  # noqa: F405
-        
-        # Get valid reactions for this gene (ones with kcat data)
-        valid_reactions = []
-        for j in reactions:
-            if (j, i) in kcat_dict and kcat_dict[(j, i)] and kcat_dict[(j, i)][0] is not None:
-                valid_reactions.append(j)
-        
-        # If no valid reactions, no constraint
-        if not valid_reactions:
-            return Constraint.Feasible  # noqa: F405
-        
-        try:
-            # Now both flux and kcat are in 1/hr units
-            promiscuous_pass.append(j)
-            return max(m.reaction[j] / kcat_dict[j, i][0] for j in valid_reactions) <= m.enzyme[i]
-            # (f"PROMISCUOUS ENZYME CASE: kcat: {kcat[j, i]}, reaction: {j}")
-        except:  # noqa: E722
-            return Constraint.Feasible  # noqa: F405
-            
-    if not promiscuous_off:  
-        Concretemodel.set_promiscuous_E = Constraint(genes, rule=rule_promiscuous_E)  # noqa: F405
-    
-    # FUNCTION for retrieving molecular weights from protein sequences
-    def calculate_molecular_weight(sequence):
-        if not sequence:  # Handle empty sequences
-            return 0
-        try:
-            return molecular_weight(sequence, seq_type='protein')
-        except:  # noqa: E722
-            return 0  # Return 0 for invalid sequences
-    
-    def get_molecular_weight(gene):
-            if gene in gene_sequences_dict and gene_sequences_dict[gene]:
-                mw = calculate_molecular_weight(gene_sequences_dict[gene])
-                return mw if mw > 0 else 100000  # Default MW if calculation fails
-            else:
-                return 100000  # Default molecular weight for missing sequences (in g/mol)
-    
-    # MODIFIED: CONSTRAINT total enzyme - Now handles missing data
-    if enzyme_ratio: 
-        # VARIABLE
-        Concretemodel.E_ratio = Var(within=NonNegativeReals, bounds=(0, enzyme_upper_bound)) # gP/gDCW  # noqa: F405
-        
-        # Handle missing sequences by using default molecular weight
-        
-        
-        Concretemodel.enzyme_molecular_weights = Param(  # noqa: F405
-            Concretemodel.enzyme_set, 
-            initialize={gene: get_molecular_weight(gene) for gene in genes}
-        )
-        
-        # CONSTRAINT
-        def rule_E_total(m):
-            total_enzyme_weight_expr = sum(m.enzyme[i] * m.enzyme_molecular_weights[i] 
-                                          for i in m.enzyme) * 0.001
-            return total_enzyme_weight_expr <= m.E_ratio
-        Concretemodel.set_E_total = Constraint(rule=rule_E_total)  # noqa: F405
-        
-    else:
-        # VARIABLE
-        Concretemodel.E_total = Var(within=NonNegativeReals, bounds=(0, enzyme_upper_bound)) # mmol/gDCW  # noqa: F405
-        
-        # CONSTRAINT
-        def rule_E_total(m):
-            return sum(m.enzyme[i] for (j, i) in reaction_gene_tuple) <= m.E_total
-        Concretemodel.set_E_total = Constraint(rule=rule_E_total)  # noqa: F405
-
-    
-    ## CONCRETE MODEL BUILDING DONE! Now we start optimization portion 
-    Concretemodel.reaction[objective_reaction].value = 0.1
-    init_e = enzyme_upper_bound / len(genes)
-    for g in genes:
-        Concretemodel.enzyme[g].value = init_e 
-
-    # 3) Use IPOPT for (non)linear optimization
-    from pyomo.environ import SolverFactory
-    solver = SolverFactory('ipopt')
-    # IPOPT options — you can tweak these
-    solver.options['warm_start_init_point']       = 'yes'   # use your .value starts :contentReference[oaicite:0]{index=0}
-
-    # (optional) let IPOPT start closer to the corner by reducing the barrier shift
-    solver.options['mu_strategy'] = 'monotone'
-    solver.options['mu_init']     = 1e-6
-
-    # 4) Now solve (your Concretemodel.dual suffix was already attached above)
-    try:
-        results = solver.solve(
-            Concretemodel,
-            tee=False
-        )
-
-        if (results.solver.status == SolverStatus.ok) and (results.solver.termination_condition == TerminationCondition.optimal):
-            # Do something when the solution in optimal and feasible
-            print("Solver status is okay! ")
-        elif (results.solver.termination_condition == TerminationCondition.infeasible):
-            # Do something when model in infeasible
-            print("Solver status is infeasible")
-        else:
-            # Something else is wrong
-            print("Solver Status: ",  result.solver.status)
-            
-            # … (often‐used code to extract objective, variables, df_FBA, etc.) …
-        solution_value = pyo.value(Concretemodel.objective)
-
-        variable = []
-        index = []
-        value = []
-        for v in Concretemodel.component_objects(pyo.Var, active=True):
-            for i in v:
-                variable.append(v.name)
-                index.append(i)
-                value.append(pyo.value(v[i]))
-
-        df_FBA = pd.DataFrame({"Variable": variable, "Index": index, "Value": value})
-
-        # (print your reaction‐condition statistics here, if desired)
-        total_reactions = len(reaction_gene_tuple)
-        constrained_reactions = len(single_enzyme_pass) + len(multiple_enzyme_pass)
-        unconstrained_reactions = len(no_enzyme_pass)
-        promiscuous_enzymes = len(promiscuous_pass)
-        isoenzyme_reactions = len(isoenzymes_pass)
-        enzyme_complexes_reactions = len(enzyme_complexes_pass)
-
-        if print_reaction_conditions:
-            print("Optimization completed successfully!")
-            print(f"Total reaction-gene pairs: {total_reactions}")
-            print(f"Enzyme-constrained pairs: {constrained_reactions}")
-            print(f"Unconstrained pairs (missing data): {unconstrained_reactions}")
-            print(f"Promiscuous enzymes in system: {promiscuous_enzymes}")
-            print(f"Isoenzymatic passes: {isoenzyme_reactions}")
-            print(f"Enzyme complex reactions: {enzyme_complexes_reactions}")
-
-        else:
-            # Handle unsuccessful optimization
-            raise ValueError(
-                f"Solver did not find an optimal solution. "
-                f"Status: {results.solver.status}, "
-                f"Termination: {results.solver.termination_condition}"
-            )
-
-    except Exception as e:
-        # Handle exceptions raised by the solver
-        print(f"An error occurred during optimization: {e}")
-        df_FBA = pd.DataFrame()  # Return an empty DataFrame
-        solution_value = None
-
-    # Print a sanity‐check of which solver was actually used:   
-    print("Termination condition:", results.solver.termination_condition)
-    print("Solver status:", results.solver.status)
-
-    print("Biomass flux:", pyo.value(Concretemodel.objective))
-
-    return solution_value, df_FBA, gene_sequences_dict, Concretemodel
 
 def _tokenize_gpr(rule):
     """Split a GPR rule into tokens: parentheses, 'and', 'or', gene IDs."""
@@ -582,6 +73,345 @@ def _parse_gpr_to_dnf(tokens):
     return unique
 
 
+# def run_optimization4(
+#     model,
+#     kcat_dict,
+#     objective_reaction,
+#     gene_sequences_dict=None,
+#     enzyme_upper_bound=0.125,
+#     enzyme_ratio=True,
+#     maximization=True,
+#     solver_name='gurobi',
+#     tee=False,
+# ):
+#     """
+#     Enzyme-constrained FBA via Pyomo, handling:
+#       - single enzymes (max kcat)
+#       - enzyme complexes (avg kcat)
+#       - isoenzymes (OR-GPR)
+#       - promiscuous enzymes
+#     Returns: sol_val, df_FBA, gene_sequences_dict, model
+#     """
+#     import logging
+#     import time  # Add this import
+
+#     import gurobipy as gp
+
+#     # 1) Silence the gurobipy Python logger
+#     logging.getLogger('gurobipy').setLevel(logging.ERROR)
+
+#     # 2) Globally mute Pyomo solver chatter
+#     logging.getLogger('pyomo').setLevel(logging.WARNING)
+    
+#     total_start = time.time()
+    
+#     # 1) Load COBRA model
+#     # print("Step 1: Loading COBRA model...")
+#     step_start = time.time()
+#     if isinstance(model, str):
+#         mod = (
+#             cb.io.read_sbml_model(model)
+#             if model.endswith(('.xml', '.sbml'))
+#             else cb.io.load_json_model(model)
+#         )
+#     else:
+#         mod = model
+#     # print(f"Model loaded in {time.time() - step_start:.2f}s\n")
+
+#     # 2) Initial flux guess
+#     # print("Step 2: Getting initial flux guess...")
+#     step_start = time.time()
+#     mod.objective = objective_reaction
+#     print("Model objective:", mod.objective)
+#     cobra_sol = mod.optimize()
+#     flux0 = cobra_sol.fluxes.to_dict()
+#     # print(f"Initial optimization completed in {time.time() - step_start:.2f}s\n")
+
+#     # 3) Load & normalize kcat_dict
+#     # print("Step 3: Processing kcat dictionary...")
+#     step_start = time.time()
+#     if isinstance(kcat_dict, str):
+#         df = pd.read_csv(kcat_dict)
+#         tmp = {}
+#         for r, g, k in zip(df.reaction, df.gene, df.kcat):
+#             tmp.setdefault((r, g), []).append(k)
+#         kcat_dict = tmp
+#     # convert all values to hr^-1 lists
+#     for key, vals in list(kcat_dict.items()):
+#         kcat_dict[key] = [(v * 3600 if v < 1000 else v) for v in vals]
+
+#     kcat_dict = {
+#     (rxn_id.lower(), gene_id.lower()): ks
+#     for (rxn_id, gene_id), ks in kcat_dict.items()
+#     }
+#     # print(f"kcat dictionary processed ({len(kcat_dict)} entries) in {time.time() - step_start:.2f}s\n")
+
+#     # DEBUG: show how many (reaction,gene) pairs we have, and print a few examples
+#     print(f"\nLoaded {len(kcat_dict)} (reaction,gene) kcat entries. Sample:")
+#     for i,(rg, ks) in enumerate(kcat_dict.items()):
+#         print(f"  {rg} → {ks}")
+#         if i >= 9:
+#             break
+#     print()
+
+#     # 4) Build stoichiometry, bounds, objective
+#     # print("Step 4: Building model data structures...")
+#     step_start = time.time()
+#     S = create_stoichiometric_matrix(mod)
+#     mets = [m.id for m in mod.metabolites]
+#     rxns = [r.id for r in mod.reactions]
+#     genes = [g.id for g in mod.genes]
+#     lb = {r.id: r.lower_bound for r in mod.reactions}
+#     ub = {r.id: r.upper_bound for r in mod.reactions}
+#     obj_coef = {r.id: (1.0 if r.id == objective_reaction else 0.0) for r in mod.reactions} #obj_coef = {r.id: r.objective_coefficient for r in mod.reactions}
+#     met_index = {m: i for i, m in enumerate(mets)}
+#     rxn_index = {r: j for j, r in enumerate(rxns)}
+#     # print(f"Data structures built ({len(mets)} mets, {len(rxns)} rxns, {len(genes)} genes) in {time.time() - step_start:.2f}s\n")
+
+#     # 5) Generate DNF clauses
+#     # print("Step 5: Parsing gene-protein-reaction rules...")
+#     step_start = time.time()
+#     dnf_clauses = {}
+#     for r in mod.reactions:
+#         rule = (r.gene_reaction_rule or '').strip()
+#         if not rule:
+#             continue
+#         tokens = _tokenize_gpr(rule)
+#         dnf_clauses[r.id] = _parse_gpr_to_dnf(tokens)
+
+#     print(dnf_clauses)
+#     # print(f"GPR rules parsed ({len(dnf_clauses)} reactions with GPRs) in {time.time() - step_start:.2f}s\n")
+
+#     # --- DEBUG INTERSECTION OF GPRs & kcats ----------------------------------
+
+#     # all reactions that have at least one GPR clause
+#     gpr_rxns = set(dnf_clauses.keys())
+
+#     # all (reaction,gene) keys in your kcat_dict
+#     kcat_keys = set(kcat_dict.keys())
+
+#     # find the overlap
+#     valid_pairs = [pair for pair in kcat_keys if pair[0] in gpr_rxns]
+#     print(f"\nFound {len(valid_pairs)} (reaction,gene) pairs where you have BOTH a GPR and a kcat.")
+#     print("Sample valid pairs:")
+#     for rg in valid_pairs[:10]:
+#         print("  ", rg, "→", kcat_dict[rg])
+#     print()  
+#     # ------------------------------------------------------------------------
+
+
+
+#     # 6) Build Pyomo model
+#     # print("Step 6: Building Pyomo optimization model...")
+#     step_start = time.time()
+#     m = ConcreteModel()  # noqa: F405
+#     m.M = Set(initialize=mets)  # noqa: F405
+#     m.R = Set(initialize=rxns)  # noqa: F405
+#     m.G = Set(initialize=genes)  # noqa: F405
+#     m.K = Set(initialize=[(r, g) for r in rxns for g in genes], dimen=2)  # noqa: F405
+#     # print(f"Sets created in {time.time() - step_start:.2f}s\n")
+
+#     # Variables
+#     substep_start = time.time()
+#     m.v = Var(  # noqa: F405
+#         m.R,
+#         domain=Reals,  # noqa: F405
+#         bounds=lambda mo, j: (lb[j], ub[j]),
+#         initialize=lambda mo, j: flux0.get(j, 0.0)
+#     )
+#     m.E = Var(m.G, domain=NonNegativeReals, initialize=0.01)  # noqa: F405
+#     # print(f"Variables created in {time.time() - substep_start:.2f}s\n")
+
+#     # Mass balance
+#     # substep_start = time.time()
+#     # def mass_balance(mo, met):
+#     #     i = met_index[met]
+#     #     return sum(S[i, rxn_index[r]] * mo.v[r] for r in mo.R) == 0
+#     # m.mass_balance = Constraint(m.M, rule=mass_balance)  # noqa: F405
+#     # print(f"Mass balance constraints created in {time.time() - substep_start:.2f}s\n")
+    
+#     # OPTIMIZED mass balance
+#     substep_start = time.time()
+    
+#     # Pre-compute which reactions involve each metabolite
+#     met_reactions = {}
+#     for met in mets:
+#         met_reactions[met] = []
+#         for rxn in rxns:
+#             if S[met_index[met], rxn_index[rxn]] != 0:
+#                 met_reactions[met].append(rxn)
+
+#     # print(f"Sparse matrix analysis: avg {sum(len(v) for v in met_reactions.values()) / len(mets):.1f} reactions per metabolite")
+
+#     def mass_balance_sparse(mo, met):
+#         # Only iterate over reactions that involve this metabolite
+#         relevant_rxns = met_reactions[met]
+#         if not relevant_rxns:
+#             return Constraint.Feasible  # noqa: F405
+        
+#         i = met_index[met]
+#         return sum(S[i, rxn_index[r]] * mo.v[r] for r in relevant_rxns) == 0
+
+#     m.mass_balance = Constraint(m.M, rule=mass_balance_sparse)  # noqa: F405
+#     # print(f"Mass balance constraints created in {time.time() - substep_start:.2f}s\n")
+    
+#     # Objective
+#     sense = maximize if maximization else minimize  # noqa: F405
+#     m.obj = Objective(expr=sum(obj_coef[r] * m.v[r] for r in m.R), sense=sense)  # noqa: F405
+
+#     # 6a) AND‐GPR: single or complex
+#     substep_start = time.time()
+#     def and_rule(mo, rxn_id, gene_id):
+#         clauses = dnf_clauses.get(rxn_id, [])
+#         if not clauses:
+#             return Constraint.Skip  # noqa: F405
+#         # single enzyme: max kcat
+#         if len(clauses) == 1 and len(clauses[0]) == 1:
+#             g = clauses[0][0]
+#             if gene_id != g:
+#                 return Constraint.Skip  # noqa: F405
+#             k_list = kcat_dict.get((rxn_id.lower(), g.lower()), [])
+#             if not k_list:
+#                 return Constraint.Skip  # noqa: F405
+#             k_val = max(k_list)
+#             print(f"[kcat‐AND] {rxn_id}:{g} → k_val = {k_val}")
+#             return mo.v[rxn_id] <= k_val * mo.E[g]
+#         # enzyme complex: avg kcat
+#         if len(clauses) == 1 and len(clauses[0]) > 1:
+#             clause = clauses[0]
+#             if gene_id not in clause:
+#                 return Constraint.Skip  # noqa: F405
+#             all_ks = []
+#             for g in clause:
+#                 all_ks.extend(kcat_dict.get((rxn_id, g), []))
+#             if not all_ks:
+#                 return Constraint.Skip  # noqa: F405
+#             k_val = sum(all_ks) / len(all_ks)
+#             return mo.v[rxn_id] <= k_val * mo.E[gene_id]
+#         return Constraint.Skip  # noqa: F405
+#     m.kcat_and = Constraint(m.K, rule=and_rule)  # noqa: F405
+#     print(f"  → AND‐GPR constraints added: {len(m.kcat_and)}")
+#     if len(m.kcat_and) > 0:
+#         # grab the first few keys
+#         sample_keys = list(m.kcat_and.keys())[:5]
+#         print("    Sample AND constraint expressions:")
+#         for key in sample_keys:
+#             c = m.kcat_and[key]
+#             print(f"      {key} : {c.expr}")   # prints the actual inequality
+#     # print(f"AND-GPR constraints created in {time.time() - substep_start:.2f}s\n")
+
+#     # 6b) OR‐GPR: isoenzymes
+#     substep_start = time.time()
+#     def iso_rule(mo, rxn_id):
+#         clauses = dnf_clauses.get(rxn_id, [])
+#         if len(clauses) <= 1:
+#             return Constraint.Skip  # noqa: F405
+#         terms = []
+#         for clause in clauses:
+#             ks = []
+#             for g in clause:
+#                 kl = kcat_dict.get((rxn_id.lower(), g.lower()), [])
+#                 if kl:
+#                     ks.append(min(kl))
+#             if not ks:
+#                 continue
+#             kmin = min(ks)
+#             for g in clause:
+#                 terms.append(kmin * mo.E[g])
+#         if not terms:
+#             return Constraint.Skip  # noqa: F405
+#         return mo.v[rxn_id] <= sum(terms)
+#     m.kcat_iso = Constraint(m.R, rule=iso_rule)  # noqa: F405
+#     print(f"  → OR‐GPR (isoenzyme) constraints added: {len(m.kcat_iso)}")
+#     if len(m.kcat_iso) > 0:
+#         sample_rxns = list(m.kcat_iso.keys())[:5]
+#         print("    Sample OR constraint expressions:")
+#         for rxn in sample_rxns:
+#             c = m.kcat_iso[rxn]
+#             print(f"      {rxn} : {c.expr}")
+
+#     # print(f"OR-GPR constraints created in {time.time() - substep_start:.2f}s\n")
+
+#     # 6c) Promiscuous enzymes
+#     substep_start = time.time()
+#     def promis_rule(mo, g_id):
+#         usage = []
+#         for r_id, clauses in dnf_clauses.items():
+#             for clause in clauses:
+#                 if g_id not in clause:
+#                     continue
+#                 for k in kcat_dict.get((r_id.lower(), g_id.lower()), []):
+#                     usage.append(mo.v[r_id] / k)
+#         if not usage:
+#             return Constraint.Skip  # noqa: F405
+#         return sum(usage) <= mo.E[g_id]
+#     m.promiscuous = Constraint(m.G, rule=promis_rule)  # noqa: F405
+#     print(f"  → Promiscuous enzyme constraints added: {len(m.promiscuous)}")
+#     if len(m.promiscuous) > 0:
+#         sample_genes = list(m.promiscuous.keys())[:5]
+#         print("    Sample PROM constraint expressions:")
+#         for g in sample_genes:
+#             c = m.promiscuous[g]
+#             print(f"      {g} : {c.expr}")
+#     # print(f"Promiscuous enzyme constraints created in {time.time() - substep_start:.2f}s\n")
+
+#     # 7) Total enzyme pool / ratio
+#     # print("Step 7: Adding enzyme pool constraints...")
+#     step_start = time.time()
+#     if enzyme_ratio:
+#         if gene_sequences_dict is None:
+#             gene_sequences_dict = {}
+#         # mw = {g: (molecular_weight(gene_sequences_dict.get(g, ''), seq_type='protein') or 1e5)
+#         #       for g in genes}
+#         def safe_mw(seq):
+#             # remove any non-standard letters (e.g. X, B, Z, etc.)
+#             clean = "".join([aa for aa in seq if aa in protein_letters])
+#             try:
+#                 return molecular_weight(clean or "A", seq_type='protein')
+#             except ValueError:
+#                 # fallback if something still weird
+#                 return 1e5
+#         mw = {g: safe_mw(gene_sequences_dict.get(g, "")) for g in genes}
+#         m.E_ratio = Var(domain=NonNegativeReals, bounds=(0, enzyme_upper_bound))  # noqa: F405
+#         m.total_enzyme = Constraint(  # noqa: F405
+#             expr=sum(m.E[g] * mw[g] for g in m.G) * 1e-3 <= m.E_ratio
+#         )
+#         print(f"  → Total enzyme pool constraint added: 1")
+#     else:
+#         m.E_total = Var(domain=NonNegativeReals, bounds=(0, enzyme_upper_bound))  # noqa: F405
+#         m.total_enzyme = Constraint(expr=sum(m.E[g] for g in m.G) <= m.E_total)  # noqa: F405
+#         print(f"  → Total enzyme pool constraint added: 1")
+#     # print(f"Enzyme pool constraints added in {time.time() - step_start:.2f}s\n")
+
+#     # print(f"\nMODEL BUILDING COMPLETED in {time.time() - total_start:.2f}s")
+
+#     # 8) Solve
+#     # print("Step 8: Setting up and running solver...")
+#     solver = SolverFactory(solver_name)
+#     solver.options['LogToConsole'] = 0
+#     solver.options['OutputFlag']   = 0
+#     solver.options['LogFile']      = ''
+#     #solver.options['threads'] = 4
+#     # print("Solver:", solver)
+#     # print(f"Solver options: {dict(solver.options)}")
+#     solver.solve(m, tee=tee, load_solutions=True)
+
+#     # 9) Post-process
+#     for r in m.R:
+#         val = m.v[r].value if m.v[r].value is not None else lb[r]
+#         m.v[r].value = max(min(val, ub[r]), lb[r])
+#     for g in m.G:
+#         if m.E[g].value is None:
+#             m.E[g].value = 0.0
+
+#     # 10) Collect results
+#     sol_val = value(m.obj)  # noqa: F405
+#     records = [('flux', r, m.v[r].value) for r in m.R]
+#     records += [('enzyme', g, m.E[g].value) for g in m.G]
+#     df_FBA = pd.DataFrame(records, columns=['Variable','Index','Value'])
+
+#     return sol_val, df_FBA, gene_sequences_dict, m
+
 def run_optimization4(
     model,
     kcat_dict,
@@ -602,252 +432,260 @@ def run_optimization4(
     Returns: sol_val, df_FBA, gene_sequences_dict, model
     """
     import logging
-    import time  # Add this import
+    import time
 
-    import gurobipy as gp
+    from Bio.Data.IUPACData import protein_letters
+    from Bio.SeqUtils import molecular_weight
+    from cobra import io as cbio
+    import pandas as pd
+    from pyomo.environ import (
+        ConcreteModel,
+        Constraint,
+        NonNegativeReals,
+        Objective,
+        Reals,
+        Set,
+        SolverFactory,
+        Var,
+        maximize,
+        minimize,
+        value,
+    )
 
-    # 1) Silence the gurobipy Python logger
-    logging.getLogger('gurobipy').setLevel(logging.ERROR)
+    def _tokenize_gpr(gpr):
+        """Tokenize a GPR rule string into symbols and operators."""
+        # ensure spacing around parentheses
+        spaced = gpr.replace('(', ' ( ').replace(')', ' ) ')
+        tokens = [tok.lower() for tok in spaced.split() if tok]
+        return tokens
 
-    # 2) Globally mute Pyomo solver chatter
-    logging.getLogger('pyomo').setLevel(logging.WARNING)
-    
-    total_start = time.time()
-    
-    # 1) Load COBRA model
-    # print("Step 1: Loading COBRA model...")
-    step_start = time.time()
+
+    def _parse_gpr_to_dnf(tokens):
+        """Parse tokenized GPR into Disjunctive Normal Form (list of lists)."""
+        # recursive descent parser
+        def parse_expr(tok_list):
+            terms = [parse_term(tok_list)]
+            while tok_list and tok_list[0] == 'or':
+                tok_list.pop(0)
+                terms.append(parse_term(tok_list))
+            if len(terms) == 1:
+                return terms[0]
+            return ('or', terms)
+
+        def parse_term(tok_list):
+            factors = [parse_factor(tok_list)]
+            while tok_list and tok_list[0] == 'and':
+                tok_list.pop(0)
+                factors.append(parse_factor(tok_list))
+            if len(factors) == 1:
+                return factors[0]
+            return ('and', factors)
+
+        def parse_factor(tok_list):
+            token = tok_list.pop(0)
+            if token == '(':
+                expr = parse_expr(tok_list)
+                if tok_list and tok_list[0] == ')':
+                    tok_list.pop(0)
+                return expr
+            return token
+
+        def to_dnf(expr):
+            if isinstance(expr, str):
+                return [[expr]]
+            op, args = expr
+            if op == 'and':
+                dnfs = [to_dnf(arg) for arg in args]
+                result = dnfs[0]
+                for sub in dnfs[1:]:
+                    result = [r + s for r in result for s in sub]
+                return result
+            if op == 'or':
+                result = []
+                for sub in args:
+                    result.extend(to_dnf(sub))
+                return result
+            return []
+
+        # work on a copy so original tokens remain intact
+        tree = parse_expr(tokens[:])
+        return to_dnf(tree)
+
+
+    # 1) Load model
     if isinstance(model, str):
         mod = (
-            cb.io.read_sbml_model(model)
+            cbio.read_sbml_model(model)
             if model.endswith(('.xml', '.sbml'))
-            else cb.io.load_json_model(model)
+            else cbio.load_json_model(model)
         )
     else:
         mod = model
-    # print(f"Model loaded in {time.time() - step_start:.2f}s\n")
 
     # 2) Initial flux guess
-    # print("Step 2: Getting initial flux guess...")
-    step_start = time.time()
     mod.objective = objective_reaction
     print("Model objective:", mod.objective)
-    cobra_sol = mod.optimize()
-    flux0 = cobra_sol.fluxes.to_dict()
-    # print(f"Initial optimization completed in {time.time() - step_start:.2f}s\n")
+    flux0 = mod.optimize().fluxes.to_dict()
 
     # 3) Load & normalize kcat_dict
-    # print("Step 3: Processing kcat dictionary...")
-    step_start = time.time()
     if isinstance(kcat_dict, str):
-        df = pd.read_csv(kcat_dict)
+        df_k = pd.read_csv(kcat_dict)
         tmp = {}
-        for r, g, k in zip(df.reaction, df.gene, df.kcat):
+        for r, g, k in zip(df_k.reaction, df_k.gene, df_k.kcat):
             tmp.setdefault((r, g), []).append(k)
         kcat_dict = tmp
-    # convert all values to hr^-1 lists
+    # convert to s^-1
     for key, vals in list(kcat_dict.items()):
         kcat_dict[key] = [(v * 3600 if v < 1000 else v) for v in vals]
-    # print(f"kcat dictionary processed ({len(kcat_dict)} entries) in {time.time() - step_start:.2f}s\n")
+    # lowercase keys
+    kcat_dict = { (r.lower(), g.lower()): ks for (r, g), ks in kcat_dict.items() }
+    # print(f"\nLoaded {len(kcat_dict)} kcat entries. Sample:")
+    # for i, ((r, g), ks) in enumerate(kcat_dict.items()):
+    #     print(f"  {(r, g)} -> {ks}")
+    #     if i >= 4: break
+    # print()
 
-    # 4) Build stoichiometry, bounds, objective
-    # print("Step 4: Building model data structures...")
-    step_start = time.time()
+    # 4) Stoichiometry, bounds, objective
     S = create_stoichiometric_matrix(mod)
     mets = [m.id for m in mod.metabolites]
     rxns = [r.id for r in mod.reactions]
     genes = [g.id for g in mod.genes]
     lb = {r.id: r.lower_bound for r in mod.reactions}
     ub = {r.id: r.upper_bound for r in mod.reactions}
-    obj_coef = {r.id: (1.0 if r.id == objective_reaction else 0.0) for r in mod.reactions} #obj_coef = {r.id: r.objective_coefficient for r in mod.reactions}
+    obj_coef = {r.id: (1.0 if r.id == objective_reaction else 0.0) for r in mod.reactions}
     met_index = {m: i for i, m in enumerate(mets)}
     rxn_index = {r: j for j, r in enumerate(rxns)}
-    # print(f"Data structures built ({len(mets)} mets, {len(rxns)} rxns, {len(genes)} genes) in {time.time() - step_start:.2f}s\n")
 
-    # 5) Generate DNF clauses
-    # print("Step 5: Parsing gene-protein-reaction rules...")
-    step_start = time.time()
+    # allow mapping from lower‐case gene → original‐case gene
+    gene_map = { g.lower(): g for g in genes }
+
+
+    # 5) Parse & lowercase GPRs
     dnf_clauses = {}
     for r in mod.reactions:
         rule = (r.gene_reaction_rule or '').strip()
         if not rule:
             continue
         tokens = _tokenize_gpr(rule)
-        dnf_clauses[r.id] = _parse_gpr_to_dnf(tokens)
-    # print(f"GPR rules parsed ({len(dnf_clauses)} reactions with GPRs) in {time.time() - step_start:.2f}s\n")
+        clauses = _parse_gpr_to_dnf(tokens)
+        dnf_clauses[r.id.lower()] = [[g.lower() for g in clause] for clause in clauses]
+    # print(f"Parsed {len(dnf_clauses)} GPR rules.")
+
+    # DEBUG: intersection of kcat & GPR
+    valid_pairs = [(r,g) for (r,g) in kcat_dict if r in dnf_clauses]
+    # print(f"Found {len(valid_pairs)} overlapping (rxn,gene) pairs. Sample: {valid_pairs[:5]}\n")
 
     # 6) Build Pyomo model
-    # print("Step 6: Building Pyomo optimization model...")
-    step_start = time.time()
-    m = ConcreteModel()  # noqa: F405
-    m.M = Set(initialize=mets)  # noqa: F405
-    m.R = Set(initialize=rxns)  # noqa: F405
-    m.G = Set(initialize=genes)  # noqa: F405
-    m.K = Set(initialize=[(r, g) for r in rxns for g in genes], dimen=2)  # noqa: F405
-    # print(f"Sets created in {time.time() - step_start:.2f}s\n")
+    m = ConcreteModel()
+    m.M = Set(initialize=mets)
+    m.R = Set(initialize=rxns)
+    m.G = Set(initialize=genes)
+    m.K = Set(initialize=[(r,g) for r in rxns for g in genes], dimen=2)
 
-    # Variables
-    substep_start = time.time()
-    m.v = Var(  # noqa: F405
-        m.R,
-        domain=Reals,  # noqa: F405
-        bounds=lambda mo, j: (lb[j], ub[j]),
-        initialize=lambda mo, j: flux0.get(j, 0.0)
+    m.v = Var(
+        m.R, domain=Reals,
+        bounds=lambda mo,j: (lb[j], ub[j]),
+        initialize=lambda mo,j: flux0.get(j, 0.0)
     )
-    m.E = Var(m.G, domain=NonNegativeReals, initialize=0.01)  # noqa: F405
-    # print(f"Variables created in {time.time() - substep_start:.2f}s\n")
+    m.E = Var(m.G, domain=NonNegativeReals, initialize=0.01)
 
-    # Mass balance
-    # substep_start = time.time()
-    # def mass_balance(mo, met):
-    #     i = met_index[met]
-    #     return sum(S[i, rxn_index[r]] * mo.v[r] for r in mo.R) == 0
-    # m.mass_balance = Constraint(m.M, rule=mass_balance)  # noqa: F405
-    # print(f"Mass balance constraints created in {time.time() - substep_start:.2f}s\n")
-    
-    # OPTIMIZED mass balance
-    substep_start = time.time()
-    
-    # Pre-compute which reactions involve each metabolite
-    met_reactions = {}
-    for met in mets:
-        met_reactions[met] = []
-        for rxn in rxns:
-            if S[met_index[met], rxn_index[rxn]] != 0:
-                met_reactions[met].append(rxn)
-
-    # print(f"Sparse matrix analysis: avg {sum(len(v) for v in met_reactions.values()) / len(mets):.1f} reactions per metabolite")
-
-    def mass_balance_sparse(mo, met):
-        # Only iterate over reactions that involve this metabolite
-        relevant_rxns = met_reactions[met]
-        if not relevant_rxns:
-            return Constraint.Feasible  # noqa: F405
-        
+    # mass balances
+    met_reactions = { met: [rxn for rxn in rxns if S[met_index[met], rxn_index[rxn]] != 0] for met in mets }
+    def mb_rule(mo, met):
+        rxn_list = met_reactions[met]
+        if not rxn_list:
+            return Constraint.Feasible
         i = met_index[met]
-        return sum(S[i, rxn_index[r]] * mo.v[r] for r in relevant_rxns) == 0
+        return sum(S[i, rxn_index[r]] * mo.v[r] for r in rxn_list) == 0
+    m.mass_balance = Constraint(m.M, rule=mb_rule)
 
-    m.mass_balance = Constraint(m.M, rule=mass_balance_sparse)  # noqa: F405
-    # print(f"Mass balance constraints created in {time.time() - substep_start:.2f}s\n")
-    
-    # Objective
-    sense = maximize if maximization else minimize  # noqa: F405
-    m.obj = Objective(expr=sum(obj_coef[r] * m.v[r] for r in m.R), sense=sense)  # noqa: F405
+    # objective
+    sense = maximize if maximization else minimize
+    m.obj = Objective(expr=sum(obj_coef[r] * m.v[r] for r in m.R), sense=sense)
 
-    # 6a) AND‐GPR: single or complex
-    substep_start = time.time()
+    # AND-GPR
     def and_rule(mo, rxn_id, gene_id):
-        clauses = dnf_clauses.get(rxn_id, [])
-        if not clauses:
-            return Constraint.Skip  # noqa: F405
-        # single enzyme: max kcat
-        if len(clauses) == 1 and len(clauses[0]) == 1:
+        clauses = dnf_clauses.get(rxn_id.lower(), [])
+        if len(clauses)==1 and len(clauses[0])==1:
             g = clauses[0][0]
-            if gene_id != g:
-                return Constraint.Skip  # noqa: F405
-            k_list = kcat_dict.get((rxn_id, g), [])
-            if not k_list:
-                return Constraint.Skip  # noqa: F405
-            k_val = max(k_list)
-            return mo.v[rxn_id] <= k_val * mo.E[g]
-        # enzyme complex: avg kcat
-        if len(clauses) == 1 and len(clauses[0]) > 1:
-            clause = clauses[0]
-            if gene_id not in clause:
-                return Constraint.Skip  # noqa: F405
-            all_ks = []
-            for g in clause:
-                all_ks.extend(kcat_dict.get((rxn_id, g), []))
-            if not all_ks:
-                return Constraint.Skip  # noqa: F405
-            k_val = sum(all_ks) / len(all_ks)
-            return mo.v[rxn_id] <= k_val * mo.E[gene_id]
-        return Constraint.Skip  # noqa: F405
-    m.kcat_and = Constraint(m.K, rule=and_rule)  # noqa: F405
-    # print(f"AND-GPR constraints created in {time.time() - substep_start:.2f}s\n")
+            if gene_id.lower()!=g:
+                return Constraint.Skip
+            ks = kcat_dict.get((rxn_id.lower(), g), [])
+            if not ks:
+                return Constraint.Skip
+            return mo.v[rxn_id] <= max(ks) * mo.E[gene_id]
+        return Constraint.Skip
+    m.kcat_and = Constraint(m.K, rule=and_rule)
+    # print(f" → AND-GPR constraints: {len(m.kcat_and)}")
 
-    # 6b) OR‐GPR: isoenzymes
-    substep_start = time.time()
-    def iso_rule(mo, rxn_id):
-        clauses = dnf_clauses.get(rxn_id, [])
-        if len(clauses) <= 1:
-            return Constraint.Skip  # noqa: F405
+    # OR-GPR
+    def or_rule(mo, rxn_id):
+        clauses = dnf_clauses.get(rxn_id.lower(), [])
+        if len(clauses)<=1:
+            return Constraint.Skip
         terms = []
         for clause in clauses:
-            ks = []
-            for g in clause:
-                kl = kcat_dict.get((rxn_id, g), [])
-                if kl:
-                    ks.append(min(kl))
-            if not ks:
+            ks_list = [min(kcat_dict.get((rxn_id.lower(), g), [])) for g in clause if kcat_dict.get((rxn_id.lower(), g), [])]
+            if not ks_list:
                 continue
-            kmin = min(ks)
-            for g in clause:
-                terms.append(kmin * mo.E[g])
+            kmin = min(ks_list)
+            for g_l in clause:
+                orig = gene_map[g_l]
+                terms.append(kmin * mo.E[orig])
         if not terms:
-            return Constraint.Skip  # noqa: F405
+            return Constraint.Skip
         return mo.v[rxn_id] <= sum(terms)
-    m.kcat_iso = Constraint(m.R, rule=iso_rule)  # noqa: F405
-    # print(f"OR-GPR constraints created in {time.time() - substep_start:.2f}s\n")
+    m.kcat_iso = Constraint(m.R, rule=or_rule)
+    # print(f" → OR-GPR constraints: {len(m.kcat_iso)}")
 
-    # 6c) Promiscuous enzymes
-    substep_start = time.time()
-    def promis_rule(mo, g_id):
+    # Promiscuous
+    def prom_rule(mo, g_id):
         usage = []
-        for r_id, clauses in dnf_clauses.items():
+        for rxn_id, clauses in dnf_clauses.items():
             for clause in clauses:
-                if g_id not in clause:
+                if g_id.lower() not in clause:
                     continue
-                for k in kcat_dict.get((r_id, g_id), []):
-                    usage.append(mo.v[r_id] / k)
+                for k in kcat_dict.get((rxn_id, g_id.lower()), []):
+                    usage.append(mo.v[rxn_id] / k)
         if not usage:
-            return Constraint.Skip  # noqa: F405
+            return Constraint.Skip
         return sum(usage) <= mo.E[g_id]
-    m.promiscuous = Constraint(m.G, rule=promis_rule)  # noqa: F405
-    # print(f"Promiscuous enzyme constraints created in {time.time() - substep_start:.2f}s\n")
+    m.promiscuous = Constraint(m.G, rule=prom_rule)
+    # print(f" → Promiscuous constraints: {len(m.promiscuous)}")
 
-    # 7) Total enzyme pool / ratio
-    # print("Step 7: Adding enzyme pool constraints...")
-    step_start = time.time()
+    # total enzyme pool
+    def safe_mw(seq):
+        clean = ''.join(aa for aa in seq if aa in protein_letters)
+        if not clean:
+            clean = 'A'
+        try:
+            return molecular_weight(clean, seq_type='protein')
+        except:
+            return 1e5
+    mw = {g: safe_mw(gene_sequences_dict.get(g, '') or '') for g in genes}
+
     if enzyme_ratio:
-        if gene_sequences_dict is None:
-            gene_sequences_dict = {}
-        mw = {g: (molecular_weight(gene_sequences_dict.get(g, ''), seq_type='protein') or 1e5)
-              for g in genes}
-        m.E_ratio = Var(domain=NonNegativeReals, bounds=(0, enzyme_upper_bound))  # noqa: F405
-        m.total_enzyme = Constraint(  # noqa: F405
-            expr=sum(m.E[g] * mw[g] for g in m.G) * 1e-3 <= m.E_ratio
-        )
+        m.E_ratio = Var(domain=NonNegativeReals, bounds=(0, enzyme_upper_bound))
+        m.total_enzyme = Constraint(expr=sum(m.E[g] * mw[g] for g in m.G) * 1e-3 <= m.E_ratio)
     else:
-        m.E_total = Var(domain=NonNegativeReals, bounds=(0, enzyme_upper_bound))  # noqa: F405
-        m.total_enzyme = Constraint(expr=sum(m.E[g] for g in m.G) <= m.E_total)  # noqa: F405
-    # print(f"Enzyme pool constraints added in {time.time() - step_start:.2f}s\n")
+        m.E_total = Var(domain=NonNegativeReals, bounds=(0, enzyme_upper_bound))
+        m.total_enzyme = Constraint(expr=sum(m.E[g] for g in m.G) <= m.E_total)
 
-    # print(f"\nMODEL BUILDING COMPLETED in {time.time() - total_start:.2f}s")
-
-    # 8) Solve
-    # print("Step 8: Setting up and running solver...")
+    # solve
     solver = SolverFactory(solver_name)
-    solver.options['LogToConsole'] = 0
-    solver.options['OutputFlag']   = 0
-    solver.options['LogFile']      = ''
-    #solver.options['threads'] = 4
-    # print("Solver:", solver)
-    # print(f"Solver options: {dict(solver.options)}")
+    solver.options.update({'LogToConsole': 0, 'OutputFlag': 0, 'LogFile': ''})
     solver.solve(m, tee=tee, load_solutions=True)
 
-    # 9) Post-process
+    # post-process
     for r in m.R:
-        val = m.v[r].value if m.v[r].value is not None else lb[r]
-        m.v[r].value = max(min(val, ub[r]), lb[r])
+        v = m.v[r].value
+        m.v[r].value = max(min(v if v is not None else lb[r], ub[r]), lb[r])
     for g in m.G:
         if m.E[g].value is None:
             m.E[g].value = 0.0
 
-    # 10) Collect results
-    sol_val = value(m.obj)  # noqa: F405
-    records = [('flux', r, m.v[r].value) for r in m.R]
-    records += [('enzyme', g, m.E[g].value) for g in m.G]
+    sol_val = value(m.obj)
+    records = [('flux', r, m.v[r].value) for r in m.R] + [('enzyme', g, m.E[g].value) for g in m.G]
     df_FBA = pd.DataFrame(records, columns=['Variable','Index','Value'])
 
     return sol_val, df_FBA, gene_sequences_dict, m

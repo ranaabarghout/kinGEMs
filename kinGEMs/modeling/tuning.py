@@ -10,6 +10,8 @@ import math  # noqa: F401
 import os
 import random  # noqa: F401
 
+from Bio.Data.IUPACData import protein_letters
+from Bio.SeqUtils import molecular_weight
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -70,8 +72,23 @@ def simulated_annealing(
         return ProteinAnalysis(seq).molecular_weight()
 
     # Precompute MWs
+    # mw_dict = {
+    #     gene: calculate_molecular_weight(seq)
+    #     for gene, seq in gene_sequences_dict.items() if seq
+    # }
+    
+    def safe_mw(seq: str) -> float:
+        # keep only standard amino acids
+        cleaned = "".join([aa for aa in seq if aa in protein_letters])
+        if not cleaned:
+            cleaned = "A"  # fallback to alanine
+        try:
+            return molecular_weight(cleaned, seq_type="protein")
+        except Exception:
+            return 1e5  # large default if something still weird
+
     mw_dict = {
-        gene: calculate_molecular_weight(seq)
+        gene: safe_mw(seq)
         for gene, seq in gene_sequences_dict.items() if seq
     }
 

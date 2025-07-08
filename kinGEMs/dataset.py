@@ -30,6 +30,7 @@ from .config import (
     CHEBI_INCHI,
     METANETX_COMPOUNDS,
     METANETX_XREF,
+    REST_DATASETS,
     SEED_COMPOUNDS,
     TAXONOMY_IDS,
     BiGG_MAPPING,
@@ -520,119 +521,163 @@ def clean_metabolite_names(name):
     
     return name
 
-def retrieve_sequences(model, organism, output_path=None):
+# Helper: map a GI number to a UniProt KB accession via the REST idmapping service
+def map_gi_to_uniprot(gi):
+    try:
+        payload = {'from':'P_GI','to':'UniProtKB','ids':gi}
+        r = requests.post('https://rest.uniprot.org/idmapping/run', data=payload)
+        job = r.json().get('jobId')
+        # poll status
+        status = None
+        while status != 'FINISHED':
+            status = requests.get(f'https://rest.uniprot.org/idmapping/status/{job}') \
+                             .json().get('jobStatus')
+        res = requests.get(f'https://rest.uniprot.org/idmapping/uniprotkb/results/{job}')
+        hits = res.json().get('results', [])
+        return hits[0]['to'] if hits else None
+    except Exception as e:
+        logging.warning(f"GI→UniProt mapping failed for {gi}: {e}")
+        return None
+
+# Main function
+def retrieve_sequences(model,
+                       organism=None,
+                       metadata_dir=None,
+                       output_path=None,
+                       use_taxonomy=True):
     """
-    Retrieve protein sequences for genes in a model using UniProt web service.
-    
-    Parameters
-    ----------
-    model : cobra.Model or str
-        COBRA model object or path to model file
-    organism : str
-        Organism name (e.g., 'E coli', 'Yeast')
-    output_path : str, optional
-        Path to save sequence data
-        
-    Returns
-    -------
-    pandas.DataFrame
-        DataFrame with gene IDs and sequences
+    Retrieve protein sequences for genes in a model, choosing the correct
+    database based on qseqid prefix:
+      - UniRef clusters (UniRef50_/UniRef90_/...) via UniRef endpoint
+      - Swiss-Prot (sp|) and TrEMBL (tr|) via UniProtKB with reviewed filter
+      - TC-DB (gnl|TC-DB|...) via TCDB FASTA endpoint
+      - GenBank GI (gi|) via idmapping → UniProtKB
+      - fallback to gene_exact search in UniProtKB
     """
-    # Load model if string
+    # load model
     if isinstance(model, str):
         model = load_model(model)
-    
-    # Get taxonomy ID
-    if organism in TAXONOMY_IDS:
+
+    # resolve taxonomy if desired
+    taxon_ID = None
+    if use_taxonomy:
+        if organism not in TAXONOMY_IDS:
+            raise ValueError(f"Unknown organism '{organism}'")
         taxon_ID = TAXONOMY_IDS[organism]
-    else:
-        raise ValueError(f"Unknown organism '{organism}'. Available options: {list(TAXONOMY_IDS.keys())}")
-    
-    # Helper functions
-    def extract_genes(gpr_rules):
-        """Extract individual genes from a GPR rule."""
-        genes = []
-        for rule in gpr_rules.split(' and '):
-            sub_genes = rule.split(' or ')
-            for gene in sub_genes:
-                gene = gene.replace('(', '').replace(')', '')
-                genes.append(gene)
-        return genes
-    
-    def get_UniProt_sequence(gene):
-        """
-        Query UniProt for gene sequence.
-        
-        Parameters
-        ----------
-        gene : str
-            Gene name to query
-        
-        Returns
-        -------
-        str or None
-            Protein sequence if found, None otherwise
-        """
-        if not gene:
-            return None
-        
-        try:
-            query = f"gene_exact:({gene}) AND taxonomy_id:({taxon_ID})"
-            result = service.search(query, frmt="fasta")
-            
-            # Validate result
-            if not result:
-                logging.warning(f"No sequence found for gene {gene}")
-                return None
-            
-            # Extract sequence from FASTA format
-            sequence = result.split("\n", 1)[-1]
-            sequence = sequence.replace("\n", "").strip()
-            
-            # Additional validation
-            if not sequence:
-                logging.warning(f"Empty sequence retrieved for gene {gene}")
-                return None
-            
-            return sequence
-        
-        except urllib.error.URLError as url_err:
-            # Network-related errors
-            logging.warning(f"Network error retrieving sequence for {gene}: {url_err}")
-            return None
-        
-        except AttributeError as attr_err:
-            # Potential issues with service or method
-            logging.error(f"Attribute error for gene {gene}: {attr_err}", exc_info=True)
-            return None
-        
-        except Exception as e:
-            # Catch any other unexpected errors
-            logging.error(f"Unexpected error retrieving sequence for {gene}: {e}", exc_info=True)
-            return None
-    
-    # Create dataframe with all genes
-    gene_data = []
-    for gene in model.genes:
-        gene_data.append({
-            'Single_gene': gene.id,
-            'Name': gene.name
-        })
-    
-    df_genes = pd.DataFrame(gene_data)
-    
-    # Initialize UniProt service
-    service = UniProt()
-    
-    # Query sequences for each gene
-    df_genes['Sequence'] = df_genes['Single_gene'].apply(get_UniProt_sequence)
-    
-    # Save if output path provided
+
+    # build gene->qseqid map
+    qseqid_map = {}
+    if metadata_dir:
+        if os.path.isfile(metadata_dir):
+            dfm = pd.read_csv(metadata_dir)
+            if {'gene','qseqid'}.issubset(dfm.columns):
+                dfm['gene'] = dfm['gene'].astype(str).str.replace(':','_')
+                qseqid_map = dict(zip(dfm['gene'], dfm['qseqid']))
+        elif os.path.isdir(metadata_dir):
+            for fn in os.listdir(metadata_dir):
+                if fn.endswith('.csv'):
+                    dfm = pd.read_csv(os.path.join(metadata_dir,fn))
+                    if {'gene','qseqid'}.issubset(dfm.columns):
+                        dfm['gene'] = dfm['gene'].astype(str).str.replace(':','_')
+                        qseqid_map = dict(zip(dfm['gene'], dfm['qseqid']))
+                        break
+        else:
+            raise ValueError(f"metadata_dir {metadata_dir} invalid")
+
+    def fetch_uniref(cluster_id):
+        url = f"https://rest.uniprot.org/uniref/{cluster_id}.fasta"
+        r = requests.get(url, timeout=10)
+        return r.text if r.status_code==200 else None
+
+    def fetch_tcdb(tc_id):
+        url = f"http://www.tcdb.org/cgi-bin/search-fasta?tc={tc_id}"
+        r = requests.get(url, timeout=10)
+        return r.text if r.status_code==200 and r.text.startswith('>') else None
+
+    def fetch_uniprotkb(accession, reviewed=None):
+        term = f"accession:({accession})"
+        if reviewed is True:
+            term += " AND reviewed:true"
+        elif reviewed is False:
+            term += " AND reviewed:false"
+        if use_taxonomy and taxon_ID:
+            term += f" AND taxonomy_id:({taxon_ID})"
+        params = {'query': term, 'format': 'fasta'}
+        r = requests.get('https://rest.uniprot.org/uniprotkb/search', params=params, timeout=10)
+        return r.text if r.status_code==200 and r.text else None
+
+    def fetch_gene_exact(gene):
+        term = f"gene_exact:({gene})"
+        if use_taxonomy and taxon_ID:
+            term += f" AND taxonomy_id:({taxon_ID})"
+        params = {'query': term, 'format': 'fasta'}
+        r = requests.get('https://rest.uniprot.org/uniprotkb/search', params=params, timeout=10)
+        return r.text if r.status_code==200 and r.text else None
+
+    def get_sequence(gene_id, raw_q):
+        seq = None
+        # UniRef cluster
+        if isinstance(raw_q, str) and raw_q.startswith('UniRef'):
+            # use full cluster ID (e.g. UniRef90_A8AFT6)
+            print("UniProt, raw_q", raw_q)
+            fasta = fetch_uniref(raw_q)
+            if fasta:
+                seq = fasta.split('\n', 1)[1].replace('\n', '').strip()
+            else:
+                logging.warning(f"UniRef miss for {gene_id} ({raw_q})")
+        # Swiss-Prot or TrEMBL
+        elif isinstance(raw_q, str) and raw_q.startswith(('sp|','tr|')):
+            acc = raw_q.split('|')[1]
+            reviewed = raw_q.startswith('sp|')
+            print("SP, TR: acc, reviewed", acc, reviewed)
+            fasta = fetch_uniprotkb(acc, reviewed)
+            if fasta:
+                seq = fasta.split('\n',1)[1].replace('\n','').strip()
+            else:
+                logging.warning(f"UniProtKB miss for {gene_id} ({raw_q})")
+        # TC-DB
+        elif isinstance(raw_q, str) and raw_q.startswith('gnl|'):
+            tc = raw_q.split('|')[2]
+            print("TCDB: tc", tc)
+            fasta = fetch_tcdb(tc)
+            if fasta:
+                seq = fasta.split('\n',1)[1].replace('\n','').strip()
+            else:
+                logging.warning(f"TCDB miss for {gene_id} ({raw_q})")
+        # GI number
+        elif isinstance(raw_q, str) and raw_q.startswith('gi|'):
+            gi = raw_q.split('|')[3]
+            print("GI: gi", gi)
+            up = map_gi_to_uniprot(gi)
+            if up:
+                fasta = fetch_uniprotkb(up)
+                if fasta:
+                    seq = fasta.split('\n',1)[1].replace('\n','').strip()
+            if not seq:
+                logging.warning(f"GI→UniProt miss for {gene_id} ({gi})")
+        # fallback: gene exact search
+        if seq is None:
+            fasta = fetch_gene_exact(gene_id)
+            if fasta:
+                seq = fasta.split('\n',1)[1].replace('\n','').strip()
+            else:
+                logging.warning(f"Gene_exact miss for {gene_id}")
+        return seq
+
+    # build DataFrame
+    rows = []
+    for g in model.genes:
+        rows.append({'Single_gene':g.id, 'Name':g.name, 'qseqid':qseqid_map.get(g.id)})
+    df = pd.DataFrame(rows)
+    df['Sequence'] = df.apply(lambda r: get_sequence(r['Single_gene'], r['qseqid']), axis=1)
+
     if output_path:
-        ensure_dir_exists(os.path.dirname(output_path))
-        df_genes.to_csv(output_path, index=False)
-    
-    return df_genes
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        df.to_csv(output_path, index=False)
+    return df
+
+
+
 
 def prepare_model_data(model_path, substrates_output=None, sequences_output=None, 
                       organism='E coli', metadata_dir=None):
@@ -690,7 +735,7 @@ def prepare_model_data(model_path, substrates_output=None, sequences_output=None
     print(f"Mapped metabolites to SMILES ({substrate_df_with_smiles['SMILES'].notna().sum()} found)")
     
     # Retrieve protein sequences
-    sequences_df = retrieve_sequences(irrev_model, organism)
+    sequences_df = retrieve_sequences(irrev_model, organism, metadata_dir=metadata_dir)
     print(f"Retrieved {sequences_df['Sequence'].notna().sum()} protein sequences")
     
     # Save outputs if paths provided
