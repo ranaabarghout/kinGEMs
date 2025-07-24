@@ -24,8 +24,6 @@ import numpy as np
 import pandas as pd
 import pubchempy as pcp  # noqa: F401
 import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
 
 from .config import (
     CHEBI_COMPOUNDS,
@@ -549,153 +547,136 @@ def retrieve_sequences(model,
                        use_taxonomy=True):
     """
     Retrieve protein sequences for genes in a model, choosing the correct
-    database based on qseqid prefix, but with caching + retries.
+    database based on qseqid prefix:
+      - UniRef clusters (UniRef50_/UniRef90_/...) via UniRef endpoint
+      - Swiss-Prot (sp|) and TrEMBL (tr|) via UniProtKB with reviewed filter
+      - TC-DB (gnl|TC-DB|...) via TCDB FASTA endpoint
+      - GenBank GI (gi|) via idmapping → UniProtKB
+      - fallback to gene_exact search in UniProtKB
     """
-    # 1) Load model if needed
+    # load model
     if isinstance(model, str):
         model = load_model(model)
 
-    # 2) Taxonomy filter
+    # resolve taxonomy if desired
     taxon_ID = None
     if use_taxonomy:
         if organism not in TAXONOMY_IDS:
             raise ValueError(f"Unknown organism '{organism}'")
         taxon_ID = TAXONOMY_IDS[organism]
 
-    # 3) Build gene → raw_q map from metadata_dir
+    # build gene->qseqid map
     qseqid_map = {}
     if metadata_dir:
-        # handle file or directory of CSVs
-        paths = [metadata_dir] if os.path.isfile(metadata_dir) else [
-            os.path.join(metadata_dir, fn)
-            for fn in os.listdir(metadata_dir)
-            if fn.endswith('.csv')
-        ]
-        for path in paths:
-            try:
-                dfm = pd.read_csv(path)
-                if {'gene','qseqid'}.issubset(dfm.columns):
-                    dfm['gene'] = dfm['gene'].astype(str).str.replace(':','_')
-                    qseqid_map.update(dict(zip(dfm['gene'], dfm['qseqid'])))
-            except Exception:
-                continue
+        if os.path.isfile(metadata_dir):
+            dfm = pd.read_csv(metadata_dir)
+            if {'gene','qseqid'}.issubset(dfm.columns):
+                dfm['gene'] = dfm['gene'].astype(str).str.replace(':','_')
+                qseqid_map = dict(zip(dfm['gene'], dfm['qseqid']))
+        elif os.path.isdir(metadata_dir):
+            for fn in os.listdir(metadata_dir):
+                if fn.endswith('.csv'):
+                    dfm = pd.read_csv(os.path.join(metadata_dir,fn))
+                    if {'gene','qseqid'}.issubset(dfm.columns):
+                        dfm['gene'] = dfm['gene'].astype(str).str.replace(':','_')
+                        qseqid_map = dict(zip(dfm['gene'], dfm['qseqid']))
+                        break
+        else:
+            raise ValueError(f"metadata_dir {metadata_dir} invalid")
 
-    # 4) Prepare requests.Session with retries
-    session = requests.Session()
-    retry = Retry(
-        total=5,
-        backoff_factor=1,
-        status_forcelist=[429,500,502,503,504],
-        allowed_methods=["GET","POST"]
-    )
-    session.mount("https://", HTTPAdapter(max_retries=retry))
-    session.mount("http://",  HTTPAdapter(max_retries=retry))
+    def fetch_uniref(cluster_id):
+        url = f"https://rest.uniprot.org/uniref/{cluster_id}.fasta"
+        r = requests.get(url, timeout=10)
+        return r.text if r.status_code==200 else None
 
-    # 5) Define fetchers that use the session
-    def fetch_uniref(cid):
-        url = f"https://rest.uniprot.org/uniref/{cid}.fasta"
-        try:
-            r = session.get(url, timeout=30)
-            r.raise_for_status()
-            return r.text.split('\n',1)[1].replace('\n','').strip()
-        except Exception as e:
-            logging.warning(f"UniRef fetch failed for {cid}: {e}")
-            return None
+    def fetch_tcdb(tc_id):
+        url = f"http://www.tcdb.org/cgi-bin/search-fasta?tc={tc_id}"
+        r = requests.get(url, timeout=10)
+        return r.text if r.status_code==200 and r.text.startswith('>') else None
 
-    def fetch_uniprotkb(acc, reviewed=None):
-        term = f"accession:({acc})"
-        if reviewed is True:  term += " AND reviewed:true"
-        if reviewed is False: term += " AND reviewed:false"
-        if taxon_ID:        term += f" AND taxonomy_id:({taxon_ID})"
+    def fetch_uniprotkb(accession, reviewed=None):
+        term = f"accession:({accession})"
+        if reviewed is True:
+            term += " AND reviewed:true"
+        elif reviewed is False:
+            term += " AND reviewed:false"
+        if use_taxonomy and taxon_ID:
+            term += f" AND taxonomy_id:({taxon_ID})"
         params = {'query': term, 'format': 'fasta'}
-        try:
-            r = session.get('https://rest.uniprot.org/uniprotkb/search',
-                            params=params, timeout=30)
-            r.raise_for_status()
-            return r.text.split('\n',1)[1].replace('\n','').strip()
-        except Exception as e:
-            logging.warning(f"UniProtKB fetch failed for {acc}: {e}")
-            return None
-
-    def fetch_tcdb(tc):
-        url = f"http://www.tcdb.org/cgi-bin/search-fasta?tc={tc}"
-        try:
-            r = session.get(url, timeout=30)
-            if r.status_code==200 and r.text.startswith('>'):
-                return r.text.split('\n',1)[1].replace('\n','').strip()
-        except Exception as e:
-            logging.warning(f"TCDB fetch failed for {tc}: {e}")
-        return None
+        r = requests.get('https://rest.uniprot.org/uniprotkb/search', params=params, timeout=10)
+        return r.text if r.status_code==200 and r.text else None
 
     def fetch_gene_exact(gene):
         term = f"gene_exact:({gene})"
-        if taxon_ID: term += f" AND taxonomy_id:({taxon_ID})"
+        if use_taxonomy and taxon_ID:
+            term += f" AND taxonomy_id:({taxon_ID})"
         params = {'query': term, 'format': 'fasta'}
-        try:
-            r = session.get('https://rest.uniprot.org/uniprotkb/search',
-                            params=params, timeout=30)
-            r.raise_for_status()
-            return r.text.split('\n',1)[1].replace('\n','').strip()
-        except Exception as e:
-            logging.warning(f"gene_exact fetch failed for {gene}: {e}")
-            return None
+        r = requests.get('https://rest.uniprot.org/uniprotkb/search', params=params, timeout=10)
+        return r.text if r.status_code==200 and r.text else None
 
-    # 6) Build DataFrame of genes
-    rows = [{'Single_gene': g.id, 'Name': g.name, 'qseqid': qseqid_map.get(g.id)}
-            for g in model.genes]
+    def get_sequence(gene_id, raw_q):
+        seq = None
+        # UniRef cluster
+        if isinstance(raw_q, str) and raw_q.startswith('UniRef'):
+            # use full cluster ID (e.g. UniRef90_A8AFT6)
+            print("UniProt, raw_q", raw_q)
+            fasta = fetch_uniref(raw_q)
+            if fasta:
+                seq = fasta.split('\n', 1)[1].replace('\n', '').strip()
+            else:
+                logging.warning(f"UniRef miss for {gene_id} ({raw_q})")
+        # Swiss-Prot or TrEMBL
+        elif isinstance(raw_q, str) and raw_q.startswith(('sp|','tr|')):
+            acc = raw_q.split('|')[1]
+            reviewed = raw_q.startswith('sp|')
+            print("SP, TR: acc, reviewed", acc, reviewed)
+            fasta = fetch_uniprotkb(acc, reviewed)
+            if fasta:
+                seq = fasta.split('\n',1)[1].replace('\n','').strip()
+            else:
+                logging.warning(f"UniProtKB miss for {gene_id} ({raw_q})")
+        # TC-DB
+        elif isinstance(raw_q, str) and raw_q.startswith('gnl|'):
+            tc = raw_q.split('|')[2]
+            print("TCDB: tc", tc)
+            fasta = fetch_tcdb(tc)
+            if fasta:
+                seq = fasta.split('\n',1)[1].replace('\n','').strip()
+            else:
+                logging.warning(f"TCDB miss for {gene_id} ({raw_q})")
+        # GI number
+        elif isinstance(raw_q, str) and raw_q.startswith('gi|'):
+            gi = raw_q.split('|')[3]
+            print("GI: gi", gi)
+            up = map_gi_to_uniprot(gi)
+            if up:
+                fasta = fetch_uniprotkb(up)
+                if fasta:
+                    seq = fasta.split('\n',1)[1].replace('\n','').strip()
+            if not seq:
+                logging.warning(f"GI→UniProt miss for {gene_id} ({gi})")
+        # fallback: gene exact search
+        if seq is None:
+            fasta = fetch_gene_exact(gene_id)
+            if fasta:
+                seq = fasta.split('\n',1)[1].replace('\n','').strip()
+            else:
+                logging.warning(f"Gene_exact miss for {gene_id}")
+        return seq
+
+    # build DataFrame
+    rows = []
+    for g in model.genes:
+        rows.append({'Single_gene':g.id, 'Name':g.name, 'qseqid':qseqid_map.get(g.id)})
     df = pd.DataFrame(rows)
+    df['Sequence'] = df.apply(lambda r: get_sequence(r['Single_gene'], r['qseqid']), axis=1)
 
-    # 7) Partition unique IDs by prefix
-    uni_clusters   = {q for q in df['qseqid'].dropna() if q.startswith('UniRef')}
-    uniprot_accs   = {q.split('|')[1] for q in df['qseqid'].dropna()
-                      if q.startswith(('sp|','tr|'))}
-    uniprot_review = {q.startswith('sp|') for q in df['qseqid'].dropna()
-                      if q.startswith(('sp|','tr|'))}
-    tcdb_ids       = {q.split('|')[2] for q in df['qseqid'].dropna() if q.startswith('gnl|')}
-    gi_ids         = {q.split('|')[3] for q in df['qseqid'].dropna() if q.startswith('gi|')}
-    # fallback genes
-    fallback_genes = set(df['Single_gene'])  # if everything else misses
-
-    # 8) Fetch in bulk into maps
-    uniref_map   = {cid: fetch_uniref(cid) for cid in uni_clusters}
-    uniprot_map  = {}
-    for acc in uniprot_accs:
-        reviewed = any(q.startswith('sp|') and q.split('|')[1]==acc
-                       for q in df['qseqid'])
-        uniprot_map[acc] = fetch_uniprotkb(acc, reviewed)
-    tcdb_map     = {tc: fetch_tcdb(tc) for tc in tcdb_ids}
-    # GI → UniProt accession via your map_gi_to_uniprot, then fetch
-    gi_map       = {}
-    for gi in gi_ids:
-        up = map_gi_to_uniprot(gi)
-        gi_map[gi] = fetch_uniprotkb(up) if up else None
-    # gene_exact map
-    geneexact_map = {g: fetch_gene_exact(g) for g in fallback_genes}
-
-    # 9) Assemble final sequences column
-    def lookup_sequence(row):
-        q = row['qseqid']
-        if isinstance(q, str):
-            if q.startswith('UniRef'):      return uniref_map.get(q)
-            if q.startswith(('sp|','tr|')):
-                acc = q.split('|')[1]
-                return uniprot_map.get(acc)
-            if q.startswith('gnl|'):
-                tc = q.split('|')[2]
-                return tcdb_map.get(tc)
-            if q.startswith('gi|'):
-                gi = q.split('|')[3]
-                return gi_map.get(gi)
-        # fallback
-        return geneexact_map.get(row['Single_gene'])
-
-    df['Sequence'] = df.apply(lookup_sequence, axis=1)
-
-    # 10) Save & return
     if output_path:
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         df.to_csv(output_path, index=False)
     return df
+
+
 
 
 def prepare_model_data(model_path, substrates_output=None, sequences_output=None, 
