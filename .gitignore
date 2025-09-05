@@ -185,3 +185,4 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 kinGEMs/dataset2.py
+/code_archive
