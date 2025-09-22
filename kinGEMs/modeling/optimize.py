@@ -98,7 +98,7 @@ def run_optimization(
     enzyme_upper_bound=0.125,
     enzyme_ratio=True,
     maximization=True,
-    solver_name='gurobi',
+    solver_name='glpk',
     tee=False,
     verbose=False,
 ):
@@ -122,6 +122,10 @@ def run_optimization(
         )
     else:
         mod = model
+    # print(f"Model loaded in {time.time() - step_start:.2f}s\n")
+    
+    # FIX: Set the COBRA model's solver to match the specified solver
+    #mod.solver = solver_name
 
     # 2) Initial flux guess
     # print("Step 2: Getting initial flux guess...")

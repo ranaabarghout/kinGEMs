@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from scipy import stats
+from scipy.stats import pearsonr, spearmanr
 
 from .config import ensure_dir_exists
 
@@ -808,3 +810,212 @@ def plot_kcat_distribution_comparison(old_kcats, new_kcats, merged_kcats, output
     
     if output_dir:
         plt.savefig(os.path.join(output_dir, f"{prefix}kcat_scatter.png"), dpi=300, bbox_inches='tight')
+
+
+def plot_flux_correlation(df, method1_col, method2_col, rxn_id_col=None, 
+                         output_path=None, figsize=(14, 6), show=False):
+    """
+    Plot correlation analysis between two flux methods with scatter and residual plots.
+    
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        DataFrame containing flux data from two methods
+    method1_col : str
+        Name of the first flux column
+    method2_col : str
+        Name of the second flux column
+    rxn_id_col : str, optional
+        Name of the reaction ID column (uses first column if None)
+    output_path : str, optional
+        Path to save the figure
+    figsize : tuple, optional
+        Figure size (width, height)
+    show : bool, optional
+        Whether to display the plot
+        
+    Returns
+    -------
+    tuple
+        (matplotlib.figure.Figure, dict) - The plot figure and correlation results
+    """
+    # Set the plotting style
+    set_plotting_style()
+    
+    # Auto-detect reaction ID column if not specified
+    if rxn_id_col is None:
+        rxn_id_col = df.columns[0]
+    
+    # Clean data - convert to numeric and remove NaN values
+    df_clean = df.copy()
+    df_clean[method1_col] = pd.to_numeric(df_clean[method1_col], errors='coerce')
+    df_clean[method2_col] = pd.to_numeric(df_clean[method2_col], errors='coerce')
+    df_clean = df_clean.dropna(subset=[method1_col, method2_col])
+    
+    if len(df_clean) == 0:
+        raise ValueError("No valid data points for correlation analysis")
+    
+    # Calculate correlations
+    pearson_r, pearson_p = pearsonr(df_clean[method1_col], df_clean[method2_col])
+    spearman_r, spearman_p = spearmanr(df_clean[method1_col], df_clean[method2_col])
+    r2 = pearson_r ** 2
+    
+    # Linear regression
+    slope, intercept, _, _, _ = stats.linregress(df_clean[method1_col], df_clean[method2_col])
+    
+    # Store results
+    results = {
+        'pearson_r': pearson_r,
+        'pearson_p': pearson_p,
+        'spearman_r': spearman_r,
+        'spearman_p': spearman_p,
+        'r_squared': r2,
+        'slope': slope,
+        'intercept': intercept,
+        'n_points': len(df_clean)
+    }
+    
+    # Create figure with subplots
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize)
+    
+    # Scatter plot with regression line
+    ax1.scatter(df_clean[method1_col], df_clean[method2_col], 
+               alpha=0.7, s=60, edgecolors='black', linewidth=0.5, color='#1f77b4')
+    
+    # Add regression line
+    x_range = np.linspace(df_clean[method1_col].min(), 
+                         df_clean[method1_col].max(), 100)
+    y_pred = slope * x_range + intercept
+    ax1.plot(x_range, y_pred, 'r--', linewidth=2, label=f'y = {slope:.3f}x + {intercept:.3f}')
+    
+    # Add diagonal line (perfect correlation)
+    min_val = min(df_clean[method1_col].min(), df_clean[method2_col].min())
+    max_val = max(df_clean[method1_col].max(), df_clean[method2_col].max())
+    ax1.plot([min_val, max_val], [min_val, max_val], 'k--', alpha=0.5, label='Perfect correlation')
+    
+    ax1.set_xlabel(f'{method1_col}')
+    ax1.set_ylabel(f'{method2_col}')
+    ax1.set_title(f'Correlation Plot\nR² = {r2:.3f}, r = {pearson_r:.3f}')
+    ax1.legend()
+    ax1.grid(True, alpha=0.3)
+    
+    # Residual plot
+    residuals = df_clean[method2_col] - (slope * df_clean[method1_col] + intercept)
+    ax2.scatter(df_clean[method1_col], residuals, alpha=0.7, s=60, 
+               edgecolors='black', linewidth=0.5, color='#1f77b4')
+    ax2.axhline(y=0, color='r', linestyle='--', linewidth=2)
+    ax2.set_xlabel(f'{method1_col}')
+    ax2.set_ylabel('Residuals')
+    ax2.set_title('Residual Plot')
+    ax2.grid(True, alpha=0.3)
+    
+    # Adjust layout
+    plt.tight_layout()
+    
+    # Save if output path provided
+    if output_path:
+        ensure_dir_exists(os.path.dirname(output_path))
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    
+    # Show if requested
+    if show:
+        plt.show()
+    
+    return fig, results
+
+
+def plot_flux_differences(df, method1_col, method2_col, rxn_id_col=None, 
+                         top_n=20, difference_type='absolute', output_path=None, 
+                         figsize=(12, 8), show=False):
+    """
+    Plot reactions with the biggest and smallest flux differences between two methods.
+    
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        DataFrame containing flux data from two methods
+    method1_col : str
+        Name of the first flux column
+    method2_col : str
+        Name of the second flux column
+    rxn_id_col : str, optional
+        Name of the reaction ID column (uses first column if None)
+    top_n : int, optional
+        Number of top reactions to show
+    difference_type : str, optional
+        Type of difference to calculate ('absolute' or 'relative')
+    output_path : str, optional
+        Path to save the figure
+    figsize : tuple, optional
+        Figure size (width, height)
+    show : bool, optional
+        Whether to display the plot
+        
+    Returns
+    -------
+    tuple
+        (matplotlib.figure.Figure, dict) - The plot figure and difference data
+    """
+    # Set the plotting style
+    set_plotting_style()
+    
+    # Auto-detect reaction ID column if not specified
+    if rxn_id_col is None:
+        rxn_id_col = df.columns[0]
+    
+    # Clean data
+    df_clean = df.copy()
+    df_clean[method1_col] = pd.to_numeric(df_clean[method1_col], errors='coerce')
+    df_clean[method2_col] = pd.to_numeric(df_clean[method2_col], errors='coerce')
+    df_clean = df_clean.dropna(subset=[method1_col, method2_col])
+    
+    if len(df_clean) == 0:
+        raise ValueError("No valid data points for difference analysis")
+    
+    # Calculate differences
+    df_clean['abs_difference'] = np.abs(df_clean[method1_col] - df_clean[method2_col])
+    df_clean['relative_difference'] = df_clean['abs_difference'] / (np.abs(df_clean[method1_col]) + 1e-10)
+    
+    # Choose difference type
+    diff_col = 'abs_difference' if difference_type == 'absolute' else 'relative_difference'
+    
+    # Sort by difference
+    df_sorted = df_clean.sort_values(diff_col, ascending=False)
+    biggest_diff = df_sorted.head(top_n)
+    smallest_diff = df_sorted.tail(top_n)
+    
+    # Create figure with subplots
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize)
+    
+    # Plot biggest differences
+    bars1 = ax1.barh(biggest_diff[rxn_id_col], biggest_diff[diff_col], color='#d62728')
+    ax1.set_title(f'Top {top_n} Reactions with Biggest {difference_type.title()} Differences')
+    ax1.set_xlabel(f'{difference_type.title()} Difference')
+    ax1.grid(True, axis='x', alpha=0.3)
+    
+    # Plot smallest differences
+    bars2 = ax2.barh(smallest_diff[rxn_id_col], smallest_diff[diff_col], color='#2ca02c')
+    ax2.set_title(f'Top {top_n} Reactions with Smallest {difference_type.title()} Differences')
+    ax2.set_xlabel(f'{difference_type.title()} Difference')
+    ax2.grid(True, axis='x', alpha=0.3)
+    
+    # Adjust layout
+    plt.tight_layout()
+    
+    # Prepare return data
+    results = {
+        'biggest_differences': biggest_diff[[rxn_id_col, method1_col, method2_col, diff_col]],
+        'smallest_differences': smallest_diff[[rxn_id_col, method1_col, method2_col, diff_col]],
+        'sorted_df': df_sorted
+    }
+    
+    # Save if output path provided
+    if output_path:
+        ensure_dir_exists(os.path.dirname(output_path))
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    
+    # Show if requested
+    if show:
+        plt.show()
+    
+    return fig, results
