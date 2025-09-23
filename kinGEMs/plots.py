@@ -810,6 +810,52 @@ def plot_kcat_distribution_comparison(old_kcats, new_kcats, merged_kcats, output
     
     if output_dir:
         plt.savefig(os.path.join(output_dir, f"{prefix}kcat_scatter.png"), dpi=300, bbox_inches='tight')
+        
+
+def kingems_cobrapy_dataframe(kingems_path: str, fba_path: str) -> pd.DataFrame:
+    """
+    Compare fluxomics simulation results
+    
+    Parameters:
+        method1_path : str
+            Path to the CSV file with kinGEMs fluxes
+            Expected columns: 'Variable', 'Index', 'Value'
+        method2_path : str
+            Path to the CSV file with COBRApy FBA fluxes
+            Expected columns: 'rxn_id', 'flux'
+    
+    Returns:
+        pd.DataFrame: DataFrame with columns: 'rxn_id', 'flux', 'kinGEMs_flux'
+    """
+    
+    # Load FBA results and filter for flux variables
+    kingems_df = pd.read_csv(kingems_path)
+    
+    # Filter for flux variables only
+    flux_df = kingems_df[kingems_df['Variable'] == 'flux'].copy()
+    
+    # Rename columns to match expected output format
+    flux_df = flux_df.rename(columns={'Index': 'rxn_id', 'Value': 'kinGEMs_flux'})
+    
+    # Keep only the columns we need
+    flux_df = flux_df[['rxn_id', 'kinGEMs_flux']]
+    
+    # Load experimental fluxes
+    fba_df = pd.read_csv(fba_path)
+    
+    # Merge the dataframes on rxn_id
+    result_df = fba_df.merge(flux_df, on='rxn_id', how='right')
+    
+    # Reorder columns to match expected output
+    result_df = result_df[['rxn_id', 'flux', 'kinGEMs_flux']]
+    
+    print(f"Loaded {len(flux_df)} kinGEMs fluxes")
+    print(f"Loaded {len(fba_df)} COBRApy FBA fluxes")
+    print(f"Merged dataframe has {len(result_df)} rows")
+    print(f"Matched reactions: {result_df['flux'].notna().sum()}")
+    print(f"Unmatched reactions: {result_df['flux'].isna().sum()}")
+    
+    return result_df
 
 
 def plot_flux_correlation(df, method1_col, method2_col, rxn_id_col=None, 
