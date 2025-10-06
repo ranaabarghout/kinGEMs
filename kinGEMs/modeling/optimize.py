@@ -790,6 +790,7 @@ def run_optimization4(
         if gene_sequences_dict is None:
             gene_sequences_dict = {}
         mw = {}
+        num_default_mw = 0
         for g in genes:
             seq = gene_sequences_dict.get(g, '')
             try:
@@ -799,7 +800,10 @@ def run_optimization4(
             except Exception as e:
                 print(f"[MW ERROR] Gene: {g} | Sequence: '{seq}' | Error: {e}")
                 mw_val = 1e5
+            if mw_val == 1e5:
+                num_default_mw += 1
             mw[g] = mw_val
+        print(f"[DIAG] {num_default_mw} out of {len(genes)} genes are using the default molecular weight (likely due to invalid/missing sequences).")
         m.E_ratio = Var(domain=NonNegativeReals, bounds=(0, enzyme_upper_bound))  # noqa: F405
         m.total_enzyme = Constraint(  # noqa: F405
             expr=sum(m.E[g] * mw[g] for g in m.G) * 1e-3 <= m.E_ratio
@@ -816,6 +820,13 @@ def run_optimization4(
     # print("Solver:", solver)
     # print(f"Solver options: {dict(solver.options)}")
     solver.solve(m, tee=tee, load_solutions=True)
+    # Print total enzyme usage after optimization if possible
+    if enzyme_ratio:
+        try:
+            total_enzyme = value(sum(m.E[g] * mw[g] for g in m.G) * 1e-3)
+            print(f"[DIAG] Total enzyme usage (g/gDW): {total_enzyme:.6g} (upper bound: {enzyme_upper_bound})")
+        except Exception as e:
+            print(f"[DIAG] Could not compute total enzyme usage: {e}")
 
     # 9) Post-process
     for r in m.R:
