@@ -273,7 +273,10 @@ def run_optimization(
         constraints_skipped += 1
         skip_reasons['multiple_clauses'] += 1
         return Constraint.Skip  # noqa: F405
+    
+    print("Creating AND-GPR constraints...")
     m.kcat_and = Constraint(m.K, rule=and_rule)  # noqa: F405
+    print(f"AND constraints created: {and_constraints_created} (single: {single_enzyme_constraints}, complex: {complex_enzyme_constraints})")
 
     # 6b) OR‐GPR: pure isoenzymes (no AND within clauses)
     iso_added = 0
@@ -306,7 +309,10 @@ def run_optimization(
             return Constraint.Skip  # noqa: F405
         iso_added += 1
         return mo.v[rxn_id] <= sum(terms)
+    
+    print("Creating OR-GPR (isoenzyme) constraints...")
     m.kcat_iso = Constraint(m.R, rule=iso_rule)  # noqa: F405
+    print(f"Isoenzyme constraints created: {iso_constraints_created}")
 
     # 6c) MIXED OR+AND: Handle complex cases like (g1 and g2) or (g3 and g4) or g5
     mixed_added = 0
@@ -384,6 +390,8 @@ def run_optimization(
             return Constraint.Skip  # noqa: F405
         promis_added += 1
         return sum(usage) <= mo.E[g_id]
+    
+    print("Creating promiscuous enzyme constraints...")
     m.promiscuous = Constraint(m.G, rule=promis_rule)  # noqa: F405
 
     # Print constraint summary (only if verbose)

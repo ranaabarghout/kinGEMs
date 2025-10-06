@@ -24,3 +24,5 @@ dependencies:
 - dask
 - distributed
 - matplotlib
+- pip:
+    - escher
