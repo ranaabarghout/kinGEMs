@@ -76,6 +76,26 @@ def load_config(config_path):
     return config
 
 
+def configure_solver():
+    """
+    Configure the optimization solver.
+    Try Gurobi first, fall back to GLPK if Gurobi is not available.
+    Returns the solver name to use.
+    """
+    # Try Gurobi
+    try:
+        import gurobipy
+        # Test if we can actually use it
+        test_env = gurobipy.Env()
+        test_env.dispose()
+        print("  Using Gurobi solver")
+        return 'gurobi'
+    except Exception as e:
+        print(f"  Gurobi not available: {e}")
+        print("  Falling back to GLPK solver")
+        return 'glpk'
+
+
 def is_modelseed_model(model_name):
     """Detect if model should use ModelSEED functions based on naming pattern."""
     return '_genome_' in model_name.lower()
@@ -111,7 +131,7 @@ def clean_annotations(model):
 
 
 def simulate_enzyme_rate(base_model, processed_df, biomass_reaction, blocked_cpds, 
-                        cpd_id, enzyme_upper_bound, uptake_rate=10.0):
+                        cpd_id, enzyme_upper_bound, uptake_rate=10.0, solver_name='glpk'):
     """Simulate enzyme-constrained growth rate for a specific substrate."""
     from copy import deepcopy
     mdl = deepcopy(base_model)
@@ -143,7 +163,8 @@ def simulate_enzyme_rate(base_model, processed_df, biomass_reaction, blocked_cpd
         complexes_off=False,
         output_dir=None,
         save_results=False,
-        print_reaction_conditions=False
+        print_reaction_conditions=False,
+        solver_name=solver_name
     )
     return sol_val
 
@@ -192,7 +213,7 @@ def run_fva_analysis(model, processed_df, biomass_reaction, enzyme_upper_bound,
 
 
 def run_biolog_validation(model, processed_df, biomass_reaction, enzyme_upper_bound,
-                         biolog_config, tuning_results_dir):
+                         biolog_config, tuning_results_dir, solver_name='glpk'):
     """Run Biolog experimental validation."""
     print("\n=== Step 6: Biolog Experimental Validation ===")
     
@@ -213,7 +234,8 @@ def run_biolog_validation(model, processed_df, biomass_reaction, enzyme_upper_bo
         blocked_cpds=blocked_cpds,
         cpd_id=reference_cpd,
         enzyme_upper_bound=enzyme_upper_bound,
-        uptake_rate=uptake_rate
+        uptake_rate=uptake_rate,
+        solver_name=solver_name
     )
     print(f"  Reference enzyme-constrained growth: {ref_rate:.4f}")
     
@@ -230,7 +252,8 @@ def run_biolog_validation(model, processed_df, biomass_reaction, enzyme_upper_bo
                 blocked_cpds=blocked_cpds,
                 cpd_id=cpd,
                 enzyme_upper_bound=enzyme_upper_bound,
-                uptake_rate=uptake_rate
+                uptake_rate=uptake_rate,
+                solver_name=solver_name
             )
         except Exception as e:
             print(f"    ⚠️ Warning for {cpd}: {e}")
@@ -285,6 +308,7 @@ def main():
     enzyme_upper_bound = config.get('enzyme_upper_bound', 0.15)
     enable_fva = config.get('enable_fva', False)
     enable_biolog = config.get('enable_biolog_validation', False)
+    solver_name = config.get('solver', 'glpk')  # Default to GLPK (free solver)
     
     # Detect model type
     is_modelseed = is_modelseed_model(model_name)
@@ -319,6 +343,7 @@ def main():
     print(f"Model type: {model_type}")
     print(f"Organism: {organism}")
     print(f"Results directory: {tuning_results_dir}")
+    print(f"Solver: {solver_name}")
     if FORCE_REGENERATE:
         print("⚠️  Force regenerate mode: will regenerate all intermediate files")
     print("="*70)
@@ -434,7 +459,8 @@ def main():
         output_dir=None,
         save_results=False,
         print_reaction_conditions=True,
-        verbose=False
+        verbose=False,
+        solver_name=solver_name
     )
     print(f"  Initial biomass value: {solution_value:.4f}")
     
@@ -494,7 +520,7 @@ def main():
     if enable_biolog:
         biolog_config = config.get('biolog_validation', {})
         run_biolog_validation(model, processed_data, biomass_reaction, enzyme_upper_bound,
-                             biolog_config, tuning_results_dir)
+                             biolog_config, tuning_results_dir, solver_name)
     
     # === Step 7: Save Final Model ===
     print("\n=== Step 7: Saving final model ===")

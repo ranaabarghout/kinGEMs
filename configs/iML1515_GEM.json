@@ -3,6 +3,7 @@
   "organism": "E coli",
   "biomass_reaction": "BIOMASS_Ec_iML1515_core_75p37M",
   "enzyme_upper_bound": 0.15,
+  "solver": "glpk",
   "enable_fva": true,
   "enable_biolog_validation": false,
   "simulated_annealing": {

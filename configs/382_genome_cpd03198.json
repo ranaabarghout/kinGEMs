@@ -3,6 +3,7 @@
   "organism": "E coli",
   "biomass_reaction": null,
   "enzyme_upper_bound": 0.15,
+  "solver": "glpk",
   "enable_fva": false,
   "enable_biolog_validation": true,
   "metadata_dir": "data/Biolog experiments",

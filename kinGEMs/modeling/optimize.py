@@ -911,7 +911,8 @@ def run_optimization_with_dataframe(model, processed_df, objective_reaction,
                     enzyme_upper_bound=0.125, enzyme_ratio=True, maximization=True, 
                     multi_enzyme_off=False, isoenzymes_off=False, 
                     promiscuous_off=False, complexes_off=False,
-                    output_dir=None, save_results=True, print_reaction_conditions=True, verbose=True):
+                    output_dir=None, save_results=True, print_reaction_conditions=True, verbose=True,
+                    solver_name='glpk'):
     """
     Run enzyme-constrained flux balance analysis using a processed dataframe.
     
@@ -980,7 +981,8 @@ def run_optimization_with_dataframe(model, processed_df, objective_reaction,
         enzyme_upper_bound=enzyme_upper_bound,
         maximization=maximization,
         enzyme_ratio=True,
-        tee=verbose
+        tee=verbose,
+        solver_name=solver_name
     )
     
     # Create descriptive filename and save results if requested
