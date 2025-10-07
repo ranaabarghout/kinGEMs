@@ -239,9 +239,21 @@ To create a configuration for a new model:
 **Solution**: Ensure the XML file exists and `model_name` matches the filename (without .xml)
 
 ### No CPI-Pred Predictions
-**Error**: `FileNotFoundError: .../CPI-Pred predictions/X06A_kinGEMs_my_model_predictions.csv`
+**Error**: `FileNotFoundError: No CPI-Pred predictions file found`
 
-**Solution**: Run CPI-Pred first to generate predictions for your model
+**Solution**: The pipeline automatically searches for predictions files with flexible naming patterns:
+- `X06A_kinGEMs_{model_name}_predictions.csv`
+- `X06A_kinGEMs_ecoli_{model_base}_predictions.csv`
+- Other variations
+
+If predictions are missing, you'll see a list of available files. Ensure you have:
+1. Run CPI-Pred to generate predictions for your model
+2. Placed the predictions CSV in `data/interim/CPI-Pred predictions/`
+3. Named the file following the `X06A_kinGEMs_*_predictions.csv` pattern
+
+**Example naming patterns that work:**
+- `iML1515_GEM` → finds `X06A_kinGEMs_ecoli_iML1515_predictions.csv`
+- `382_genome_cpd03198` → finds `X06A_kinGEMs_382_genome_cpd03198_predictions.csv`
 
 ### Biomass Reaction Not Found
 **Error**: `No objective reaction found in model`

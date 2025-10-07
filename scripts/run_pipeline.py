@@ -96,6 +96,72 @@ def configure_solver():
         return 'glpk'
 
 
+def find_predictions_file(model_name, CPIPred_data_dir):
+    """
+    Find the CPI-Pred predictions file for a given model.
+    Tries multiple naming patterns to handle inconsistencies.
+    
+    Parameters
+    ----------
+    model_name : str
+        Name of the model (e.g., 'iML1515_GEM', '382_genome_cpd03198')
+    CPIPred_data_dir : str
+        Directory containing CPI-Pred predictions
+        
+    Returns
+    -------
+    str
+        Path to the predictions file
+        
+    Raises
+    ------
+    FileNotFoundError
+        If no predictions file is found
+    """
+    import glob
+    
+    # Try multiple naming patterns
+    patterns = [
+        f"X06A_kinGEMs_{model_name}_predictions.csv",  # Direct match
+        f"*{model_name}*predictions.csv",  # Fuzzy match
+        f"*{model_name.replace('_GEM', '')}*predictions.csv",  # Without _GEM suffix
+        f"*ecoli*{model_name.split('_')[0]}*predictions.csv",  # E.coli specific patterns
+    ]
+    
+    # Also try common substitutions
+    # iML1515_GEM -> ecoli_iML1515
+    if '_GEM' in model_name:
+        base_name = model_name.replace('_GEM', '')
+        patterns.append(f"*ecoli_{base_name}*predictions.csv")
+        patterns.append(f"*{base_name}*predictions.csv")
+    
+    # e_coli_core -> ecoli_core
+    if 'e_coli' in model_name:
+        ecoli_variant = model_name.replace('e_coli', 'ecoli')
+        patterns.append(f"*{ecoli_variant}*predictions.csv")
+    
+    for pattern in patterns:
+        search_path = os.path.join(CPIPred_data_dir, pattern)
+        matches = glob.glob(search_path)
+        if matches:
+            # Return the first match
+            print(f"  Found predictions file: {os.path.basename(matches[0])}")
+            return matches[0]
+    
+    # If no file found, list available files to help user
+    available_files = glob.glob(os.path.join(CPIPred_data_dir, "*.csv"))
+    if available_files:
+        print(f"\n  ⚠️  No predictions file found for '{model_name}'")
+        print(f"  Available prediction files:")
+        for f in available_files:
+            print(f"    - {os.path.basename(f)}")
+        print(f"\n  Please ensure CPI-Pred predictions exist for this model.")
+    
+    raise FileNotFoundError(
+        f"No CPI-Pred predictions file found for model '{model_name}' in {CPIPred_data_dir}"
+    )
+
+
 def is_modelseed_model(model_name):
     """Detect if model should use ModelSEED functions based on naming pattern."""
     return '_genome_' in model_name.lower()
@@ -330,7 +396,10 @@ def main():
     
     # File paths
     model_path = os.path.join(raw_data_dir, f"{model_name}.xml")
-    predictions_csv_path = os.path.join(CPIPred_data_dir, f"X06A_kinGEMs_{model_name}_predictions.csv")
+    
+    # Find predictions file with flexible naming
+    predictions_csv_path = find_predictions_file(model_name, CPIPred_data_dir)
+    
     substrates_output = os.path.join(interim_data_dir, f"{model_name}_substrates.csv")
     sequences_output = os.path.join(interim_data_dir, f"{model_name}_sequences.csv")
     merged_data_output = os.path.join(interim_data_dir, f"{model_name}_merged_data.csv")
@@ -356,7 +425,7 @@ def main():
     # === Step 1: Prepare model data ===
     print("\n=== Step 1: Preparing model data ===")
     if not FORCE_REGENERATE and os.path.exists(substrates_output) and os.path.exists(sequences_output):
-        print(f"  ✓ Found existing files, loading cached data:")
+        print("  ✓ Found existing files, loading cached data:")
         print(f"    - {substrates_output}")
         print(f"    - {sequences_output}")
         substrate_df = pd.read_csv(substrates_output)
@@ -384,14 +453,14 @@ def main():
                 sequences_output=sequences_output,
                 organism=organism
             )
-        print(f"  ✓ Generated and saved substrates and sequences")
+        print("  ✓ Generated and saved substrates and sequences")
     
     print(f"  Model: {len(model.genes)} genes, {len(model.reactions)} reactions")
     
     # === Step 2: Merge substrate and sequence data ===
     print("\n=== Step 2: Merging substrate and sequence data ===")
     if not FORCE_REGENERATE and os.path.exists(merged_data_output):
-        print(f"  ✓ Found existing file, loading cached data:")
+        print("  ✓ Found existing file, loading cached data:")
         print(f"    - {merged_data_output}")
         merged_data = pd.read_csv(merged_data_output)
     else:
@@ -405,7 +474,7 @@ def main():
             model=model,
             output_path=merged_data_output
         )
-        print(f"  ✓ Generated and saved merged data")
+        print("  ✓ Generated and saved merged data")
     
     print(f"  Merged data: {len(merged_data)} rows")
     
@@ -425,7 +494,7 @@ def main():
             predictions_csv_path=predictions_csv_path,
             output_path=processed_data_output
         )
-        print(f"  ✓ Generated and saved processed data")
+        print("  ✓ Generated and saved processed data")
     
     print(f"  Processed data: {len(processed_data)} rows")
     
