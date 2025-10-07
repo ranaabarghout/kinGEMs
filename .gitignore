@@ -187,8 +187,10 @@ cython_debug/
 kinGEMs/dataset2.py
 /code_archive
 
-
 # Results
 notebooks/results/
 results/tuning_results/
 results/validation/
+
+# uv
+uv.lock
