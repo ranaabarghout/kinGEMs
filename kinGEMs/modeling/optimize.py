@@ -298,7 +298,10 @@ def run_optimization(
     print(f"[DEBUG] OR/ISO constraints: {iso_added} added, {iso_skipped} skipped")
 
     # 6c) Promiscuous enzymes
+    promis_added = 0
+    promis_skipped = 0
     def promis_rule(mo, g_id):
+        nonlocal promis_added, promis_skipped
         usage = []
         for r_id, clauses in dnf_clauses.items():
             for clause in clauses:
@@ -307,9 +310,23 @@ def run_optimization(
                 for k in kcat_dict.get((r_id, g_id), []):
                     usage.append(mo.v[r_id] / k)
         if not usage:
+            promis_skipped += 1
             return Constraint.Skip  # noqa: F405
+        promis_added += 1
         return sum(usage) <= mo.E[g_id]
     m.promiscuous = Constraint(m.G, rule=promis_rule)  # noqa: F405
+    print(f"[DEBUG] Promiscuous enzyme constraints: {promis_added} added, {promis_skipped} skipped")
+    
+    # Print constraint summary
+    print(f"\n{'='*60}")
+    print(f"ENZYME CONSTRAINT SUMMARY")
+    print(f"{'='*60}")
+    print(f"AND constraints (single/complex):  {constraints_added:4d} added, {constraints_skipped:4d} skipped")
+    print(f"OR/ISO constraints (isoenzymes):   {iso_added:4d} added, {iso_skipped:4d} skipped")
+    print(f"Promiscuous enzyme constraints:    {promis_added:4d} added, {promis_skipped:4d} skipped")
+    print(f"{'='*60}")
+    print(f"Total enzyme constraints:          {constraints_added + iso_added + promis_added:4d}")
+    print(f"{'='*60}\n")
 
     # 7) Total enzyme pool / ratio
     # print("Step 7: Adding enzyme pool constraints...")
