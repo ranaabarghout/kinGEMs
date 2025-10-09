@@ -5,7 +5,7 @@
   "enzyme_upper_bound": 0.15,
   "solver": "glpk",
   "enable_fva": false,
-  "enable_biolog_validation": true,
+  "enable_biolog_validation": false,
   "metadata_dir": "data/Biolog experiments",
   "simulated_annealing": {
     "temperature": 1.0,

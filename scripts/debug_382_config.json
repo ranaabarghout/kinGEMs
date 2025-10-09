@@ -1,0 +1,8 @@
+{
+  "model_name": "382_genome_cpd03198",
+  "model_path": "/project/def-mahadeva/ranaab/kinGEMs_v2/data/raw/382_genome_cpd03198.xml",
+  "df_path": "/project/def-mahadeva/ranaab/kinGEMs_v2/data/processed/382_genome_cpd03198/382_genome_cpd03198_processed_data.csv",
+  "enzyme_upper_bound": 0.15,
+  "organism": "E. coli",
+  "description": "Debug configuration for 382_genome_cpd03198 ModelSEED model constraint analysis"
+}

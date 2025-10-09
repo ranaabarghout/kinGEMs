@@ -533,6 +533,55 @@ def main():
     )
     print(f"  Initial biomass value: {solution_value:.4f}")
     
+    # Add enzyme constraints to processed_data for simulated annealing
+    print("  Adding enzyme constraints to processed data for simulated annealing...")
+    if 'kcat_mean' in processed_data.columns:
+        processed_data['kcat'] = processed_data['kcat_mean']
+    elif 'kcat_y' in processed_data.columns:
+        processed_data['kcat'] = processed_data['kcat_y']
+    
+    # Calculate molecular weights and enzyme constraints
+    def calculate_molecular_weight(sequence):
+        """Calculate molecular weight of a protein sequence."""
+        valid_sequence = ''.join(c for c in str(sequence).upper() if c in 'ACDEFGHIKLMNPQRSTVWY')
+        return len(valid_sequence) * 110.0  # Da
+    
+    processed_data['MW'] = processed_data['SEQ'].apply(
+        lambda seq: calculate_molecular_weight(seq) if pd.notna(seq) else np.nan
+    )
+    processed_data['kcat_MW'] = processed_data['kcat'] / (processed_data['MW'] / 1000)  # kDa
+    
+    # Calculate enzyme requirements more tightly
+    # Use a scaling factor to make constraints more restrictive
+    scaling_factor = 1e-6  # Adjust this to make constraints tighter
+    processed_data['enzyme_requirement'] = scaling_factor / processed_data['kcat_MW']
+    
+    # Group by reaction to get total enzyme constraints per reaction
+    reaction_constraints = processed_data.groupby('Reactions').agg({
+        'enzyme_requirement': 'sum'  # Sum all enzyme requirements for the reaction
+    }).reset_index()
+    
+    processed_data = processed_data.merge(reaction_constraints, on='Reactions', suffixes=('', '_total'))
+    processed_data['enzyme_constraint'] = processed_data['enzyme_requirement_total']
+    processed_data['reaction_id'] = processed_data['Reactions']
+    
+    # Clean up
+    processed_data = processed_data.drop(['enzyme_requirement_total'], axis=1)
+    
+    constraint_count = processed_data['enzyme_constraint'].notna().sum()
+    constraint_stats = processed_data['enzyme_constraint'].describe()
+    print(f"  Added enzyme constraints to {constraint_count} entries")
+    print(f"  Constraint range: {constraint_stats['min']:.2e} to {constraint_stats['max']:.2e}")
+    print(f"  Constraint median: {constraint_stats['50%']:.2e}")
+    
+    # Check if constraints are reasonable (should be much smaller than 1000)
+    tight_constraints = (processed_data['enzyme_constraint'] < 100).sum()
+    print(f"  Tight constraints (< 100): {tight_constraints}/{constraint_count}")
+    
+    if tight_constraints == 0:
+        print("  ⚠️ WARNING: All constraints are very loose (> 100). Enzyme constraints may not be effective.")
+        print("  Consider adjusting the scaling_factor or checking kcat values.")
+    
     # === Step 5: Simulated Annealing ===
     print("\n=== Step 5: Running simulated annealing ===")
     sa_config = config.get('simulated_annealing', {})

@@ -1,0 +1,7 @@
+{
+  "model_name": "Example ModelSEED Model",
+  "model_path": "/path/to/your/model.xml",
+  "df_path": "/path/to/your/processed_dataframe.csv",
+  "enzyme_upper_bound": 0.15,
+  "description": "Configuration for debugging ModelSEED enzyme constraints"
+}
