@@ -191,6 +191,7 @@ kinGEMs/dataset2.py
 notebooks/results/
 results/tuning_results/
 results/validation/
+notebooks/data/escher/
 
 # uv
 uv.lock

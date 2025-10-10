@@ -843,17 +843,20 @@ def kingems_cobrapy_dataframe(kingems_path: str, fba_path: str) -> pd.DataFrame:
     # Load experimental fluxes
     fba_df = pd.read_csv(fba_path)
     
+    # Rename columns to match expected output format
+    fba_df = fba_df.rename(columns={'Index': 'rxn_id', 'Value': 'cobrapy_flux'})
+    
     # Merge the dataframes on rxn_id
     result_df = fba_df.merge(flux_df, on='rxn_id', how='right')
     
     # Reorder columns to match expected output
-    result_df = result_df[['rxn_id', 'flux', 'kinGEMs_flux']]
+    result_df = result_df[['rxn_id', 'cobrapy_flux', 'kinGEMs_flux']]
     
     print(f"Loaded {len(flux_df)} kinGEMs fluxes")
     print(f"Loaded {len(fba_df)} COBRApy FBA fluxes")
     print(f"Merged dataframe has {len(result_df)} rows")
-    print(f"Matched reactions: {result_df['flux'].notna().sum()}")
-    print(f"Unmatched reactions: {result_df['flux'].isna().sum()}")
+    print(f"Matched reactions: {result_df['cobrapy_flux'].notna().sum()}")
+    print(f"Unmatched reactions: {result_df['cobrapy_flux'].isna().sum()}")
     
     return result_df
 
