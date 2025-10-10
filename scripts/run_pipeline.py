@@ -69,6 +69,26 @@ except ImportError:
     pass
 
 
+class Tee:
+    """
+    Class to duplicate stdout/stderr to both console and a log file.
+    """
+    def __init__(self, file_path, mode='w'):
+        self.file = open(file_path, mode)
+        self.stdout = sys.stdout if mode == 'w' else sys.stderr
+        
+    def write(self, data):
+        self.file.write(data)
+        self.stdout.write(data)
+        
+    def flush(self):
+        self.file.flush()
+        self.stdout.flush()
+        
+    def close(self):
+        self.file.close()
+
+
 def load_config(config_path):
     """Load configuration from JSON file."""
     with open(config_path, 'r') as f:
@@ -100,26 +120,26 @@ def find_predictions_file(model_name, CPIPred_data_dir):
     """
     Find the CPI-Pred predictions file for a given model.
     Tries multiple naming patterns to handle inconsistencies.
-    
+
     Parameters
     ----------
     model_name : str
         Name of the model (e.g., 'iML1515_GEM', '382_genome_cpd03198')
     CPIPred_data_dir : str
         Directory containing CPI-Pred predictions
-        
+
     Returns
     -------
     str
         Path to the predictions file
-        
+
     Raises
     ------
     FileNotFoundError
         If no predictions file is found
     """
     import glob
-    
+
     # Try multiple naming patterns
     patterns = [
         f"X06A_kinGEMs_{model_name}_predictions.csv",  # Direct match
@@ -127,19 +147,19 @@ def find_predictions_file(model_name, CPIPred_data_dir):
         f"*{model_name.replace('_GEM', '')}*predictions.csv",  # Without _GEM suffix
         f"*ecoli*{model_name.split('_')[0]}*predictions.csv",  # E.coli specific patterns
     ]
-    
+
     # Also try common substitutions
     # iML1515_GEM -> ecoli_iML1515
     if '_GEM' in model_name:
         base_name = model_name.replace('_GEM', '')
         patterns.append(f"*ecoli_{base_name}*predictions.csv")
         patterns.append(f"*{base_name}*predictions.csv")
-    
+
     # e_coli_core -> ecoli_core
     if 'e_coli' in model_name:
         ecoli_variant = model_name.replace('e_coli', 'ecoli')
         patterns.append(f"*{ecoli_variant}*predictions.csv")
-    
+
     for pattern in patterns:
         search_path = os.path.join(CPIPred_data_dir, pattern)
         matches = glob.glob(search_path)
@@ -147,7 +167,7 @@ def find_predictions_file(model_name, CPIPred_data_dir):
             # Return the first match
             print(f"  Found predictions file: {os.path.basename(matches[0])}")
             return matches[0]
-    
+
     # If no file found, list available files to help user
     available_files = glob.glob(os.path.join(CPIPred_data_dir, "*.csv"))
     if available_files:
@@ -156,7 +176,7 @@ def find_predictions_file(model_name, CPIPred_data_dir):
         for f in available_files:
             print(f"    - {os.path.basename(f)}")
         print(f"\n  Please ensure CPI-Pred predictions exist for this model.")
-    
+
     raise FileNotFoundError(
         f"No CPI-Pred predictions file found for model '{model_name}' in {CPIPred_data_dir}"
     )
@@ -169,8 +189,8 @@ def is_modelseed_model(model_name):
 
 def determine_biomass_reaction(model):
     """Automatically determine the biomass reaction from model objective."""
-    obj_rxns = {rxn.id: rxn.objective_coefficient 
-                for rxn in model.reactions 
+    obj_rxns = {rxn.id: rxn.objective_coefficient
+                for rxn in model.reactions
                 if rxn.objective_coefficient != 0}
     if not obj_rxns:
         raise ValueError("No objective reaction found in model")
@@ -196,12 +216,12 @@ def clean_annotations(model):
     return model
 
 
-def simulate_enzyme_rate(base_model, processed_df, biomass_reaction, blocked_cpds, 
+def simulate_enzyme_rate(base_model, processed_df, biomass_reaction, blocked_cpds,
                         cpd_id, enzyme_upper_bound, uptake_rate=10.0, solver_name='glpk'):
     """Simulate enzyme-constrained growth rate for a specific substrate."""
     from copy import deepcopy
     mdl = deepcopy(base_model)
-    
+
     # Block all other compounds
     for cpd in blocked_cpds:
         if cpd.lower() == cpd_id.lower():
@@ -209,13 +229,13 @@ def simulate_enzyme_rate(base_model, processed_df, biomass_reaction, blocked_cpd
         ex_name = f"EX_{cpd}_e0"
         if ex_name in mdl.reactions:
             mdl.reactions.get_by_id(ex_name).lower_bound = 0.0
-    
+
     # Set target compound uptake
     target_ex = f"EX_{cpd_id}_e0"
     if target_ex not in mdl.reactions:
         raise KeyError(f"Exchange {target_ex} not found")
     mdl.reactions.get_by_id(target_ex).lower_bound = -abs(uptake_rate)
-    
+
     sol_val, _, _, _ = run_optimization_with_dataframe(
         model=mdl,
         processed_df=processed_df,
@@ -235,15 +255,15 @@ def simulate_enzyme_rate(base_model, processed_df, biomass_reaction, blocked_cpd
     return sol_val
 
 
-def run_fva_analysis(model, processed_df, biomass_reaction, enzyme_upper_bound, 
+def run_fva_analysis(model, processed_df, biomass_reaction, enzyme_upper_bound,
                      tuning_results_dir, organism_strain_GEMname):
     """Run flux variability analysis and generate plots."""
     print("\n=== Step 6: Running Flux Variability Analysis ===")
-    
+
     fva_results_path = os.path.join(tuning_results_dir, f"{organism_strain_GEMname}_fva_results.csv")
     fva_plot_path = os.path.join(tuning_results_dir, f"{organism_strain_GEMname}_fva_flux_range_plot.png")
     fva_cumulative_path = os.path.join(tuning_results_dir, f"{organism_strain_GEMname}_fva_cumulative_plot.png")
-    
+
     # Run kinGEMs FVA
     fva_results, _, _ = flux_variability_analysis(
         model=model,
@@ -253,7 +273,7 @@ def run_fva_analysis(model, processed_df, biomass_reaction, enzyme_upper_bound,
         enzyme_upper_bound=enzyme_upper_bound
     )
     print(f"  kinGEMs FVA completed: {len(fva_results)} reactions analyzed")
-    
+
     # Run COBRApy FVA for comparison
     print("  Running COBRApy FVA for comparison...")
     cobra_fva_results = cobra_fva(model, fraction_of_optimum=0.9)
@@ -264,12 +284,12 @@ def run_fva_analysis(model, processed_df, biomass_reaction, enzyme_upper_bound,
         "Solution Biomass": [model.slim_optimize()] * len(cobra_fva_results)
     })
     print(f"  COBRApy FVA completed: {len(cobra_fva_df)} reactions analyzed")
-    
+
     # Generate plots
     print("  Generating FVA plots...")
     plot_flux_variability(fva_results, output_file=fva_plot_path)
     print(f"  Saved FVA flux range plot to: {fva_plot_path}")
-    
+
     plot_cumulative_fvi_distribution(
         dfs=[fva_results, cobra_fva_df],
         labels=["kinGEMs FVA", "COBRApy FVA"],
@@ -282,15 +302,15 @@ def run_biolog_validation(model, processed_df, biomass_reaction, enzyme_upper_bo
                          biolog_config, tuning_results_dir, solver_name='glpk'):
     """Run Biolog experimental validation."""
     print("\n=== Step 6: Biolog Experimental Validation ===")
-    
+
     biolog_path = biolog_config['experiments_file']
     sheet_name = biolog_config.get('sheet_name', 'Ecoli')
     blocked_cpds = biolog_config.get('blocked_compounds', [])
     reference_cpd = biolog_config.get('reference_compound', 'cpd00027')
     uptake_rate = biolog_config.get('uptake_rate', 100.0)
-    
+
     exp_df = pd.read_excel(biolog_path, sheet_name=sheet_name, engine="openpyxl")
-    
+
     # Calculate reference (glucose) rate
     print(f"  Calculating reference growth rate for {reference_cpd}...")
     ref_rate = simulate_enzyme_rate(
@@ -304,7 +324,7 @@ def run_biolog_validation(model, processed_df, biomass_reaction, enzyme_upper_bo
         solver_name=solver_name
     )
     print(f"  Reference enzyme-constrained growth: {ref_rate:.4f}")
-    
+
     # Test all experimental substrates
     results = []
     for row in exp_df.itertuples():
@@ -324,7 +344,7 @@ def run_biolog_validation(model, processed_df, biomass_reaction, enzyme_upper_bo
         except Exception as e:
             print(f"    ⚠️ Warning for {cpd}: {e}")
             rate = None
-        
+
         norm = rate / ref_rate if rate is not None and ref_rate > 0 else None
         results.append({
             'cpd': cpd,
@@ -332,15 +352,15 @@ def run_biolog_validation(model, processed_df, biomass_reaction, enzyme_upper_bo
             'norm_rate': norm,
             'exp_value': row.exp_value
         })
-    
+
     # Merge and save results
     result_df = pd.DataFrame(results)
     comp_df = exp_df.merge(result_df, on='cpd')
-    
+
     comparison_path = os.path.join(tuning_results_dir, "biolog_comparison.csv")
     comp_df.to_csv(comparison_path, index=False)
     print(f"  Saved comparison to: {comparison_path}")
-    
+
     # Generate plot
     plt.figure(figsize=(6, 4))
     plt.scatter(comp_df['exp_value'], comp_df['norm_rate'], s=50)
@@ -360,14 +380,14 @@ def main():
     if len(sys.argv) < 2:
         print(__doc__)
         sys.exit(1)
-    
+
     config_path = sys.argv[1]
     FORCE_REGENERATE = '--force' in sys.argv or '-f' in sys.argv
-    
+
     # Load configuration
     print(f"Loading configuration from: {config_path}")
     config = load_config(config_path)
-    
+
     # Extract configuration
     model_name = config['model_name']
     organism = config.get('organism', 'Unknown')
@@ -375,14 +395,14 @@ def main():
     enable_fva = config.get('enable_fva', False)
     enable_biolog = config.get('enable_biolog_validation', False)
     solver_name = config.get('solver', 'glpk')  # Default to GLPK (free solver)
-    
+
     # Detect model type
     is_modelseed = is_modelseed_model(model_name)
     model_type = "ModelSEED" if is_modelseed else "Standard"
-    
+
     # Generate run ID
     run_id = f"{model_name}_{datetime.today().strftime('%Y%m%d')}_{random.randint(1000, 9999)}"
-    
+
     # Setup paths
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     data_dir = os.path.join(project_root, "data")
@@ -394,34 +414,44 @@ def main():
     tuning_results_dir = os.path.join(results_dir, "tuning_results", run_id)
     os.makedirs(tuning_results_dir, exist_ok=True)
     
-    # File paths
-    model_path = os.path.join(raw_data_dir, f"{model_name}.xml")
+    # Set up output logging to capture all console output
+    log_file_path = os.path.join(results_dir, f"{run_id}.out")
+    tee_stdout = Tee(log_file_path, mode='w')
+    original_stdout = sys.stdout
+    original_stderr = sys.stderr
+    sys.stdout = tee_stdout
+    sys.stderr = tee_stdout
     
-    # Find predictions file with flexible naming
-    predictions_csv_path = find_predictions_file(model_name, CPIPred_data_dir)
-    
-    substrates_output = os.path.join(interim_data_dir, f"{model_name}_substrates.csv")
-    sequences_output = os.path.join(interim_data_dir, f"{model_name}_sequences.csv")
-    merged_data_output = os.path.join(interim_data_dir, f"{model_name}_merged_data.csv")
-    processed_data_output = os.path.join(processed_data_dir, f"{model_name}_processed_data.csv")
-    
-    print("\n" + "="*70)
-    print(f"=== kinGEMs Pipeline for {model_name} ===")
-    print("="*70)
-    print(f"Run ID: {run_id}")
-    print(f"Model type: {model_type}")
-    print(f"Organism: {organism}")
-    print(f"Results directory: {tuning_results_dir}")
-    print(f"Solver: {solver_name}")
-    if FORCE_REGENERATE:
-        print("⚠️  Force regenerate mode: will regenerate all intermediate files")
-    print("="*70)
-    
+    try:
+        # File paths
+        model_path = os.path.join(raw_data_dir, f"{model_name}.xml")
+
+        # Find predictions file with flexible naming
+        predictions_csv_path = find_predictions_file(model_name, CPIPred_data_dir)
+
+        substrates_output = os.path.join(interim_data_dir, f"{model_name}_substrates.csv")
+        sequences_output = os.path.join(interim_data_dir, f"{model_name}_sequences.csv")
+        merged_data_output = os.path.join(interim_data_dir, f"{model_name}_merged_data.csv")
+        processed_data_output = os.path.join(processed_data_dir, f"{model_name}_processed_data.csv")
+
+        print("\n" + "="*70)
+        print(f"=== kinGEMs Pipeline for {model_name} ===")
+        print("="*70)
+        print(f"Run ID: {run_id}")
+        print(f"Model type: {model_type}")
+        print(f"Organism: {organism}")
+        print(f"Results directory: {tuning_results_dir}")
+        print(f"Log file: {log_file_path}")
+        print(f"Solver: {solver_name}")
+        if FORCE_REGENERATE:
+            print("⚠️  Force regenerate mode: will regenerate all intermediate files")
+        print("="*70)
+
     # Determine biomass reaction
     temp_model = cobra.io.read_sbml_model(model_path)
     biomass_reaction = config.get('biomass_reaction') or determine_biomass_reaction(temp_model)
     print(f"\nBiomass reaction: {biomass_reaction}")
-    
+
     # === Step 1: Prepare model data ===
     print("\n=== Step 1: Preparing model data ===")
     if not FORCE_REGENERATE and os.path.exists(substrates_output) and os.path.exists(sequences_output):
@@ -436,7 +466,7 @@ def main():
             print("  ⟳ Regenerating model data (--force flag)")
         else:
             print("  No cached files found, preparing model data...")
-        
+
         if is_modelseed:
             metadata_dir = config.get('metadata_dir', os.path.join(data_dir, "Biolog experiments"))
             model, substrate_df, sequences_df = prepare_modelseed_model_data(
@@ -454,9 +484,9 @@ def main():
                 organism=organism
             )
         print("  ✓ Generated and saved substrates and sequences")
-    
+
     print(f"  Model: {len(model.genes)} genes, {len(model.reactions)} reactions")
-    
+
     # === Step 2: Merge substrate and sequence data ===
     print("\n=== Step 2: Merging substrate and sequence data ===")
     if not FORCE_REGENERATE and os.path.exists(merged_data_output):
@@ -475,9 +505,9 @@ def main():
             output_path=merged_data_output
         )
         print("  ✓ Generated and saved merged data")
-    
+
     print(f"  Merged data: {len(merged_data)} rows")
-    
+
     # === Step 3: Process kcat predictions ===
     print("\n=== Step 3: Processing CPI-Pred kcat values & annotating model ===")
     if not FORCE_REGENERATE and os.path.exists(processed_data_output):
@@ -495,23 +525,23 @@ def main():
             output_path=processed_data_output
         )
         print("  ✓ Generated and saved processed data")
-    
+
     print(f"  Processed data: {len(processed_data)} rows")
-    
+
     # Ensure kcat column exists
     if 'kcat_mean' in processed_data.columns and 'kcat' not in processed_data.columns:
         processed_data['kcat'] = processed_data['kcat_mean']
     elif 'kcat_y' in processed_data.columns and 'kcat' not in processed_data.columns:
         processed_data['kcat'] = processed_data['kcat_y']
-    
+
     # Annotate model
     model = annotate_model_with_kcat_and_gpr(model=model, df=processed_data)
-    
-    rxn_with_kcat = sum(1 for rxn in model.reactions 
-                        if hasattr(rxn, 'annotation') and 'kcat' in rxn.annotation 
+
+    rxn_with_kcat = sum(1 for rxn in model.reactions
+                        if hasattr(rxn, 'annotation') and 'kcat' in rxn.annotation
                         and rxn.annotation['kcat'] not in [None, '', 0, '0'])
     print(f"  Reactions with kcat: {rxn_with_kcat}/{len(model.reactions)}")
-    
+
     # === Step 4: Optimization ===
     print("\n=== Step 4: Running enzyme-constrained optimization ===")
     (solution_value, df_FBA, gene_sequences_dict, _) = run_optimization_with_dataframe(
@@ -532,7 +562,7 @@ def main():
         solver_name=solver_name
     )
     print(f"  Initial biomass value: {solution_value:.4f}")
-    
+
     # For ModelSEED models, we need to let the optimization system handle constraints
     # Don't manually add enzyme constraints - let simulated annealing use the optimization framework
     if is_modelseed:
@@ -542,7 +572,7 @@ def main():
     else:
         print("  Using standard model - may need additional constraint processing")
         constraint_data = processed_data
-    
+
     # === Step 5: Simulated Annealing ===
     print("\n=== Step 5: Running simulated annealing ===")
     sa_config = config.get('simulated_annealing', {})
@@ -553,7 +583,17 @@ def main():
     max_unchanged_iterations = sa_config.get('max_unchanged_iterations', 5)
     change_threshold = sa_config.get('change_threshold', 0.009)
     biomass_goal = sa_config.get('biomass_goal', 0.5)
-    
+    verbose = sa_config.get('verbose', False)
+
+    print(f"  Configuration:")
+    print(f"    - Temperature: {temperature}")
+    print(f"    - Cooling rate: {cooling_rate}")
+    print(f"    - Max iterations: {max_iterations}")
+    print(f"    - Max unchanged iterations: {max_unchanged_iterations}")
+    print(f"    - Change threshold: {change_threshold}")
+    print(f"    - Biomass goal: {biomass_goal}")
+    print(f"  Starting optimization...\n")
+
     kcat_dict, top_targets, df_new, iterations, biomasses, df_FBA = simulated_annealing(
         model=model,
         processed_data=constraint_data,
@@ -567,16 +607,34 @@ def main():
         min_temperature=min_temperature,
         max_iterations=max_iterations,
         max_unchanged_iterations=max_unchanged_iterations,
-        change_threshold=change_threshold
+        change_threshold=change_threshold,
+        verbose=verbose
     )
-    
+
     improvement = (biomasses[-1] - biomasses[0]) / biomasses[0] * 100 if biomasses[0] > 0 else 0
+    print(f"\n  Annealing complete!")
+    print(f"  Initial biomass: {biomasses[0]:.4f}")
     print(f"  Final biomass: {biomasses[-1]:.4f}")
     print(f"  Improvement: {improvement:.1f}%")
-    print(f"  Iterations: {iterations}")
+    print(f"  Total iterations: {len(iterations)}")
+
+    # Show biomass progression
+    if len(biomasses) > 1:
+        print(f"\n  Biomass progression:")
+        step = max(1, len(biomasses) // 10)  # Show up to 10 checkpoints
+        for i in range(0, len(biomasses), step):
+            if i == 0:
+                print(f"    Iter {iterations[i]:3d}: {biomasses[i]:.6f}")
+            else:
+                change_pct = (biomasses[i] - biomasses[i-step]) / biomasses[i-step] * 100 if i >= step else 0
+                print(f"    Iter {iterations[i]:3d}: {biomasses[i]:.6f} ({change_pct:+.2f}%)")
+        if len(biomasses) - 1 not in range(0, len(biomasses), step):
+            idx = len(biomasses) - 1
+            change_pct = (biomasses[idx] - biomasses[idx-1]) / biomasses[idx-1] * 100
+            print(f"    Iter {iterations[idx]:3d}: {biomasses[idx]:.6f} ({change_pct:+.2f}%)")
     print("\n  Top 10 enzymes by mass contribution:")
     print(top_targets[['Reactions', 'Single_gene', 'enzyme_mass']].head(10))
-    
+
     # Merge kcat_dict into df_new
     df_new_path = os.path.join(tuning_results_dir, "df_new.csv")
     df_new.to_csv(df_new_path, index=False)
@@ -590,28 +648,29 @@ def main():
     final_info_path = os.path.join(tuning_results_dir, "final_model_info.csv")
     df_new.to_csv(final_info_path, index=False)
     print(f"\n  Saved merged DataFrame to: {final_info_path}")
-    
+
     # === Step 6: Optional analyses ===
-    if enable_fva:
-        run_fva_analysis(model, df_new, biomass_reaction, enzyme_upper_bound, 
-                        tuning_results_dir, model_name)
-    
+    # Temporarily disabled during debugging
+    # if enable_fva:
+    #     run_fva_analysis(model, df_new, biomass_reaction, enzyme_upper_bound,
+    #                     tuning_results_dir, model_name)
+
     if enable_biolog:
         biolog_config = config.get('biolog_validation', {})
         run_biolog_validation(model, processed_data, biomass_reaction, enzyme_upper_bound,
                              biolog_config, tuning_results_dir, solver_name)
-    
+
     # === Step 7: Save Final Model ===
     print("\n=== Step 7: Saving final model ===")
     model_output_dir = os.path.join(project_root, "models")
     os.makedirs(model_output_dir, exist_ok=True)
     model_output_path = os.path.join(model_output_dir, f"{run_id}.xml")
-    
+
     model_with_kcats = assign_kcats_to_model(model, df_new)
     model_with_kcats = clean_annotations(model_with_kcats)
     write_sbml_model(model_with_kcats, model_output_path)
     print(f"  Final GEM saved to: {model_output_path}")
-    
+
     # === Summary ===
     print("\n" + "="*70)
     print("=== Pipeline Complete ===")

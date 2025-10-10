@@ -53,10 +53,11 @@ def simulated_annealing(
     Use simulated annealing to tune kcat values for improved biomass production.
     """
 
-    def acceptance_probability(old_cost, new_cost, temperature):
-        if new_cost > old_cost:
+    def acceptance_probability(old_biomass, new_biomass, temperature):
+        # For MAXIMIZATION: always accept if new > old, probabilistically accept if new < old
+        if new_biomass > old_biomass:
             return 1.0
-        return math.exp((new_cost - old_cost) / temperature)
+        return math.exp((new_biomass - old_biomass) / temperature)
 
     def get_neighbor(kcat_value, std):
         k_val_hr = kcat_value * 3600
@@ -77,7 +78,19 @@ def simulated_annealing(
             (updated_df['Single_gene'] == gene_id)
         )
         # convert back to per-second
-        updated_df.loc[cond, 'kcat_mean'] = new_kcat_value / 3600
+        old_value = updated_df.loc[cond, 'kcat_mean'].iloc[0] if cond.sum() > 0 else None
+        new_value_s = new_kcat_value / 3600
+
+        # Update both kcat_mean AND kcat columns (optimization uses 'kcat' if it exists)
+        updated_df.loc[cond, 'kcat_mean'] = new_value_s
+        if 'kcat' in updated_df.columns:
+            updated_df.loc[cond, 'kcat'] = new_value_s
+
+        # Debug: verify update happened
+        if cond.sum() > 0 and verbose:
+            actual_new = updated_df.loc[cond, 'kcat_mean'].iloc[0]
+            print(f"    [UPDATE] {reaction_id}_{gene_id}: {old_value:.6e} → {actual_new:.6e} s⁻¹")
+
         return updated_df
 
     def calculate_molecular_weight(seq):
@@ -88,7 +101,7 @@ def simulated_annealing(
     #     gene: calculate_molecular_weight(seq)
     #     for gene, seq in gene_sequences_dict.items() if seq
     # }
-    
+
     def safe_mw(seq: str) -> float:
         # keep only standard amino acids
         cleaned = "".join([aa for aa in seq if aa in protein_letters])
@@ -128,6 +141,24 @@ def simulated_annealing(
         .reset_index(drop=True)
     )
 
+    # Check for duplicates BEFORE deduplication
+    duplicates = top_targets.duplicated(subset=['Reactions', 'Single_gene'], keep=False)
+    if duplicates.any():
+        print(f"[INFO] Found {duplicates.sum()} duplicate reaction-gene pairs in {len(top_targets)} total rows")
+        print(f"[INFO] Deduplicating to keep only first occurrence of each (Reaction, Gene) pair...")
+        top_targets = top_targets.drop_duplicates(subset=['Reactions', 'Single_gene'], keep='first').reset_index(drop=True)
+        print(f"[INFO] After deduplication: {len(top_targets)} unique reaction-gene pairs")
+
+    print(f"\n[ANNEALING DEBUG] Top 5 target enzymes:")
+    print(top_targets.head()[['Reactions', 'Single_gene', 'enzyme_mass', 'kcat_mean']])
+    print(f"[ANNEALING DEBUG] Total targets: {len(top_targets)}")
+
+    # Verify these reactions/genes exist in processed_data
+    for idx, row in top_targets.head(3).iterrows():
+        rxn, gene = row['Reactions'], row['Single_gene']
+        matches = processed_data[(processed_data['Reactions']==rxn) & (processed_data['Single_gene']==gene)]
+        print(f"[DEBUG] {rxn}_{gene}: found {len(matches)} matches in processed_data, kcat_mean={matches['kcat_mean'].iloc[0] if len(matches)>0 else 'NOT FOUND'}")
+
     largest_rxn_id  = top_targets['Reactions'].tolist()
     largest_gene_id = top_targets['Single_gene'].tolist()
     current_solution = top_targets['kcat_mean'].tolist()
@@ -154,19 +185,41 @@ def simulated_annealing(
 
         # PROPOSE & print old vs new kcats
         updated_df = df_new.copy()
+        actually_changed = 0
         for i, (rxn, gene) in enumerate(zip(largest_rxn_id, largest_gene_id)):
-            old_k = current_solution[i]
-            new_k_hr = get_neighbor(old_k, stds[i])
-            new_k = new_k_hr / 3600.0
+            old_k = current_solution[i]  # in s⁻¹
+            new_k_hr = get_neighbor(old_k, stds[i])  # returns hr⁻¹
+            new_k_s = new_k_hr / 3600
+
+            # Check if actually different
+            if abs(new_k_s - old_k) / max(old_k, 1e-12) > 0.01:  # >1% change
+                actually_changed += 1
+
             if verbose:
-                print(f"  {rxn}_{gene}: old kcat = {old_k:.3e}  →  new kcat = {new_k:.3e}")
+                print(f"  {rxn}_{gene}: old kcat = {old_k:.3e} s⁻¹  →  new kcat = {new_k_s:.3e} s⁻¹ (Δ={(new_k_s-old_k)/old_k*100:+.1f}%)")
+            # update_kcat expects hr⁻¹ and will convert to s⁻¹ internally
             updated_df = update_kcat(updated_df, rxn, gene, new_k_hr)
 
-        # ANNOTATE & EVALUATE
-        temp_model = annotate_model_with_kcat_and_gpr(model=model, df=updated_df)
+        if verbose:
+            print(f"  Actually changed {actually_changed}/{len(largest_rxn_id)} kcats by >1%")
 
+        # Debug: Verify kcats actually changed in updated_df
+        if not verbose and iteration <= 3:
+            first_rxn, first_gene = largest_rxn_id[0], largest_gene_id[0]
+            old_val = df_new.loc[(df_new['Reactions']==first_rxn) & (df_new['Single_gene']==first_gene), 'kcat_mean'].iloc[0]
+            new_val = updated_df.loc[(updated_df['Reactions']==first_rxn) & (updated_df['Single_gene']==first_gene), 'kcat_mean'].iloc[0]
+
+            # Check if there are multiple matches and what their values are
+            matches = updated_df.loc[(updated_df['Reactions']==first_rxn) & (updated_df['Single_gene']==first_gene), 'kcat_mean']
+            if len(matches) > 1:
+                print(f"\n  [DEBUG] {first_rxn}_{first_gene} has {len(matches)} rows with kcats: {matches.tolist()}")
+                print(f"  [DEBUG] Average that will be used: {matches.mean():.6f} s⁻¹")
+            else:
+                print(f"\n  [DEBUG] First target {first_rxn}_{first_gene}: old={old_val:.6f} s⁻¹, new={new_val:.6f} s⁻¹, changed={old_val != new_val}")
+
+        # EVALUATE with updated kcats
         new_biomass, temp_df_FBA, _, _ = run_optimization_with_dataframe(
-            model=temp_model,
+            model=model,
             processed_df=updated_df,
             objective_reaction=biomass_reaction,
             enzyme_upper_bound=enzyme_fraction,
@@ -174,18 +227,33 @@ def simulated_annealing(
             save_results=False,
             verbose=False
         )
+
+        # Debug: Check if enzyme allocations changed even if biomass didn't
+        if not verbose and iteration <= 3:
+            # Compare enzyme allocation for first target
+            old_enzyme = df_FBA[df_FBA['Index']==largest_gene_id[0]]
+            new_enzyme = temp_df_FBA[temp_df_FBA['Index']==largest_gene_id[0]]
+            if len(old_enzyme) > 0 and len(new_enzyme) > 0:
+                old_alloc = old_enzyme[old_enzyme['Variable']=='enzyme']['Value'].iloc[0] if len(old_enzyme[old_enzyme['Variable']=='enzyme']) > 0 else 0
+                new_alloc = new_enzyme[new_enzyme['Variable']=='enzyme']['Value'].iloc[0] if len(new_enzyme[new_enzyme['Variable']=='enzyme']) > 0 else 0
+                print(f"  [DEBUG] Enzyme allocation for {largest_gene_id[0]}: {old_alloc:.6e} → {new_alloc:.6e} mmol/gDW/h")
+
         if verbose:
             print(f"Proposed biomass = {new_biomass:.6e}")
 
-        # compute change *before* accepting new solution
-        change = abs(new_biomass - current_biomass) / max(current_biomass, 1e-6)
-
         # ACCEPT or REJECT
+        old_biomass = current_biomass  # Store for change calculation
         prob = acceptance_probability(current_biomass, new_biomass, temperature)
-        if prob > random.random():
+        random_val = random.random()
+        accept = prob > random_val
+
+        # Debug output for non-verbose mode
+        if not verbose and iteration <= 3:
+            print(f"\n  [DEBUG Iter {iteration}] current={current_biomass:.6f}, proposed={new_biomass:.6f}, prob={prob:.4f}, random={random_val:.4f}, accept={accept}")
+
+        if accept:
             if verbose:
                 print(f"Iteration {iteration}: ACCEPTED (Δ = {new_biomass-current_biomass:.2e})")
-            model = temp_model
             df_FBA = temp_df_FBA
             df_new = updated_df.copy()
             current_biomass = new_biomass
@@ -201,24 +269,38 @@ def simulated_annealing(
                 best_solution = current_solution[:]
                 best_df       = df_new.copy()
         else:
-            if verbose:    
+            if verbose:
                 print(f"Iteration {iteration}: REJECTED (Δ = {new_biomass-current_biomass:.2e})")
 
-        iterations.append(iteration)
-        biomasses.append(new_biomass)
+        # Compute ACTUAL change after acceptance/rejection
+        change = abs(current_biomass - old_biomass) / max(old_biomass, 1e-6)
 
-        # STAGNATION check uses `change` from above
+        iterations.append(iteration)
+        biomasses.append(current_biomass)  # Record ACCEPTED biomass, not proposed
+
+        # Print progress every iteration (non-verbose mode)
+        if not verbose and iteration % 1 == 0:
+            print(f"  Iter {iteration}/{max_iterations}: biomass={current_biomass:.6f}, temp={temperature:.4f}", end='\r')
+
+        # STAGNATION check uses actual change
         if change < change_threshold:
             no_change_counter += 1
             if no_change_counter >= max_unchanged_iterations:
+                print()  # New line after progress indicator
                 if verbose:
                     print(f"No significant change for {max_unchanged_iterations} iterations; stopping early.")
+                else:
+                    print(f"  Early stop: No change for {no_change_counter} iterations")
                 break
         else:
             no_change_counter = 0
 
         temperature *= cooling_rate
         iteration += 1
+
+    # Clear progress line
+    if not verbose:
+        print()  # New line after progress indicator
 
     # FINALIZE: build kcat_dict from best_solution
     kcat_dict = {
@@ -243,7 +325,7 @@ def simulated_annealing(
 def save_annealing_results(output_dir, kcat_dict, df_enzyme_sorted, df_new, iterations, biomasses, df_FBA, prefix=""):
     """
     Save the results of the simulated annealing process.
-    
+
     Parameters
     ----------
     output_dir : str
@@ -265,24 +347,24 @@ def save_annealing_results(output_dir, kcat_dict, df_enzyme_sorted, df_new, iter
     """
     # Ensure directory exists
     ensure_dir_exists(output_dir)
-    
+
     # Save kcat dictionary
     kcat_dict_df = pd.DataFrame(list(kcat_dict.items()), columns=['Key', 'Value'])
     kcat_dict_df.to_csv(os.path.join(output_dir, f"{prefix}kcat_dict.csv"), index=False)
-    
+
     # Save sorted enzyme data
     df_enzyme_sorted.to_csv(os.path.join(output_dir, f"{prefix}df_enzyme_sorted.csv"), index=False)
-    
+
     # Save updated data
     df_new.to_csv(os.path.join(output_dir, f"{prefix}df_new.csv"), index=False)
-    
+
     # Save FBA results
     df_FBA.to_csv(os.path.join(output_dir, f"{prefix}df_FBA.csv"), index=False)
-    
+
     # Save iterations data
     df_iterations = pd.DataFrame({"Iteration": iterations, "Biomass": biomasses})
     df_iterations.to_csv(os.path.join(output_dir, f"{prefix}iterations.csv"), index=False)
-    
+
     # Create and save plot
-    plot_annealing_progress(iterations, biomasses, 
+    plot_annealing_progress(iterations, biomasses,
                            output_path=os.path.join(output_dir, f"{prefix}annealing_progress.png"))

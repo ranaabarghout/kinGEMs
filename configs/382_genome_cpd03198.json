@@ -2,7 +2,7 @@
   "model_name": "382_genome_cpd03198",
   "organism": "E coli",
   "biomass_reaction": null,
-  "enzyme_upper_bound": 0.15,
+  "enzyme_upper_bound": 0.25,
   "solver": "glpk",
   "enable_fva": false,
   "enable_biolog_validation": false,
