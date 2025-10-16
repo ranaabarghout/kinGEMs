@@ -20,6 +20,7 @@ from sklearn.metrics import confusion_matrix as confusion_matrix
 from sklearn.metrics import precision_recall_curve as pre_rec
 from sklearn.model_selection import train_test_split
 from statsmodels.nonparametric.smoothers_lowess import lowess
+from tqdm import tqdm
 
 from kinGEMs.config import ECOLI_VALIDATION_DIR, MODELS_DIR
 from kinGEMs.modeling.optimize import run_optimization_with_dataframe
@@ -236,13 +237,16 @@ def test_growth(model_adj, name_carbon_model_matched_adj, medium_ex_inds, carbon
         print(f"Growth with no carbon source (base medium only): {'Growth' if base_growth == 1 else 'No growth'} (Objective value: {solution.objective_value})")
         results['base_growth'] = base_growth
         base_growth_C = np.ones(len(carbon_ex_inds), dtype=float) * -1
-        for e, idx in enumerate(carbon_ex_inds):
+        
+        print(f"\nTesting growth on {len(carbon_ex_inds)} carbon sources...")
+        for e, idx in tqdm(enumerate(carbon_ex_inds), total=len(carbon_ex_inds), desc="Testing carbon sources", unit="carbon"):
             if idx != -1:
                 model_adj.exchanges[idx].lower_bound = -10
             sol = model_adj.slim_optimize()
             base_growth_C[e] = 1 if sol > thresh else 0
             carbon_name = name_carbon_model_matched_adj[e] if e < len(name_carbon_model_matched_adj) else f"Carbon {e}"
-            print(f"Growth with carbon source '{carbon_name}': {'Growth' if base_growth_C[e] == 1 else 'No growth'} (Solution: {sol})")
+            growth_status = 'Growth' if base_growth_C[e] == 1 else 'No growth'
+            tqdm.write(f"  Growth with carbon source '{carbon_name}': {growth_status} (Solution: {sol})")
             if idx != -1:
                 model_adj.exchanges[idx].lower_bound = 0
         results['carbon_growth'] = base_growth_C
@@ -265,71 +269,104 @@ def simulate_phenotype(
     2. Enzyme-constrained GEM (run_optimization_with_dataframe)
     Returns a tuple: (baseline_GEM, enzyme_constrained_GEM)
     """
+    n_genes = len(name_genes_matched_adj)
+    n_carbons = len(name_carbon_model_matched_adj)
+    
     # Baseline GEM simulation
-    baseline_GEM = np.zeros([len(name_genes_matched_adj), len(name_carbon_model_matched_adj)], dtype=float)
+    print("\nBaseline GEM Simulation")
+    print(f"Total simulations: {n_genes} genes × {n_carbons} carbon sources = {n_genes * n_carbons} optimizations")
+    
+    baseline_GEM = np.zeros([n_genes, n_carbons], dtype=float)
     for e in medium_ex_inds:
         if e != -1:
             model_run.exchanges[e].lower_bound = -1000
-    for e in range(len(name_carbon_model_matched_adj)):
-        print(f"Baseline GEM progress: {e+1}/{len(name_carbon_model_matched_adj)}", end='\r')
-        if name_carbon_model_matched_adj[e] in name_carbon_model_matched_adj[:e]:
-            e_found = name_carbon_model_matched_adj[:e].index(name_carbon_model_matched_adj[e])
-            baseline_GEM[:, e] = baseline_GEM[:, e_found]
-        else:
-            if carbon_ex_inds[e] != -1:
-                model_run.exchanges[carbon_ex_inds[e]].lower_bound = -10
-            for g in range(len(name_genes_matched_adj)):
-                with model_run:
-                    model_run.genes.get_by_id(name_genes_matched_adj[g]).knock_out()
-                    solution = model_run.slim_optimize()
-                    if np.isnan(solution):
-                        solution = 0
-                    baseline_GEM[g, e] = solution
-            if carbon_ex_inds[e] != -1:
-                model_run.exchanges[carbon_ex_inds[e]].lower_bound = 0
+    
+    # Calculate total iterations for progress bar
+    total_baseline_iterations = sum(
+        n_genes if name_carbon_model_matched_adj[e] not in name_carbon_model_matched_adj[:e] else 0
+        for e in range(n_carbons)
+    )
+    
+    with tqdm(total=total_baseline_iterations, desc="Baseline GEM", unit="simulation") as pbar:
+        for e in range(n_carbons):
+            carbon_name = name_carbon_model_matched_adj[e]
+            if carbon_name in name_carbon_model_matched_adj[:e]:
+                e_found = name_carbon_model_matched_adj[:e].index(carbon_name)
+                baseline_GEM[:, e] = baseline_GEM[:, e_found]
+                pbar.set_postfix({"carbon": carbon_name, "status": "cached"})
+            else:
+                if carbon_ex_inds[e] != -1:
+                    model_run.exchanges[carbon_ex_inds[e]].lower_bound = -10
+                for g in range(n_genes):
+                    with model_run:
+                        model_run.genes.get_by_id(name_genes_matched_adj[g]).knock_out()
+                        solution = model_run.slim_optimize()
+                        if np.isnan(solution):
+                            solution = 0
+                        baseline_GEM[g, e] = solution
+                    pbar.update(1)
+                    if g % 50 == 0:
+                        pbar.set_postfix({"carbon": carbon_name, "gene": f"{g+1}/{n_genes}"})
+                if carbon_ex_inds[e] != -1:
+                    model_run.exchanges[carbon_ex_inds[e]].lower_bound = 0
 
     # Enzyme-constrained GEM simulation
+    print("\nEnzyme-Constrained GEM Simulation")
+    print(f"Total simulations: {n_genes} genes x {n_carbons} carbon sources = {n_genes * n_carbons} optimizations")
+    
     if 'kcat_mean' in processed_df.columns:
         processed_df['kcat_mean'] = processed_df['kcat_mean'].apply(lambda x: float(x) if isinstance(x, str) and x.replace('.','',1).isdigit() else x)
 
     enzyme_constrained_GEM = np.zeros([len(name_genes_matched_adj), len(name_carbon_model_matched_adj)], dtype=float)
-    for e in range(len(name_carbon_model_matched_adj)):
-        print(f"Enzyme-constrained GEM progress: {e+1}/{len(name_carbon_model_matched_adj)}", end='\r')
-        if name_carbon_model_matched_adj[e] in name_carbon_model_matched_adj[:e]:
-            e_found = name_carbon_model_matched_adj[:e].index(name_carbon_model_matched_adj[e])
-            enzyme_constrained_GEM[:, e] = enzyme_constrained_GEM[:, e_found]
-        else:
-            if carbon_ex_inds[e] != -1:
-                model_run.exchanges[carbon_ex_inds[e]].lower_bound = -10
-            for g in range(len(name_genes_matched_adj)):
-                with model_run:
-                    model_run.genes.get_by_id(name_genes_matched_adj[g]).knock_out()
-                    try:
-                        solution_value, df_FBA, gene_sequences_dict, _ = run_optimization_with_dataframe(
-                            model=model_run,
-                            processed_df=processed_df,
-                            objective_reaction=objective_reaction,
-                            enzyme_upper_bound=enzyme_upper_bound,
-                            enzyme_ratio=True,
-                            maximization=True,
-                            multi_enzyme_off=False,
-                            isoenzymes_off=False,
-                            promiscuous_off=False,
-                            complexes_off=False,
-                            output_dir=None,
-                            save_results=False,
-                            print_reaction_conditions=False,
-                            verbose=False
-                        )
-                        # Use solution_value as the simulated growth value
-                        if solution_value is None or np.isnan(solution_value):
-                            solution_value = 0
-                        enzyme_constrained_GEM[g, e] = solution_value
-                    except Exception as ex:
-                        print(f"Enzyme-constrained optimization failed for gene {name_genes_matched_adj[g]}, carbon {name_carbon_model_matched_adj[e]}: {ex}")
-                        enzyme_constrained_GEM[g, e] = 0
-            if carbon_ex_inds[e] != -1:
-                model_run.exchanges[carbon_ex_inds[e]].lower_bound = 0
+    
+    # Calculate total iterations for progress bar
+    total_ec_iterations = sum(
+        n_genes if name_carbon_model_matched_adj[e] not in name_carbon_model_matched_adj[:e] else 0
+        for e in range(n_carbons)
+    )
+    
+    with tqdm(total=total_ec_iterations, desc="Enzyme-Constrained GEM", unit="simulation") as pbar:
+        for e in range(len(name_carbon_model_matched_adj)):
+            carbon_name = name_carbon_model_matched_adj[e]
+            if carbon_name in name_carbon_model_matched_adj[:e]:
+                e_found = name_carbon_model_matched_adj[:e].index(carbon_name)
+                enzyme_constrained_GEM[:, e] = enzyme_constrained_GEM[:, e_found]
+                pbar.set_postfix({"carbon": carbon_name, "status": "cached"})
+            else:
+                if carbon_ex_inds[e] != -1:
+                    model_run.exchanges[carbon_ex_inds[e]].lower_bound = -10
+                for g in range(len(name_genes_matched_adj)):
+                    with model_run:
+                        model_run.genes.get_by_id(name_genes_matched_adj[g]).knock_out()
+                        try:
+                            solution_value, df_FBA, gene_sequences_dict, _ = run_optimization_with_dataframe(
+                                model=model_run,
+                                processed_df=processed_df,
+                                objective_reaction=objective_reaction,
+                                enzyme_upper_bound=enzyme_upper_bound,
+                                enzyme_ratio=True,
+                                maximization=True,
+                                multi_enzyme_off=False,
+                                isoenzymes_off=False,
+                                promiscuous_off=False,
+                                complexes_off=False,
+                                output_dir=None,
+                                save_results=False,
+                                print_reaction_conditions=False,
+                                verbose=False
+                            )
+                            # Use solution_value as the simulated growth value
+                            if solution_value is None or np.isnan(solution_value):
+                                solution_value = 0
+                            enzyme_constrained_GEM[g, e] = solution_value
+                        except Exception as ex:
+                            tqdm.write(f"Enzyme-constrained optimization failed for gene {name_genes_matched_adj[g]}, carbon {carbon_name}: {ex}")
+                            enzyme_constrained_GEM[g, e] = 0
+                    pbar.update(1)
+                    if g % 50 == 0:
+                        pbar.set_postfix({"carbon": carbon_name, "gene": f"{g+1}/{n_genes}"})
+                if carbon_ex_inds[e] != -1:
+                    model_run.exchanges[carbon_ex_inds[e]].lower_bound = 0
 
     print("\nBaseline GEM and enzyme-constrained GEM simulation complete.")
     return baseline_GEM, enzyme_constrained_GEM
@@ -355,81 +392,111 @@ def simulate_phenotype_flux(
     n_rxns = len(model_run.reactions)
 
     # Baseline GEM flux simulation
+    print("\nBaseline GEM Flux Simulation")
+    print(f"Total simulations: {n_genes} genes x {n_carbons} carbon sources x {n_rxns} reactions")
+    
     baseline_fluxes = np.zeros([n_genes, n_carbons, n_rxns], dtype=float)
     for e in medium_ex_inds:
         if e != -1:
             model_run.exchanges[e].lower_bound = -1000
-    for e in range(n_carbons):
-        print(f"Baseline GEM flux progress: {e+1}/{n_carbons}", end='\r')
-        if name_carbon_model_matched_adj[e] in name_carbon_model_matched_adj[:e]:
-            e_found = name_carbon_model_matched_adj[:e].index(name_carbon_model_matched_adj[e])
-            baseline_fluxes[:, e, :] = baseline_fluxes[:, e_found, :]
-        else:
-            if carbon_ex_inds[e] != -1:
-                model_run.exchanges[carbon_ex_inds[e]].lower_bound = -10
-            for g in range(n_genes):
-                with model_run:
-                    model_run.genes.get_by_id(name_genes_matched_adj[g]).knock_out()
-                    solution = model_run.optimize()
-                    if solution.status == 'optimal':
-                        fluxes = solution.fluxes.values
-                    else:
-                        fluxes = np.zeros(n_rxns)
-                    baseline_fluxes[g, e, :] = fluxes
-            if carbon_ex_inds[e] != -1:
-                model_run.exchanges[carbon_ex_inds[e]].lower_bound = 0
+    
+    # Total iterations for progress bar
+    total_baseline_iterations = sum(
+        n_genes if name_carbon_model_matched_adj[e] not in name_carbon_model_matched_adj[:e] else 0
+        for e in range(n_carbons)
+    )
+    
+    with tqdm(total=total_baseline_iterations, desc="Baseline Flux", unit="simulation") as pbar:
+        for e in range(n_carbons):
+            carbon_name = name_carbon_model_matched_adj[e]
+            if carbon_name in name_carbon_model_matched_adj[:e]:
+                e_found = name_carbon_model_matched_adj[:e].index(carbon_name)
+                baseline_fluxes[:, e, :] = baseline_fluxes[:, e_found, :]
+                pbar.set_postfix({"carbon": carbon_name, "status": "cached"})
+            else:
+                if carbon_ex_inds[e] != -1:
+                    model_run.exchanges[carbon_ex_inds[e]].lower_bound = -10
+                for g in range(n_genes):
+                    with model_run:
+                        model_run.genes.get_by_id(name_genes_matched_adj[g]).knock_out()
+                        solution = model_run.optimize()
+                        if solution.status == 'optimal':
+                            fluxes = solution.fluxes.values
+                        else:
+                            fluxes = np.zeros(n_rxns)
+                        baseline_fluxes[g, e, :] = fluxes
+                    pbar.update(1)
+                    if g % 50 == 0:
+                        pbar.set_postfix({"carbon": carbon_name, "gene": f"{g+1}/{n_genes}"})
+                if carbon_ex_inds[e] != -1:
+                    model_run.exchanges[carbon_ex_inds[e]].lower_bound = 0
 
     # Enzyme-constrained GEM flux simulation
+    print("\nEnzyme-Constrained GEM Flux Simulation")
+    print(f"Total simulations: {n_genes} genes x {n_carbons} carbon sources x {n_rxns} reactions")
+    
     if 'kcat_mean' in processed_df.columns:
         processed_df['kcat_mean'] = processed_df['kcat_mean'].apply(lambda x: float(x) if isinstance(x, str) and x.replace('.','',1).isdigit() else x)
 
     enzyme_constrained_fluxes = np.zeros([n_genes, n_carbons, n_rxns], dtype=float)
-    for e in range(n_carbons):
-        print(f"Enzyme-constrained GEM flux progress: {e+1}/{n_carbons}", end='\r')
-        if name_carbon_model_matched_adj[e] in name_carbon_model_matched_adj[:e]:
-            e_found = name_carbon_model_matched_adj[:e].index(name_carbon_model_matched_adj[e])
-            enzyme_constrained_fluxes[:, e, :] = enzyme_constrained_fluxes[:, e_found, :]
-        else:
-            if carbon_ex_inds[e] != -1:
-                model_run.exchanges[carbon_ex_inds[e]].lower_bound = -10
-            for g in range(n_genes):
-                with model_run:
-                    model_run.genes.get_by_id(name_genes_matched_adj[g]).knock_out()
-                    try:
-                        solution_value, df_FBA, gene_sequences_dict, _ = run_optimization_with_dataframe(
-                            model=model_run,
-                            processed_df=processed_df,
-                            objective_reaction=objective_reaction,
-                            enzyme_upper_bound=enzyme_upper_bound,
-                            enzyme_ratio=True,
-                            maximization=True,
-                            multi_enzyme_off=False,
-                            isoenzymes_off=False,
-                            promiscuous_off=False,
-                            complexes_off=False,
-                            output_dir=None,
-                            save_results=False,
-                            print_reaction_conditions=False,
-                            verbose=False
-                        )
-                        # Try to extract fluxes from df_FBA
-                        if df_FBA is not None and hasattr(df_FBA, 'loc') and 'fluxes' in df_FBA.columns:
-                            # If df_FBA has a 'fluxes' column, use it
-                            fluxes = df_FBA['fluxes'].values
-                            if len(fluxes) == n_rxns:
-                                enzyme_constrained_fluxes[g, e, :] = fluxes
+    
+    # Calculate total iterations for progress bar
+    total_ec_iterations = sum(
+        n_genes if name_carbon_model_matched_adj[e] not in name_carbon_model_matched_adj[:e] else 0
+        for e in range(n_carbons)
+    )
+    
+    with tqdm(total=total_ec_iterations, desc="Enzyme-Constrained Flux", unit="simulation") as pbar:
+        for e in range(n_carbons):
+            carbon_name = name_carbon_model_matched_adj[e]
+            if carbon_name in name_carbon_model_matched_adj[:e]:
+                e_found = name_carbon_model_matched_adj[:e].index(carbon_name)
+                enzyme_constrained_fluxes[:, e, :] = enzyme_constrained_fluxes[:, e_found, :]
+                pbar.set_postfix({"carbon": carbon_name, "status": "cached"})
+            else:
+                if carbon_ex_inds[e] != -1:
+                    model_run.exchanges[carbon_ex_inds[e]].lower_bound = -10
+                for g in range(n_genes):
+                    with model_run:
+                        model_run.genes.get_by_id(name_genes_matched_adj[g]).knock_out()
+                        try:
+                            solution_value, df_FBA, gene_sequences_dict, _ = run_optimization_with_dataframe(
+                                model=model_run,
+                                processed_df=processed_df,
+                                objective_reaction=objective_reaction,
+                                enzyme_upper_bound=enzyme_upper_bound,
+                                enzyme_ratio=True,
+                                maximization=True,
+                                multi_enzyme_off=False,
+                                isoenzymes_off=False,
+                                promiscuous_off=False,
+                                complexes_off=False,
+                                output_dir=None,
+                                save_results=False,
+                                print_reaction_conditions=False,
+                                verbose=False
+                            )
+                            # Try to extract fluxes from df_FBA
+                            if df_FBA is not None and hasattr(df_FBA, 'loc') and 'fluxes' in df_FBA.columns:
+                                # If df_FBA has a 'fluxes' column, use it
+                                fluxes = df_FBA['fluxes'].values
+                                if len(fluxes) == n_rxns:
+                                    enzyme_constrained_fluxes[g, e, :] = fluxes
+                                else:
+                                    enzyme_constrained_fluxes[g, e, :] = np.zeros(n_rxns)
+                            elif df_FBA is not None and hasattr(df_FBA, 'values') and df_FBA.shape[1] == n_rxns:
+                                # If df_FBA is a DataFrame with fluxes as columns
+                                enzyme_constrained_fluxes[g, e, :] = df_FBA.values[0]
                             else:
                                 enzyme_constrained_fluxes[g, e, :] = np.zeros(n_rxns)
-                        elif df_FBA is not None and hasattr(df_FBA, 'values') and df_FBA.shape[1] == n_rxns:
-                            # If df_FBA is a DataFrame with fluxes as columns
-                            enzyme_constrained_fluxes[g, e, :] = df_FBA.values[0]
-                        else:
+                        except Exception as ex:
+                            tqdm.write(f"Enzyme-constrained optimization failed for gene {name_genes_matched_adj[g]}, carbon {carbon_name}: {ex}")
                             enzyme_constrained_fluxes[g, e, :] = np.zeros(n_rxns)
-                    except Exception as ex:
-                        print(f"Enzyme-constrained optimization failed for gene {name_genes_matched_adj[g]}, carbon {name_carbon_model_matched_adj[e]}: {ex}")
-                        enzyme_constrained_fluxes[g, e, :] = np.zeros(n_rxns)
-            if carbon_ex_inds[e] != -1:
-                model_run.exchanges[carbon_ex_inds[e]].lower_bound = 0
+                    pbar.update(1)
+                    if g % 50 == 0:
+                        pbar.set_postfix({"carbon": carbon_name, "gene": f"{g+1}/{n_genes}"})
+                if carbon_ex_inds[e] != -1:
+                    model_run.exchanges[carbon_ex_inds[e]].lower_bound = 0
 
     print("\nBaseline GEM and enzyme-constrained GEM flux simulation complete.")
     return baseline_fluxes, enzyme_constrained_fluxes
