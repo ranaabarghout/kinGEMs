@@ -261,7 +261,8 @@ def simulate_phenotype(
     processed_df,
     objective_reaction,
     enzyme_upper_bound,
-    thresh=0.001
+    thresh=0.001,
+    timeout=10
 ):
     """
     Simulate growth/no-growth phenotypes for each gene and carbon source combination using:
@@ -272,9 +273,20 @@ def simulate_phenotype(
     n_genes = len(name_genes_matched_adj)
     n_carbons = len(name_carbon_model_matched_adj)
     
+    # Set solver timeout
+    try:
+        model_run.solver.configuration.timeout = timeout
+    except Exception:
+        pass
+
     # Baseline GEM simulation
     print("\nBaseline GEM Simulation")
     print(f"Total simulations: {n_genes} genes × {n_carbons} carbon sources = {n_genes * n_carbons} optimizations")
+    try:
+        solver_name = model_run.solver.interface.__name__
+    except Exception:
+        solver_name = "unknown"
+    print(f"Solver: {solver_name} (timeout: {timeout}s per optimization)")
     
     baseline_GEM = np.zeros([n_genes, n_carbons], dtype=float)
     for e in medium_ex_inds:
@@ -286,6 +298,10 @@ def simulate_phenotype(
         n_genes if name_carbon_model_matched_adj[e] not in name_carbon_model_matched_adj[:e] else 0
         for e in range(n_carbons)
     )
+    
+    timeout_count = 0
+    error_count = 0
+    invalid_count = 0
     
     with tqdm(total=total_baseline_iterations, desc="Baseline GEM", unit="simulation") as pbar:
         for e in range(n_carbons):
@@ -300,15 +316,53 @@ def simulate_phenotype(
                 for g in range(n_genes):
                     with model_run:
                         model_run.genes.get_by_id(name_genes_matched_adj[g]).knock_out()
-                        solution = model_run.slim_optimize()
-                        if np.isnan(solution):
-                            solution = 0
-                        baseline_GEM[g, e] = solution
+                        try:
+                            solution = model_run.slim_optimize()
+                            # Check if optimization actually timed out
+                            if solution is None:
+                                timeout_count += 1
+                                gene_id = name_genes_matched_adj[g]
+                                #tqdm.write(f"Timeout #{timeout_count}: Gene {gene_id} on carbon {carbon_name} (returned None)")
+                                solution = 0
+                            elif np.isnan(solution) or np.isinf(solution):
+                                invalid_count += 1
+                                gene_id = name_genes_matched_adj[g]
+                                #tqdm.write(f"Invalid result #{error_count}: Gene {gene_id} on carbon {carbon_name} (returned {solution})")
+                                solution = 0
+                            baseline_GEM[g, e] = solution
+                        except Exception as ex:
+                            # Handle timeout or other solver errors
+                            msg = str(ex).lower()
+                            gene_id = name_genes_matched_adj[g]
+                            if ('timeout' in msg) or ('time limit' in msg) or ('tmlim' in msg):
+                                timeout_count += 1
+                                #tqdm.write(f"Timeout #{timeout_count}: Gene {gene_id} on carbon {carbon_name}")
+                            else:
+                                error_count += 1
+                                #tqdm.write(f"Error #{error_count}: Gene {gene_id} on carbon {carbon_name}: {ex}")
+                            baseline_GEM[g, e] = 0
                     pbar.update(1)
                     if g % 50 == 0:
-                        pbar.set_postfix({"carbon": carbon_name, "gene": f"{g+1}/{n_genes}"})
+                        pbar.set_postfix({
+                            "carbon": carbon_name, 
+                            "gene": f"{g+1}/{n_genes}",
+                            "timeouts": timeout_count,
+                            "errors": error_count,
+                            "invalid": invalid_count
+                        })
                 if carbon_ex_inds[e] != -1:
                     model_run.exchanges[carbon_ex_inds[e]].lower_bound = 0
+    
+    # Print summary of issues
+    print("\nBaseline GEM Issues Summary:")
+    if timeout_count > 0:
+        print(f"  - Timeouts: {timeout_count}/{total_baseline_iterations} optimizations")
+    if error_count > 0:
+        print(f"  - Errors: {error_count}/{total_baseline_iterations} optimizations")
+    if invalid_count > 0:
+        print(f"  - Invalid: {invalid_count}/{total_baseline_iterations} optimizations")
+    else:
+        print(f"  - No errors or invalid results")
 
     # Enzyme-constrained GEM simulation
     print("\nEnzyme-Constrained GEM Simulation")
@@ -324,6 +378,9 @@ def simulate_phenotype(
         n_genes if name_carbon_model_matched_adj[e] not in name_carbon_model_matched_adj[:e] else 0
         for e in range(n_carbons)
     )
+    
+    kingems_error_count = 0
+    kingems_invalid_count = 0
     
     with tqdm(total=total_ec_iterations, desc="Enzyme-Constrained GEM", unit="simulation") as pbar:
         for e in range(len(name_carbon_model_matched_adj)):
@@ -358,15 +415,27 @@ def simulate_phenotype(
                             # Use solution_value as the simulated growth value
                             if solution_value is None or np.isnan(solution_value):
                                 solution_value = 0
+                                kingems_invalid_count += 1
                             enzyme_constrained_GEM[g, e] = solution_value
                         except Exception as ex:
                             tqdm.write(f"Enzyme-constrained optimization failed for gene {name_genes_matched_adj[g]}, carbon {carbon_name}: {ex}")
+                            kingems_error_count += 1
                             enzyme_constrained_GEM[g, e] = 0
                     pbar.update(1)
                     if g % 50 == 0:
-                        pbar.set_postfix({"carbon": carbon_name, "gene": f"{g+1}/{n_genes}"})
+                        pbar.set_postfix({"carbon": carbon_name, "gene": f"{g+1}/{n_genes}", 
+                                          "invalid": invalid_count, "errors": error_count})
                 if carbon_ex_inds[e] != -1:
                     model_run.exchanges[carbon_ex_inds[e]].lower_bound = 0
+
+    # Print summary of issues
+    print("\nEnzyme-constrained GEM Issues Summary:")
+    if kingems_invalid_count > 0:
+        print(f"  - Invalid: {kingems_invalid_count}/{total_ec_iterations} optimizations")
+    if kingems_error_count > 0:
+        print(f"  - Errors: {kingems_error_count}/{total_ec_iterations} optimizations")
+    else:
+        print(f"  - No errors or invalid results")
 
     print("\nBaseline GEM and enzyme-constrained GEM simulation complete.")
     return baseline_GEM, enzyme_constrained_GEM
@@ -380,7 +449,8 @@ def simulate_phenotype_flux(
     processed_df,
     objective_reaction,
     enzyme_upper_bound,
-    thresh=0.001
+    thresh=0.001,
+    timeout=10
 ):
     """
     Simulate pFBA and record fluxes for all reactions for each gene and carbon source combination.
@@ -390,10 +460,14 @@ def simulate_phenotype_flux(
     n_genes = len(name_genes_matched_adj)
     n_carbons = len(name_carbon_model_matched_adj)
     n_rxns = len(model_run.reactions)
+    
+    # Solver timeout
+    model_run.solver.configuration.timeout = timeout
 
     # Baseline GEM flux simulation
     print("\nBaseline GEM Flux Simulation")
     print(f"Total simulations: {n_genes} genes x {n_carbons} carbon sources x {n_rxns} reactions")
+    print(f"Solver: {model_run.solver.interface.__name__} (timeout: {timeout}s per optimization)")
     
     baseline_fluxes = np.zeros([n_genes, n_carbons, n_rxns], dtype=float)
     for e in medium_ex_inds:
@@ -405,6 +479,10 @@ def simulate_phenotype_flux(
         n_genes if name_carbon_model_matched_adj[e] not in name_carbon_model_matched_adj[:e] else 0
         for e in range(n_carbons)
     )
+    
+    timeout_count = 0
+    error_count = 0
+    invalid_count = 0
     
     with tqdm(total=total_baseline_iterations, desc="Baseline Flux", unit="simulation") as pbar:
         for e in range(n_carbons):
@@ -419,17 +497,34 @@ def simulate_phenotype_flux(
                 for g in range(n_genes):
                     with model_run:
                         model_run.genes.get_by_id(name_genes_matched_adj[g]).knock_out()
-                        solution = model_run.optimize()
-                        if solution.status == 'optimal':
-                            fluxes = solution.fluxes.values
-                        else:
-                            fluxes = np.zeros(n_rxns)
-                        baseline_fluxes[g, e, :] = fluxes
+                        try:
+                            solution = model_run.optimize()
+                            if solution.status == 'optimal':
+                                fluxes = solution.fluxes.values
+                                baseline_fluxes[g, e, :] = fluxes
+                            else:
+                                invalid_count += 1
+                                baseline_fluxes[g, e, :] = np.zeros(n_rxns)
+                        except Exception as ex:
+                            # Handle timeout or other solver errors
+                            error_msg = str(ex).lower()
+                            if 'timeout' in error_msg or 'time limit' in error_msg or 'tmlim' in error_msg:
+                                timeout_count += 1
+                                #tqdm.write(f"Timeout #{timeout_count}: Gene {name_genes_matched_adj[g]} on carbon {carbon_name}")
+                            else:
+                                #tqdm.write(f"Error: Gene {name_genes_matched_adj[g]} on carbon {carbon_name}: {ex}")
+                                error_count += 1
+                            baseline_fluxes[g, e, :] = np.zeros(n_rxns)
+                    
                     pbar.update(1)
                     if g % 50 == 0:
-                        pbar.set_postfix({"carbon": carbon_name, "gene": f"{g+1}/{n_genes}"})
+                        pbar.set_postfix({"carbon": carbon_name, "gene": f"{g+1}/{n_genes}", "timeouts": timeout_count})
+                
                 if carbon_ex_inds[e] != -1:
                     model_run.exchanges[carbon_ex_inds[e]].lower_bound = 0
+    
+    if timeout_count > 0:
+        print(f"\nTotal optimizations that timed out: {timeout_count}/{total_baseline_iterations}")
 
     # Enzyme-constrained GEM flux simulation
     print("\nEnzyme-Constrained GEM Flux Simulation")
@@ -440,14 +535,14 @@ def simulate_phenotype_flux(
 
     enzyme_constrained_fluxes = np.zeros([n_genes, n_carbons, n_rxns], dtype=float)
     
-    # Calculate total iterations for progress bar
+    # Total iterations for progress bar
     total_ec_iterations = sum(
         n_genes if name_carbon_model_matched_adj[e] not in name_carbon_model_matched_adj[:e] else 0
         for e in range(n_carbons)
     )
     
     with tqdm(total=total_ec_iterations, desc="Enzyme-Constrained Flux", unit="simulation") as pbar:
-        for e in range(n_carbons):
+        for e in range(len(name_carbon_model_matched_adj)):
             carbon_name = name_carbon_model_matched_adj[e]
             if carbon_name in name_carbon_model_matched_adj[:e]:
                 e_found = name_carbon_model_matched_adj[:e].index(carbon_name)
@@ -456,7 +551,7 @@ def simulate_phenotype_flux(
             else:
                 if carbon_ex_inds[e] != -1:
                     model_run.exchanges[carbon_ex_inds[e]].lower_bound = -10
-                for g in range(n_genes):
+                for g in range(len(name_genes_matched_adj)):
                     with model_run:
                         model_run.genes.get_by_id(name_genes_matched_adj[g]).knock_out()
                         try:
