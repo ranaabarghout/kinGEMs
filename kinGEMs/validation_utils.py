@@ -3,6 +3,8 @@ import copy
 import os
 
 import cobra
+from dask import delayed
+from dask.distributed import Client, LocalCluster
 import fastcluster
 import lightgbm as lgbm
 import matplotlib.pyplot as plt
@@ -252,6 +254,101 @@ def test_growth(model_adj, name_carbon_model_matched_adj, medium_ex_inds, carbon
         results['carbon_growth'] = base_growth_C
     return results
 
+def _simulate_baseline_gene_carbon(model_json, gene_id, carbon_idx, carbon_ex_idx, medium_ex_inds, timeout):
+    """
+    Helper function to simulate a single gene knockout on a single carbon source for baseline GEM.
+    Designed to run in parallel with Dask.
+    """
+    import cobra
+    import numpy as np
+    
+    # Reconstruct model from JSON
+    model = cobra.io.json.from_json(model_json)
+    
+    # Set solver timeout
+    try:
+        model.solver.configuration.timeout = timeout
+    except Exception:
+        pass
+    
+    # Set medium bounds
+    for e in medium_ex_inds:
+        if e != -1:
+            model.exchanges[e].lower_bound = -1000
+    
+    # Set carbon source bound
+    if carbon_ex_idx != -1:
+        model.exchanges[carbon_ex_idx].lower_bound = -10
+    
+    # Knock out gene and optimize
+    with model:
+        model.genes.get_by_id(gene_id).knock_out()
+        try:
+            solution = model.slim_optimize()
+            if solution is None or np.isnan(solution) or np.isinf(solution):
+                solution = 0
+        except Exception:
+            solution = 0
+    
+    return (carbon_idx, solution)
+
+
+def _simulate_ecgem_gene_carbon(model_json, gene_id, carbon_idx, carbon_ex_idx, medium_ex_inds, 
+                                 processed_df, objective_reaction, enzyme_upper_bound, timeout):
+    """
+    Helper function to simulate a single gene knockout on a single carbon source for enzyme-constrained GEM.
+    Designed to run in parallel with Dask.
+    """
+    import cobra
+    import numpy as np
+    from kinGEMs.modeling.optimize import run_optimization_with_dataframe
+    
+    # Reconstruct model from JSON
+    model = cobra.io.json.from_json(model_json)
+    
+    # Set solver timeout
+    try:
+        model.solver.configuration.timeout = timeout
+    except Exception:
+        pass
+    
+    # Set medium bounds
+    for e in medium_ex_inds:
+        if e != -1:
+            model.exchanges[e].lower_bound = -1000
+    
+    # Set carbon source bound
+    if carbon_ex_idx != -1:
+        model.exchanges[carbon_ex_idx].lower_bound = -10
+    
+    # Knock out gene and optimize with enzyme constraints
+    with model:
+        model.genes.get_by_id(gene_id).knock_out()
+        try:
+            solution_value, df_FBA, gene_sequences_dict, _ = run_optimization_with_dataframe(
+                model=model,
+                processed_df=processed_df,
+                objective_reaction=objective_reaction,
+                enzyme_upper_bound=enzyme_upper_bound,
+                enzyme_ratio=True,
+                maximization=True,
+                multi_enzyme_off=False,
+                isoenzymes_off=False,
+                promiscuous_off=False,
+                complexes_off=False,
+                output_dir=None,
+                save_results=False,
+                print_reaction_conditions=False,
+                verbose=False
+            )
+            if solution_value is None or np.isnan(solution_value):
+                solution_value = 0
+        except Exception:
+            solution_value = 0
+    
+    return (carbon_idx, solution_value)
+
+
 def simulate_phenotype(
     model_run,
     name_genes_matched_adj,
@@ -435,10 +532,205 @@ def simulate_phenotype(
     if kingems_error_count > 0:
         print(f"  - Errors: {kingems_error_count}/{total_ec_iterations} optimizations")
     else:
-        print(f"  - No errors or invalid results")
+        print("  - No errors or invalid results")
 
     print("\nBaseline GEM and enzyme-constrained GEM simulation complete.")
     return baseline_GEM, enzyme_constrained_GEM
+
+
+def simulate_phenotype_parallel(
+    model_run,
+    name_genes_matched_adj,
+    name_carbon_model_matched_adj,
+    medium_ex_inds,
+    carbon_ex_inds,
+    processed_df,
+    objective_reaction,
+    enzyme_upper_bound,
+    thresh=0.001,
+    timeout=10,
+    n_workers=None,
+    use_distributed=False
+):
+    """
+    Parallel version of simulate_phenotype using Dask for multiprocessing.
+    Simulates growth/no-growth phenotypes for each gene and carbon source combination using:
+    1. Baseline GEM (slim_optimize)
+    2. Enzyme-constrained GEM (run_optimization_with_dataframe)
+    """
+    import multiprocessing as mp
+    
+    n_genes = len(name_genes_matched_adj)
+    n_carbons = len(name_carbon_model_matched_adj)
+    
+    # Default to number of CPU cores
+    if n_workers is None:
+        n_workers = mp.cpu_count()
+    
+    print(f"Parallel phenotype simulation using Dask")
+    print(f"Workers: {n_workers}")
+    print(f"Scheduler: {'Distributed' if use_distributed else 'Threaded'}")
+    print(f"Total simulations: {n_genes} genes × {n_carbons} carbon sources = {n_genes * n_carbons}")
+    
+    # Serialize model to JSON for passing to worker processes
+    print("\nSerializing model for parallel processing...")
+    model_json = cobra.io.json.to_json(model_run)
+    
+    # Set solver timeout
+    try:
+        model_run.solver.configuration.timeout = timeout
+    except Exception:
+        pass
+    
+    # Initialize Dask client if using distributed scheduler
+    client = None
+    if use_distributed:
+        print(f"Starting Dask distributed cluster with {n_workers} workers...")
+        cluster = LocalCluster(n_workers=n_workers, threads_per_worker=1, processes=True)
+        client = Client(cluster)
+        print(f"Dask dashboard available at: {client.dashboard_link}")
+    
+    # Baseline GEM simulation
+    print("\nBaseline GEM simulation (Parallel)")
+    
+    baseline_GEM = np.zeros([n_genes, n_carbons], dtype=float)
+    
+    # Build list of tasks, handling carbon source caching
+    baseline_tasks = []
+    task_map = {}  # Maps (gene_idx, carbon_idx) to task
+    
+    for e in range(n_carbons):
+        carbon_name = name_carbon_model_matched_adj[e]
+        
+        # Check if this carbon source was already processed
+        if carbon_name in name_carbon_model_matched_adj[:e]:
+            e_found = name_carbon_model_matched_adj[:e].index(carbon_name)
+            baseline_GEM[:, e] = baseline_GEM[:, e_found]
+            print(f"Carbon '{carbon_name}' (idx {e}): Using cached results from idx {e_found}")
+        else:
+            # Create tasks for this carbon source
+            for g in range(n_genes):
+                task = delayed(_simulate_baseline_gene_carbon)(
+                    model_json,
+                    name_genes_matched_adj[g],
+                    e,
+                    carbon_ex_inds[e],
+                    medium_ex_inds,
+                    timeout
+                )
+                baseline_tasks.append(task)
+                task_map[(g, e)] = len(baseline_tasks) - 1
+    
+    # Execute tasks in parallel
+    if baseline_tasks:
+        print(f"\nExecuting {len(baseline_tasks)} baseline simulations in parallel...")
+        
+        if use_distributed and client:
+            # using distributed scheduler - submit all, gather all
+            futures = client.compute(baseline_tasks)
+            results = client.gather(futures) 
+            print(f"Completed {len(results)} simulations")
+        else:
+            # using threaded scheduler - compute all at once
+            results = dask.compute(*baseline_tasks, scheduler='threads', num_workers=n_workers)
+            results = list(results)
+            print(f"Completed {len(results)} simulations")
+        
+        # Collect results back into the matrix
+        result_idx = 0
+        for e in range(n_carbons):
+            carbon_name = name_carbon_model_matched_adj[e]
+            if carbon_name not in name_carbon_model_matched_adj[:e]:
+                for g in range(n_genes):
+                    carbon_idx, solution = results[result_idx]
+                    baseline_GEM[g, carbon_idx] = solution
+                    result_idx += 1
+    
+    print("\nBaseline GEM simulation complete!")
+    print(f"Non-zero results: {np.count_nonzero(baseline_GEM)}/{baseline_GEM.size}")
+    
+    # kinGEMs simulation
+    print("\nEnzyme-constrained GEM simulation (Parallel)")
+    
+    if 'kcat_mean' in processed_df.columns:
+        processed_df['kcat_mean'] = processed_df['kcat_mean'].apply(
+            lambda x: float(x) if isinstance(x, str) and x.replace('.','',1).isdigit() else x
+        )
+    
+    enzyme_constrained_GEM = np.zeros([n_genes, n_carbons], dtype=float)
+    
+    # Build list of tasks
+    ecgem_tasks = []
+    ecgem_task_map = {}
+    
+    for e in range(n_carbons):
+        carbon_name = name_carbon_model_matched_adj[e]
+        
+        # Check if this carbon source was already processed
+        if carbon_name in name_carbon_model_matched_adj[:e]:
+            e_found = name_carbon_model_matched_adj[:e].index(carbon_name)
+            enzyme_constrained_GEM[:, e] = enzyme_constrained_GEM[:, e_found]
+            print(f"Carbon '{carbon_name}' (idx {e}): Using cached results from idx {e_found}")
+        else:
+            # Create tasks for this carbon source
+            for g in range(n_genes):
+                task = delayed(_simulate_ecgem_gene_carbon)(
+                    model_json,
+                    name_genes_matched_adj[g],
+                    e,
+                    carbon_ex_inds[e],
+                    medium_ex_inds,
+                    processed_df,
+                    objective_reaction,
+                    enzyme_upper_bound,
+                    timeout
+                )
+                ecgem_tasks.append(task)
+                ecgem_task_map[(g, e)] = len(ecgem_tasks) - 1
+    
+    # Execute tasks in parallel
+    if ecgem_tasks:
+        print(f"\nExecuting {len(ecgem_tasks)} enzyme-constrained simulations in parallel...")
+        with tqdm(total=len(ecgem_tasks), desc="Enzyme-Constrained GEM (Parallel)", unit="simulation") as pbar:
+            if use_distributed and client:
+                # using distributed scheduler
+                futures = client.compute(ecgem_tasks)
+                ecgem_results = []
+                for future in futures:
+                    result = future.result()
+                    ecgem_results.append(result)
+                    pbar.update(1)
+            else:
+                # using threaded scheduler
+                ecgem_results = []
+                for task in ecgem_tasks:
+                    result = task.compute()
+                    ecgem_results.append(result)
+                    pbar.update(1)
+        
+        # Collect results back into the matrix
+        result_idx = 0
+        for e in range(n_carbons):
+            carbon_name = name_carbon_model_matched_adj[e]
+            if carbon_name not in name_carbon_model_matched_adj[:e]:
+                for g in range(n_genes):
+                    carbon_idx, solution = ecgem_results[result_idx]
+                    enzyme_constrained_GEM[g, carbon_idx] = solution
+                    result_idx += 1
+    
+    print("\nEnzyme-constrained GEM simulation complete!")
+    print(f"Non-zero results: {np.count_nonzero(enzyme_constrained_GEM)}/{enzyme_constrained_GEM.size}")
+    
+    # Clean up Dask client if using distributed scheduler
+    if client:
+        client.close()
+        cluster.close()
+        print("\nDask cluster closed.")
+    
+    print("Parallel simulation complete!")
+    
+    return baseline_GEM, enzyme_constrained_GEM
+
 
 def simulate_phenotype_flux(
     model_run,
