@@ -3,6 +3,7 @@ import copy
 import os
 
 import cobra
+import dask
 from dask import delayed
 from dask.distributed import Client, LocalCluster
 import fastcluster
