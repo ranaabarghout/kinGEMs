@@ -626,16 +626,26 @@ def simulate_phenotype_parallel(
     if baseline_tasks:
         print(f"\nExecuting {len(baseline_tasks)} baseline simulations in parallel...")
         
-        if use_distributed and client:
-            # using distributed scheduler - submit all, gather all
-            futures = client.compute(baseline_tasks)
-            results = client.gather(futures) 
-            print(f"Completed {len(results)} simulations")
-        else:
-            # using threaded scheduler - compute all at once
-            results = dask.compute(*baseline_tasks, scheduler='threads', num_workers=n_workers)
-            results = list(results)
-            print(f"Completed {len(results)} simulations")
+        with tqdm(total=len(baseline_tasks), desc="Baseline GEM (Parallel)", unit="simulation") as pbar:
+            if use_distributed and client:
+                # using distributed scheduler - track futures as they complete
+                from dask.distributed import as_completed
+                futures = client.compute(baseline_tasks)
+                results = []
+                for future in as_completed(futures):
+                    result = future.result()
+                    results.append(result)
+                    pbar.update(1)
+            else:
+                # using threaded scheduler - compute with progress tracking
+                # We'll compute in batches to update progress
+                batch_size = max(1, len(baseline_tasks) // 100)  # Update ~100 times
+                results = []
+                for i in range(0, len(baseline_tasks), batch_size):
+                    batch = baseline_tasks[i:i+batch_size]
+                    batch_results = dask.compute(*batch, scheduler='threads', num_workers=n_workers)
+                    results.extend(batch_results)
+                    pbar.update(len(batch))
         
         # Collect results back into the matrix
         result_idx = 0
@@ -692,22 +702,27 @@ def simulate_phenotype_parallel(
     # Execute tasks in parallel
     if ecgem_tasks:
         print(f"\nExecuting {len(ecgem_tasks)} enzyme-constrained simulations in parallel...")
+        
         with tqdm(total=len(ecgem_tasks), desc="Enzyme-Constrained GEM (Parallel)", unit="simulation") as pbar:
             if use_distributed and client:
-                # using distributed scheduler
+                # using distributed scheduler - track futures as they complete
+                from dask.distributed import as_completed
                 futures = client.compute(ecgem_tasks)
                 ecgem_results = []
-                for future in futures:
+                for future in as_completed(futures):
                     result = future.result()
                     ecgem_results.append(result)
                     pbar.update(1)
             else:
-                # using threaded scheduler
+                # using threaded scheduler - compute with progress tracking
+                # We'll compute in batches to update progress
+                batch_size = max(1, len(ecgem_tasks) // 100)  # Update ~100 times
                 ecgem_results = []
-                for task in ecgem_tasks:
-                    result = task.compute()
-                    ecgem_results.append(result)
-                    pbar.update(1)
+                for i in range(0, len(ecgem_tasks), batch_size):
+                    batch = ecgem_tasks[i:i+batch_size]
+                    batch_results = dask.compute(*batch, scheduler='threads', num_workers=n_workers)
+                    ecgem_results.extend(batch_results)
+                    pbar.update(len(batch))
         
         # Collect results back into the matrix
         result_idx = 0
