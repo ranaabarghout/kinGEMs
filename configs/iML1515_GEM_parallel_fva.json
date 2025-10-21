@@ -1,0 +1,30 @@
+{
+  "model_name": "iML1515_GEM",
+  "organism": "E coli",
+  "biomass_reaction": null,
+  "enzyme_upper_bound": 0.35,
+  "solver": "glpk",
+  "enable_fva": true,
+  "enable_biolog_validation": false,
+
+  "fva": {
+    "parallel": true,
+    "workers": 4,
+    "chunk_size": 50,
+    "method": "dask",
+    "_comment_method": "Options: 'dask' (distributed, scalable) or 'multiprocessing' (simpler, single-machine)",
+    "_comment_workers": "Set to null for auto-detection (uses all CPU cores)",
+    "_comment_chunk_size": "Number of reactions per task. null = auto-calculate. Larger = less overhead but less load balancing"
+  },
+
+  "simulated_annealing": {
+    "temperature": 1.0,
+    "cooling_rate": 0.975,
+    "min_temperature": 0.001,
+    "max_iterations": 100,
+    "max_unchanged_iterations": 5,
+    "change_threshold": 0.009,
+    "biomass_goal": 0.5,
+    "verbose": false
+  }
+}

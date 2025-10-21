@@ -58,6 +58,19 @@ This directory contains comprehensive documentation for the kinGEMs v2 pipeline.
 
 ### Analysis & Validation
 
+- **[VALIDATION_PIPELINE_GUIDE.md](VALIDATION_PIPELINE_GUIDE.md)** - Config-driven validation system ⭐ NEW
+  - Compare baseline, pre-tuning, and post-tuning models
+  - Performance metrics (accuracy, precision, recall, F1, AUC)
+  - Essential genes and kcat-specific analysis
+  - Automated visualization generation
+  - Configuration examples and use cases
+
+- **[FVA_PARALLELIZATION_ANALYSIS.md](FVA_PARALLELIZATION_ANALYSIS.md)** - FVA performance optimization
+  - Parallel FVA with Dask and multiprocessing
+  - Performance benchmarks and recommendations
+  - Memory usage estimates
+  - Configuration options
+
 - **[MODEL_COMPARISON.md](MODEL_COMPARISON.md)** - Comparing different models
   - Standard vs ModelSEED models
   - Model complexity metrics
