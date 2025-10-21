@@ -102,6 +102,7 @@ def run_optimization(
     tee=False,
     verbose=False,
     medium=None,
+    medium_upper_bound=True,
 ):
     """
     Enzyme-constrained FBA via Pyomo, handling:
@@ -126,14 +127,19 @@ def run_optimization(
     
     # 1a) Apply medium conditions if provided
     if medium is not None:
-        print(f"Applying medium conditions: {medium}")
-        for rxn_id, uptake in medium.items():
+        for rxn_id, flux_value in medium.items():
             try:
                 rxn = mod.reactions.get_by_id(rxn_id)
-                rxn.lower_bound = uptake
-                print(f"  Set {rxn_id} lower bound to {uptake}")
+                rxn.lower_bound = flux_value
+                if medium_upper_bound:
+                    rxn.upper_bound = flux_value
+                if verbose:
+                    if medium_upper_bound:
+                        print(f"  Fixed {rxn_id}: lower={flux_value}, upper={flux_value}")
+                    else:
+                        print(f"  Set {rxn_id}: lower={flux_value}, upper={rxn.upper_bound}")
             except KeyError:
-                print(f"  Warning: Reaction {rxn_id} not found in model")
+                print(f"  Warning: Reaction provided '{rxn_id}' was not found in model")
 
     # 2) Initial flux guess
     # print("Step 2: Getting initial flux guess...")
@@ -172,8 +178,10 @@ def run_optimization(
         for rxn_id in medium.keys():
             if rxn_id in lb:
                 print(f"  {rxn_id} lower bound in lb dict: {lb[rxn_id]:.4f} (should be {medium[rxn_id]:.4f})")
+            if rxn_id in ub:
+                print(f"  {rxn_id} upper bound in ub dict: {ub[rxn_id]:.4f} (should be {medium[rxn_id]:.4f})")
             else:
-                print(f"  {rxn_id} NOT FOUND in lb dict!")
+                print(f"  {rxn_id} NOT FOUND in lb or ub dict!")
         print("=== END DIAGNOSTIC ===\n")
     obj_coef = {r.id: (1.0 if r.id == objective_reaction else 0.0) for r in mod.reactions} #obj_coef = {r.id: r.objective_coefficient for r in mod.reactions}
     met_index = {m: i for i, m in enumerate(mets)}
@@ -578,7 +586,7 @@ def run_optimization_with_dataframe(model, processed_df, objective_reaction,
                     multi_enzyme_off=False, isoenzymes_off=False,
                     promiscuous_off=False, complexes_off=False,
                     output_dir=None, save_results=True, print_reaction_conditions=True, verbose=True,
-                    solver_name='glpk', medium=None):
+                    solver_name='glpk', medium=None, medium_upper_bound=True):
     """
     Run enzyme-constrained flux balance analysis using a processed dataframe.
 
@@ -609,8 +617,11 @@ def run_optimization_with_dataframe(model, processed_df, objective_reaction,
     save_results : bool, optional
         Whether to automatically save results to a file
     medium : dict, optional
-        Dictionary mapping exchange reaction IDs to their lower bounds (uptake rates).
+        Dictionary mapping exchange reaction IDs to their flux values.
         Example: {"EX_glc__D_e": -10, "EX_o2_e": -14.49}
+    medium_upper_bound : bool, optional
+        If True, set both lower and upper bounds equal.
+        If False, only set lower bound.
 
     Returns
     -------
@@ -658,7 +669,8 @@ def run_optimization_with_dataframe(model, processed_df, objective_reaction,
         enzyme_ratio=True,
         tee=verbose,
         solver_name=solver_name,
-        medium=medium
+        medium=medium,
+        medium_upper_bound=medium_upper_bound
     )
 
     # Create descriptive filename and save results if requested

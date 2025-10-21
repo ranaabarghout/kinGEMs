@@ -123,7 +123,9 @@ def _apply_medium_conditions(model: cobra.Model, medium_id: str) -> None:
         try:
             rxn = model.reactions.get_by_id(rxn_id)
             rxn.lower_bound = uptake
+            rxn.upper_bound = uptake
             print(f"Set {rxn_id} lower bound to {uptake}")
+            print(f"Set {rxn_id} upper bound to {uptake}")
         except KeyError:
             print(f"Reaction {rxn_id} not found in model.")
 
