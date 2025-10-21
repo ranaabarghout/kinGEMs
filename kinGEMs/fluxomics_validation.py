@@ -46,6 +46,55 @@ def apply_ecomics_condition(model: cobra.Model, medium_id: str, stress: str):
     return model
 
 
+def get_medium_dict(medium_id: str) -> dict:
+    """
+    Get medium composition as a dictionary for a given medium ID.
+    
+    Parameters:
+        medium_id : str
+            Medium identifier. Options: 'MD066', 'MD120', 'MD004', 'MD121'
+    
+    Returns:
+        dict: Dictionary mapping exchange reaction IDs to their lower bounds (uptake rates)
+    """
+    
+    valid_medium_ids = {'MD066', 'MD120', 'MD004', 'MD121'}
+    if medium_id not in valid_medium_ids:
+        raise ValueError(f"Invalid medium_id '{medium_id}'. Must be one of {valid_medium_ids}")
+    
+    if medium_id == 'MD066':
+        # synthetic+Glu medium
+        # TODO: add medium composition
+        return {
+            "EX_glc__D_e": -10
+        }
+        
+    elif medium_id == 'MD004':
+        # synthetic+Glu medium with higher glucose uptake
+        # TODO: add medium composition
+        return {
+            "EX_glc__D_e": -10
+        }
+    
+    elif medium_id == 'MD120':
+        # MOPS+Glu(0.4%) medium
+        # TODO: add medium composition
+        return {
+            "EX_glc__D_e": -10
+        }
+    
+    elif medium_id == 'MD121':
+        # M9+Glu medium
+        return {
+            "EX_glc__D_e": -10,
+            "EX_so4_e": -1.699,
+            "EX_o2_e": -14.49,
+            #"EX_co2_e": 16.22,
+            "EX_nh4_e": -5.229,
+            "EX_h2o_e": -6.96
+        }
+
+
 def _apply_medium_conditions(model: cobra.Model, medium_id: str) -> None:
     """
     Apply medium-specific modifications to the model.
@@ -57,41 +106,17 @@ def _apply_medium_conditions(model: cobra.Model, medium_id: str) -> None:
             Medium identifier
     """
     
-    if medium_id == 'MD066':
-        # synthetic+Glu medium
-        # TODO: add medium composition
-        print("Applying synthetic+Glu medium")
-        medium = {
-            "EX_glc__D_e": -10
-        }
-        
-    elif medium_id == 'MD004':
-        # synthetic+Glu medium with higher glucose uptake
-        # TODO: add medium composition
-        print("Applying synthetic+Glu medium with higher glucose uptake")
-        medium = {
-            "EX_glc__D_e": -10
-        }
+    # Get the medium dictionary
+    medium = get_medium_dict(medium_id)
     
-    elif medium_id == 'MD120':
-        # MOPS+Glu(0.4%) medium
-        # TODO: add medium composition
-        print("Applying MOPS+Glu(0.4%) medium")
-        medium = {
-            "EX_glc__D_e": -10
-        }
-    
-    elif medium_id == 'MD121':
-        # M9+Glu medium
-        print("Applying M9+Glu medium")
-        medium = {
-            "EX_glc__D_e": -10,
-            "EX_so4_e": -1.699,
-            "EX_o2_e": -14.49,
-            #"EX_co2_e": 16.22,
-            "EX_nh4_e": -5.229,
-            "EX_h2o_e": -6.96
-        }
+    # Print which medium is being applied
+    medium_names = {
+        'MD066': 'synthetic+Glu medium',
+        'MD004': 'synthetic+Glu medium with higher glucose uptake',
+        'MD120': 'MOPS+Glu(0.4%) medium',
+        'MD121': 'M9+Glu medium'
+    }
+    print(f"Applying {medium_names.get(medium_id, medium_id)}")
     
     # Apply the medium by setting lower bounds
     for rxn_id, uptake in medium.items():

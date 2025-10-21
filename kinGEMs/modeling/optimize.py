@@ -98,9 +98,10 @@ def run_optimization(
     enzyme_upper_bound=0.125,
     enzyme_ratio=True,
     maximization=True,
-    solver_name='glpk',
+    solver_name='gurobi',
     tee=False,
     verbose=False,
+    medium=None,
 ):
     """
     Enzyme-constrained FBA via Pyomo, handling:
@@ -122,10 +123,17 @@ def run_optimization(
         )
     else:
         mod = model
-    # print(f"Model loaded in {time.time() - step_start:.2f}s\n")
     
-    # FIX: Set the COBRA model's solver to match the specified solver
-    #mod.solver = solver_name
+    # 1a) Apply medium conditions if provided
+    if medium is not None:
+        print(f"Applying medium conditions: {medium}")
+        for rxn_id, uptake in medium.items():
+            try:
+                rxn = mod.reactions.get_by_id(rxn_id)
+                rxn.lower_bound = uptake
+                print(f"  Set {rxn_id} lower bound to {uptake}")
+            except KeyError:
+                print(f"  Warning: Reaction {rxn_id} not found in model")
 
     # 2) Initial flux guess
     # print("Step 2: Getting initial flux guess...")
@@ -157,6 +165,16 @@ def run_optimization(
     genes = [g.id for g in mod.genes]
     lb = {r.id: r.lower_bound for r in mod.reactions}
     ub = {r.id: r.upper_bound for r in mod.reactions}
+    
+    # DIAGNOSTIC: Print the bounds that will be used in optimization
+    if medium is not None:
+        print("\n=== DIAGNOSTIC: Checking captured bounds ===")
+        for rxn_id in medium.keys():
+            if rxn_id in lb:
+                print(f"  {rxn_id} lower bound in lb dict: {lb[rxn_id]:.4f} (should be {medium[rxn_id]:.4f})")
+            else:
+                print(f"  {rxn_id} NOT FOUND in lb dict!")
+        print("=== END DIAGNOSTIC ===\n")
     obj_coef = {r.id: (1.0 if r.id == objective_reaction else 0.0) for r in mod.reactions} #obj_coef = {r.id: r.objective_coefficient for r in mod.reactions}
     met_index = {m: i for i, m in enumerate(mets)}
     rxn_index = {r: j for j, r in enumerate(rxns)}
@@ -273,10 +291,7 @@ def run_optimization(
         constraints_skipped += 1
         skip_reasons['multiple_clauses'] += 1
         return Constraint.Skip  # noqa: F405
-    
-    print("Creating AND-GPR constraints...")
     m.kcat_and = Constraint(m.K, rule=and_rule)  # noqa: F405
-    print(f"AND constraints created: {and_constraints_created} (single: {single_enzyme_constraints}, complex: {complex_enzyme_constraints})")
 
     # 6b) OR‐GPR: pure isoenzymes (no AND within clauses)
     iso_added = 0
@@ -309,10 +324,7 @@ def run_optimization(
             return Constraint.Skip  # noqa: F405
         iso_added += 1
         return mo.v[rxn_id] <= sum(terms)
-    
-    print("Creating OR-GPR (isoenzyme) constraints...")
     m.kcat_iso = Constraint(m.R, rule=iso_rule)  # noqa: F405
-    print(f"Isoenzyme constraints created: {iso_constraints_created}")
 
     # 6c) MIXED OR+AND: Handle complex cases like (g1 and g2) or (g3 and g4) or g5
     mixed_added = 0
@@ -390,8 +402,6 @@ def run_optimization(
             return Constraint.Skip  # noqa: F405
         promis_added += 1
         return sum(usage) <= mo.E[g_id]
-    
-    print("Creating promiscuous enzyme constraints...")
     m.promiscuous = Constraint(m.G, rule=promis_rule)  # noqa: F405
 
     # Print constraint summary (only if verbose)
@@ -485,6 +495,18 @@ def run_optimization(
     records = [('flux', r, m.v[r].value) for r in m.R]
     records += [('enzyme', g, m.E[g].value) for g in m.G]
     df_FBA = pd.DataFrame(records, columns=['Variable','Index','Value'])
+    
+    # DIAGNOSTIC: Print exchange reaction fluxes if medium was provided
+    if medium is not None:
+        print("\n=== DIAGNOSTIC: Exchange reaction fluxes after optimization ===")
+        for rxn_id in medium.keys():
+            flux_val = m.v[rxn_id].value if rxn_id in m.R else None
+            if flux_val is not None:
+                print(f"  {rxn_id}: flux = {flux_val:.4f} (bound was {medium[rxn_id]:.4f})")
+            else:
+                print(f"  {rxn_id}: NOT FOUND in optimization results")
+        print(f"Objective value: {sol_val:.6f}")
+        print("=== END DIAGNOSTIC ===\n")
 
     return sol_val, df_FBA, gene_sequences_dict, m
 
@@ -556,7 +578,7 @@ def run_optimization_with_dataframe(model, processed_df, objective_reaction,
                     multi_enzyme_off=False, isoenzymes_off=False,
                     promiscuous_off=False, complexes_off=False,
                     output_dir=None, save_results=True, print_reaction_conditions=True, verbose=True,
-                    solver_name='glpk'):
+                    solver_name='glpk', medium=None):
     """
     Run enzyme-constrained flux balance analysis using a processed dataframe.
 
@@ -586,6 +608,9 @@ def run_optimization_with_dataframe(model, processed_df, objective_reaction,
         Directory to save results in
     save_results : bool, optional
         Whether to automatically save results to a file
+    medium : dict, optional
+        Dictionary mapping exchange reaction IDs to their lower bounds (uptake rates).
+        Example: {"EX_glc__D_e": -10, "EX_o2_e": -14.49}
 
     Returns
     -------
@@ -632,7 +657,8 @@ def run_optimization_with_dataframe(model, processed_df, objective_reaction,
         maximization=maximization,
         enzyme_ratio=True,
         tee=verbose,
-        solver_name=solver_name
+        solver_name=solver_name,
+        medium=medium
     )
 
     # Create descriptive filename and save results if requested
