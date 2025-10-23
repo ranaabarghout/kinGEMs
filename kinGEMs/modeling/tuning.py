@@ -50,7 +50,7 @@ def simulated_annealing(
     change_threshold=0.001,
     verbose=False,
     medium=None,
-    medium_upper_bound=True
+    medium_upper_bound=False
 ):
     """
     Use simulated annealing to tune kcat values for improved biomass production.

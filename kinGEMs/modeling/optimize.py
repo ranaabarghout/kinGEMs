@@ -102,7 +102,7 @@ def run_optimization(
     tee=False,
     verbose=False,
     medium=None,
-    medium_upper_bound=True,
+    medium_upper_bound=False,
 ):
     """
     Enzyme-constrained FBA via Pyomo, handling:
@@ -586,7 +586,7 @@ def run_optimization_with_dataframe(model, processed_df, objective_reaction,
                     multi_enzyme_off=False, isoenzymes_off=False,
                     promiscuous_off=False, complexes_off=False,
                     output_dir=None, save_results=True, print_reaction_conditions=True, verbose=True,
-                    solver_name='glpk', medium=None, medium_upper_bound=True):
+                    solver_name='glpk', medium=None, medium_upper_bound=False):
     """
     Run enzyme-constrained flux balance analysis using a processed dataframe.
 

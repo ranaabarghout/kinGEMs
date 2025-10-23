@@ -2,7 +2,7 @@
   "model_name": "iML1515_GEM",
   "organism": "E coli",
   "biomass_reaction": "BIOMASS_Ec_iML1515_core_75p37M",
-  "enzyme_upper_bound": 0.3,
+  "enzyme_upper_bound": 0.5,
   "solver": "glpk",
   "enable_fva": true,
   "enable_biolog_validation": false,
@@ -13,7 +13,7 @@
     "max_iterations": 100,
     "max_unchanged_iterations": 5,
     "change_threshold": 0.009,
-    "biomass_goal": 0.5,
+    "biomass_goal": 0.4842,
     "verbose": false,
     "medium": {
       "EX_glc__D_e": -10,

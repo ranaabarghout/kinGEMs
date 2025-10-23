@@ -862,7 +862,8 @@ def kingems_cobrapy_dataframe(kingems_path: str, fba_path: str) -> pd.DataFrame:
 
 
 def plot_flux_correlation(df, method1_col, method2_col, rxn_id_col=None, 
-                         output_path=None, figsize=(14, 6), show=False):
+                         output_path=None, figsize=(14, 6), show=False,
+                         biomass1=None, biomass2=None):
     """
     Plot correlation analysis between two flux methods with scatter and residual plots.
     
@@ -882,6 +883,10 @@ def plot_flux_correlation(df, method1_col, method2_col, rxn_id_col=None,
         Figure size (width, height)
     show : bool, optional
         Whether to display the plot
+    biomass1 : float, optional
+        Biomass/growth rate value for method 1
+    biomass2 : float, optional
+        Biomass/growth rate value for method 2
         
     Returns
     -------
@@ -944,7 +949,20 @@ def plot_flux_correlation(df, method1_col, method2_col, rxn_id_col=None,
     
     ax1.set_xlabel(f'{method1_col}')
     ax1.set_ylabel(f'{method2_col}')
-    ax1.set_title(f'Correlation Plot\nR² = {r2:.3f}, r = {pearson_r:.3f}')
+    
+    # Build title with biomass values if provided
+    title = f'Correlation Plot\nR² = {r2:.3f}, r = {pearson_r:.3f}'
+    if biomass1 is not None or biomass2 is not None:
+        biomass_text = '\n'
+        if biomass1 is not None:
+            biomass_text += f'{method1_col} Biomass: {biomass1:.4f}'
+        if biomass2 is not None:
+            if biomass1 is not None:
+                biomass_text += ' | '
+            biomass_text += f'{method2_col} Biomass: {biomass2:.4f}'
+        title += biomass_text
+    
+    ax1.set_title(title)
     ax1.legend()
     ax1.grid(True, alpha=0.3)
     
