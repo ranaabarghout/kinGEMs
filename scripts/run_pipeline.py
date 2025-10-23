@@ -414,8 +414,7 @@ def main():
     # File paths
     model_path = os.path.join(raw_data_dir, f"{model_name}.xml")
 
-    # Find predictions file with flexible naming
-    predictions_csv_path = find_predictions_file(model_name, CPIPred_data_dir)
+    
 
     substrates_output = os.path.join(interim_data_dir, f"{model_name}_substrates.csv")
     sequences_output = os.path.join(interim_data_dir, f"{model_name}_sequences.csv")
@@ -535,6 +534,8 @@ def main():
     print(f"  Merged data: {len(merged_data)} rows")
 
     # === Step 3: Process kcat predictions ===
+    # Find predictions file with flexible naming
+    predictions_csv_path = find_predictions_file(model_name, CPIPred_data_dir)
     print("\n=== Step 3: Processing CPI-Pred kcat values & annotating model ===")
     if not FORCE_REGENERATE and os.path.exists(processed_data_output):
         print("  ✓ Found existing file, loading cached data:")
