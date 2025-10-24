@@ -107,8 +107,6 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from kinGEMs.dataset import annotate_model_with_kcat_and_gpr, process_kcat_predictions
 from kinGEMs.fluxomics_validation import (
     compare_fluxomics,
-    apply_ecomics_condition,
-    get_medium_dict,
 )
 from kinGEMs.modeling.optimize import run_optimization_with_dataframe
 from kinGEMs.modeling.tuning import simulated_annealing
@@ -143,6 +141,76 @@ def determine_biomass_reaction(model):
     if not obj_rxns:
         raise ValueError("No objective reaction found in model")
     return next(iter(obj_rxns.keys()))
+
+
+def get_medium_from_config(config, use_sa_medium=False):
+    """
+    Get medium composition from config file.
+    
+    Parameters:
+        config: dict
+            The loaded configuration dictionary
+        use_sa_medium: bool
+            If True, use simulated annealing medium, otherwise use experimental validation medium
+    
+    Returns:
+        dict: Medium composition mapping exchange reaction IDs to bounds
+    """
+    if use_sa_medium:
+        return config.get('simulated_annealing', {}).get('medium', {})
+    else:
+        exp_medium = config.get('experimental_validation', {}).get('medium', {})
+        if not exp_medium:
+            # Fallback to simulated annealing medium
+            exp_medium = config.get('simulated_annealing', {}).get('medium', {})
+        return exp_medium
+
+
+def apply_medium_to_model(model, medium_dict, stress='none'):
+    """
+    Apply medium composition to a cobra model.
+    
+    Parameters:
+        model: cobra.Model
+            The model to modify
+        medium_dict: dict
+            Dictionary mapping exchange reaction IDs to their bounds
+        stress: str
+            Stress condition (currently supports 'none', 'NADH-limitation', 'ATP-limitation')
+    
+    Returns:
+        model: cobra.Model
+            Modified model with applied medium
+    """
+    print("Applying medium composition from config")
+    
+    # Apply medium bounds
+    for rxn_id, uptake in medium_dict.items():
+        try:
+            rxn = model.reactions.get_by_id(rxn_id)
+            rxn.lower_bound = uptake
+            rxn.upper_bound = uptake
+            print(f"Set {rxn_id} bounds to {uptake}")
+        except KeyError:
+            print(f"WARNING: Reaction {rxn_id} not found in model.")
+    
+    # Apply stress conditions if needed
+    if stress == 'NADH-limitation':
+        try:
+            nadh_dehyd = model.reactions.get_by_id("NADH16pp")
+            nadh_dehyd.upper_bound = 3
+            print("Applied NADH dehydrogenase limitation")
+        except KeyError:
+            print("WARNING: NADH16pp reaction not found for NADH limitation")
+    elif stress == 'ATP-limitation':
+        try:
+            atp_synth = model.reactions.get_by_id("ATPS4rpp")
+            atp_synth.upper_bound = 3
+            print("Applied ATP synthase limitation")
+        except KeyError:
+            print("WARNING: ATPS4rpp reaction not found for ATP limitation")
+    
+    return model
 
 
 def main():
@@ -334,8 +402,8 @@ def main():
     print("\n=== Step 4: Running modified kinGEMs optimization ===")
     print(f"  (Enzyme-constrained FBA with experimental medium: {medium_id})")
     
-    # Get medium composition
-    medium = get_medium_dict(medium_id)
+    # Get medium composition from config
+    medium = get_medium_from_config(config, use_sa_medium=False)
     print(f"  Medium composition: {medium}")
     
     out_path_modified = os.path.join(exp_output_dir, "df_FBA_modified_model.csv")
@@ -403,9 +471,10 @@ def main():
             cobrapy_biomass = None
     
     if cobrapy_biomass is None:
-        # Apply medium changes
+        # Apply medium changes from config
         cobrapy_model = cb.io.read_sbml_model(model_xml)
-        cobrapy_model = apply_ecomics_condition(model=cobrapy_model, medium_id=medium_id, stress=stress)
+        cobrapy_medium = get_medium_from_config(config, use_sa_medium=False)
+        cobrapy_model = apply_medium_to_model(cobrapy_model, cobrapy_medium, stress)
         
         # Run COBRApy FBA
         cobrapy_solution = cobrapy_model.optimize()

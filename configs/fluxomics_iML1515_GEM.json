@@ -6,6 +6,18 @@
   "solver": "glpk",
   "enable_fva": true,
   "enable_biolog_validation": false,
+  "experimental_validation": {
+    "experiment": "W3110_MD121_M9+Glu_none",
+    "medium_id": "MD121",
+    "stress": "none",
+    "medium": {
+      "EX_glc__D_e": -10,
+      "EX_so4_e": -1.699,
+      "EX_o2_e": -14.49,
+      "EX_nh4_e": -5.229,
+      "EX_h2o_e": -6.96
+    }
+  },
   "simulated_annealing": {
     "temperature": 1.0,
     "cooling_rate": 0.975,
@@ -13,7 +25,7 @@
     "max_iterations": 100,
     "max_unchanged_iterations": 5,
     "change_threshold": 0.009,
-    "biomass_goal": 0.4842,
+    "biomass_goal": 0.5,
     "verbose": false,
     "medium": {
       "EX_glc__D_e": -10,
