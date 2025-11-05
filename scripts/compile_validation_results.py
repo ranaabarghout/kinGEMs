@@ -25,7 +25,7 @@ from scipy.stats import pearsonr, spearmanr
 
 def load_results(input_dir, mode):
     """Load results for a specific mode."""
-    filename = f"{mode.replace('tuning', '_tuning')}_GEM.npy" if 'tuning' in mode else f"{mode}_GEM.npy"
+    filename = f"{mode}_GEM.npy"
     filepath = os.path.join(input_dir, filename)
 
     if not os.path.exists(filepath):
@@ -245,15 +245,15 @@ def main():
 
     if baseline_GEM is not None:
         metrics['Baseline GEM'] = calculate_correlations(experimental, baseline_GEM)
-        print(f"  ✓ Baseline metrics calculated")
+        print("  ✓ Baseline metrics calculated")
 
     if pretuning_GEM is not None:
         metrics['Pre-tuning kinGEMs'] = calculate_correlations(experimental, pretuning_GEM)
-        print(f"  ✓ Pre-tuning metrics calculated")
+        print("  ✓ Pre-tuning metrics calculated")
 
     if posttuning_GEM is not None:
         metrics['Post-tuning kinGEMs'] = calculate_correlations(experimental, posttuning_GEM)
-        print(f"  ✓ Post-tuning metrics calculated")
+        print("  ✓ Post-tuning metrics calculated")
 
     # === Step 3: Create visualizations ===
     print("\n=== Step 3: Creating visualizations ===")
@@ -298,10 +298,10 @@ def main():
     print("="*70)
     print(f"Results saved to: {args.output}")
     print("\nGenerated files:")
-    print(f"  - validation_metrics.csv")
-    print(f"  - validation_improvements.csv")
-    print(f"  - validation_comparison.png")
-    print(f"  - compiled_metadata.json")
+    print("  - validation_metrics.csv")
+    print("  - validation_improvements.csv")
+    print("  - validation_comparison.png")
+    print("  - compiled_metadata.json")
     print("="*70)
 
 

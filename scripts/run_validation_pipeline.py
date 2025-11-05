@@ -45,7 +45,6 @@ from kinGEMs.validation_utils import (
     prepare_model,
     simulate_phenotype,
     simulate_phenotype_parallel,
-    test_growth,
 )
 
 # Silence warnings
@@ -109,7 +108,6 @@ def print_basic_metrics(exp_binary, sim_binary, label):
 def simulate_baseline_only(model_adj, name_genes_matched_adj, name_carbon_model_matched_adj,
                            medium_ex_inds, carbon_ex_inds):
     """Simulate baseline GEM (no enzyme constraints) only."""
-    from copy import deepcopy
 
     n_genes = len(name_genes_matched_adj)
     n_carbons = len(name_carbon_model_matched_adj)

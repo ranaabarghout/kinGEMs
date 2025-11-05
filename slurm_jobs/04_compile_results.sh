@@ -37,8 +37,7 @@ mkdir -p logs
 echo "Compiling validation results..."
 python scripts/compile_validation_results.py \
     --input results/validation_parallel \
-    --output results/validation_compiled \
-    --config configs/validation_iML1515.json
+    --output results/validation_compiled
 
 exitcode=$?
 
