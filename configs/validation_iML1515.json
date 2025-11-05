@@ -23,11 +23,11 @@
   "parallel": {
     "enabled": true,
     "workers": 3,
-    "method": "dask",
-    "_comment_method": "Options: 'dask' (distributed) or 'multiprocessing' (simpler, more reliable on HPC)",
-    "_comment_workers": "Set to 3 workers with 4 CPUs allocated (1 CPU for scheduler/overhead). Optimized for 60GB memory",
-    "chunk_size": 25,
-    "_comment_chunk_size": "Tasks per chunk. Reduced to 25 to prevent worker death and memory issues. With CPLEX: 25 tasks @ 0.5s = 12.5s per chunk (well under timeouts)"
+    "method": "multiprocessing",
+    "_comment_method": "Using multiprocessing instead of dask - more reliable on HPC, better memory management, no scheduler overhead",
+    "_comment_workers": "Set to 3 workers with 4 CPUs allocated. Each worker gets ~20GB RAM (60GB / 3 workers)",
+    "chunk_size": 442,
+    "_comment_chunk_size": "Tasks per chunk. With CPLEX (0.05-0.5s/task) and 3 workers: 442 tasks/chunk × 0.5s = 221s (3-4min) per chunk. Total: 75 chunks for 33,150 tasks."
   },
 
   "_comment_thresholds": "Thresholds for binary classification",

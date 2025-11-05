@@ -429,6 +429,12 @@ def run_optimization(
     # 8) Solve
     # print("Step 8: Setting up and running solver...")
     solver = SolverFactory(solver_name)
+    
+    # Debug: Check if solver is available
+    if not solver.available():
+        if verbose:
+            print(f"⚠️  WARNING: Solver '{solver_name}' not available in Pyomo, falling back to GLPK")
+        solver = SolverFactory('glpk')
 
     # Set solver tolerances to avoid numerical precision warnings
     if solver_name.lower() == 'glpk':
@@ -436,6 +442,9 @@ def run_optimization(
     elif solver_name.lower() == 'gurobi':
         solver.options['FeasibilityTol'] = 1e-9
         solver.options['OptimalityTol'] = 1e-9
+    elif solver_name.lower() == 'cplex':
+        # CPLEX options for better performance
+        solver.options['timelimit'] = 300  # time limit in seconds
 
     #solver.options['threads'] = 4
     # print("Solver:", solver)

@@ -32,11 +32,14 @@ module load python/3.11
 export MODULEPATH=$HOME/modulefiles:$MODULEPATH
 module load mycplex/22.1.1
 
-# Verify CPLEX is accessible
+# Verify CPLEX is accessible and set environment variables for Pyomo
 echo "Checking CPLEX availability..."
-which cplex || echo "⚠️  CPLEX not found in PATH"
+export CPLEX_STUDIO_DIR=$HOME/cplex_studio2211
 export PATH=$HOME/cplex_studio2211/cplex/bin/x86-64_linux:$PATH
-which cplex && echo "✓ CPLEX found: $(which cplex)"
+export LD_LIBRARY_PATH=$HOME/cplex_studio2211/cplex/bin/x86-64_linux:$LD_LIBRARY_PATH
+
+which cplex && echo "✓ CPLEX found: $(which cplex)" || echo "⚠️  CPLEX not found in PATH"
+echo "CPLEX_STUDIO_DIR: $CPLEX_STUDIO_DIR"
 
 # Activate virtual environment
 source venv/bin/activate

@@ -1,0 +1,373 @@
+=========================================
+Job: Post-tuning kinGEMs Validation
+Job ID: 10427566
+Node: fc30512
+Current working directory: /project/def-mahadeva/ranaab/kinGEMs_v2
+Starting run at: Tue Nov  4 19:16:08 PST 2025
+=========================================
+Checking CPLEX availability...
+/home/ranaab/cplex_studio2211/cplex/bin/x86-64_linux/cplex
+✓ CPLEX found: /home/ranaab/cplex_studio2211/cplex/bin/x86-64_linux/cplex
+CPLEX_STUDIO_DIR: /home/ranaab/cplex_studio2211
+Running Post-tuning kinGEMs validation...
+Loading configuration from: configs/validation_iML1515.json
+
+======================================================================
+=== kinGEMs Parallel Validation: POSTTUNING ===
+======================================================================
+Model: iML1515_GEM
+Mode: posttuning
+Output: results/validation_parallel
+Parallel: True (multiprocessing with 3 workers)
+======================================================================
+
+=== Step 1: Loading model ===
+  Genes: 1516
+  Reactions: 2712
+  ✓ Pyomo found CPLEX solver: /home/ranaab/cplex_studio2211/cplex/bin/x86-64_linux/cplex
+  ⚠️  Could not set solver to cplex: cplex is not a valid solver interface. Pick one from glpk_exact, glpk, scipy.
+  Using default solver: optlang.glpk_interface
+  ⚠️  WARNING: Using GLPK solver (slow)
+  ⚠️  Consider loading CPLEX: module load cplex
+  Objective: BIOMASS_Ec_iML1515_core_75p37M
+
+=== Step 2: Preparing validation environment ===
+Matching model genes to data genes...
+Matched 1339 genes.
+Matching experimental carbon sources to model carbon sources...
+Matched 54 carbon sources.
+Shape of matched fitness data: (1339, 54)
+Averaging fitness data for replicate carbon sources...
+Final shape of averaged fitness data: (1339, 27)
+Unique carbon sources after averaging: 27
+Removing strain genes:
+['b0066' 'b0348' 'b3909']
+Removing essential genes: 
+b0142
+b0641
+b0908
+b2329
+b2687
+b3040
+b3196
+b3198
+b3199
+b3368
+Removing carbon sources: 
+['man' 'sucr']
+  Matched genes: 1326
+  Carbon sources: 25
+
+=== Step 3: Running POSTTUNING simulation ===
+Loading post-tuning data from: results/tuning_results/iML1515_GEM_20251020_7262/df_new.csv
+Running PARALLEL post-tuning validation...
+
+  Parallel validation configuration:
+    Method: multiprocessing
+    Workers: 3
+    Total simulations: 33150 (1326 genes × 25 carbons)
+    Chunk size: 442
+    Number of chunks: 75
+    Estimated memory: ~0.7 GB
+    Unique carbon sources: 25 (cached: 0)
+
+  ⏭️  Skipping baseline GEM simulation (already completed)
+
+  Starting parallel enzyme-constrained GEM simulation...
+    Processing 75 chunks (33150 total simulations)...
+    Mode: enzyme, Solver: cplex
+    Submitted 75 chunks to workers...
+Writing problem data to '/tmp/tmpk_p7_n0c.glpk'...
+33879 lines were written
+Writing problem data to '/tmp/tmp6ajfimuy.glpk'...
+33879 lines were written
+Writing problem data to '/tmp/tmpyt90ejvs.glpk'...
+33879 lines were written
+Writing problem data to '/tmp/tmpy7o9e_uq.glpk'...
+33879 lines were written
+    Progress: 1/75 chunks (442/33150 simulations, 1.3%)
+    Chunk time: 892.8s, Total time: 14.9min
+Writing problem data to '/tmp/tmpr31670fx.glpk'...
+33879 lines were written
+    Progress: 2/75 chunks (884/33150 simulations, 2.7%)
+    Chunk time: 2.4s, Total time: 14.9min
+Writing problem data to '/tmp/tmpp41lmd2b.glpk'...
+33879 lines were written
+    Progress: 3/75 chunks (1326/33150 simulations, 4.0%)
+    Chunk time: 1.0s, Total time: 14.9min
+Writing problem data to '/tmp/tmp0twhz_h9.glpk'...
+33879 lines were written
+    Progress: 4/75 chunks (1768/33150 simulations, 5.3%)
+    Chunk time: 1022.8s, Total time: 32.0min
+Writing problem data to '/tmp/tmpn06y5kf3.glpk'...
+33879 lines were written
+    Progress: 5/75 chunks (2210/33150 simulations, 6.7%)
+    Chunk time: 3.8s, Total time: 32.0min
+Writing problem data to '/tmp/tmpvlro33ho.glpk'...
+33879 lines were written
+    Progress: 6/75 chunks (2652/33150 simulations, 8.0%)
+    Chunk time: 4.7s, Total time: 32.1min
+Writing problem data to '/tmp/tmp5qe80kco.glpk'...
+33879 lines were written
+    Progress: 7/75 chunks (3094/33150 simulations, 9.3%)
+    Chunk time: 972.4s, Total time: 48.3min
+Writing problem data to '/tmp/tmpy0lgpety.glpk'...
+33879 lines were written
+    Progress: 8/75 chunks (3536/33150 simulations, 10.7%)
+    Chunk time: 6.5s, Total time: 48.4min
+Writing problem data to '/tmp/tmp_orchslm.glpk'...
+33879 lines were written
+    Progress: 9/75 chunks (3978/33150 simulations, 12.0%)
+    Chunk time: 3.1s, Total time: 48.5min
+Writing problem data to '/tmp/tmpy7hag52l.glpk'...
+33879 lines were written
+    Progress: 10/75 chunks (4420/33150 simulations, 13.3%)
+    Chunk time: 1025.1s, Total time: 65.6min
+Writing problem data to '/tmp/tmpdsu9mhvy.glpk'...
+33879 lines were written
+    Progress: 11/75 chunks (4862/33150 simulations, 14.7%)
+    Chunk time: 5.8s, Total time: 65.7min
+Writing problem data to '/tmp/tmpyw43ssm9.glpk'...
+33879 lines were written
+    Progress: 12/75 chunks (5304/33150 simulations, 16.0%)
+    Chunk time: 7.7s, Total time: 65.8min
+Writing problem data to '/tmp/tmpzo7wvfb7.glpk'...
+33879 lines were written
+    Progress: 13/75 chunks (5746/33150 simulations, 17.3%)
+    Chunk time: 1011.9s, Total time: 82.7min
+Writing problem data to '/tmp/tmpyqqdi_ds.glpk'...
+33879 lines were written
+    Progress: 14/75 chunks (6188/33150 simulations, 18.7%)
+    Chunk time: 8.5s, Total time: 82.8min
+Writing problem data to '/tmp/tmp6wphjnmx.glpk'...
+33879 lines were written
+    Progress: 15/75 chunks (6630/33150 simulations, 20.0%)
+    Chunk time: 8.4s, Total time: 83.0min
+Writing problem data to '/tmp/tmphbd74d_s.glpk'...
+33879 lines were written
+    Progress: 16/75 chunks (7072/33150 simulations, 21.3%)
+    Chunk time: 1037.7s, Total time: 100.2min
+Writing problem data to '/tmp/tmp4pyypjht.glpk'...
+33879 lines were written
+    Progress: 17/75 chunks (7514/33150 simulations, 22.7%)
+    Chunk time: 7.5s, Total time: 100.4min
+Writing problem data to '/tmp/tmpb09m4wxt.glpk'...
+33879 lines were written
+    Progress: 18/75 chunks (7956/33150 simulations, 24.0%)
+    Chunk time: 2.0s, Total time: 100.4min
+Writing problem data to '/tmp/tmp5e5cu58r.glpk'...
+33879 lines were written
+    Progress: 19/75 chunks (8398/33150 simulations, 25.3%)
+    Chunk time: 1028.0s, Total time: 117.5min
+Writing problem data to '/tmp/tmpdoshpi7d.glpk'...
+33879 lines were written
+    Progress: 20/75 chunks (8840/33150 simulations, 26.7%)
+    Chunk time: 10.0s, Total time: 117.7min
+Writing problem data to '/tmp/tmpb6zgm5nr.glpk'...
+33879 lines were written
+    Progress: 21/75 chunks (9282/33150 simulations, 28.0%)
+    Chunk time: 40.8s, Total time: 118.4min
+Writing problem data to '/tmp/tmpjcg5pa9u.glpk'...
+33879 lines were written
+    Progress: 22/75 chunks (9724/33150 simulations, 29.3%)
+    Chunk time: 926.5s, Total time: 133.8min
+Writing problem data to '/tmp/tmpp1s9zdpj.glpk'...
+33879 lines were written
+    Progress: 23/75 chunks (10166/33150 simulations, 30.7%)
+    Chunk time: 22.6s, Total time: 134.2min
+Writing problem data to '/tmp/tmpbwd9bozv.glpk'...
+33879 lines were written
+    Progress: 24/75 chunks (10608/33150 simulations, 32.0%)
+    Chunk time: 41.5s, Total time: 134.9min
+Writing problem data to '/tmp/tmphjnbfrtq.glpk'...
+33879 lines were written
+    Progress: 25/75 chunks (11050/33150 simulations, 33.3%)
+    Chunk time: 909.4s, Total time: 150.1min
+Writing problem data to '/tmp/tmpk41lvn8e.glpk'...
+33879 lines were written
+    Progress: 26/75 chunks (11492/33150 simulations, 34.7%)
+    Chunk time: 25.0s, Total time: 150.5min
+Writing problem data to '/tmp/tmp3j7vqphh.glpk'...
+33879 lines were written
+    Progress: 27/75 chunks (11934/33150 simulations, 36.0%)
+    Chunk time: 51.4s, Total time: 151.3min
+Writing problem data to '/tmp/tmp6vczmdwn.glpk'...
+33879 lines were written
+    Progress: 28/75 chunks (12376/33150 simulations, 37.3%)
+    Chunk time: 932.5s, Total time: 166.9min
+Writing problem data to '/tmp/tmph36meguv.glpk'...
+33879 lines were written
+    Progress: 29/75 chunks (12818/33150 simulations, 38.7%)
+    Chunk time: 39.1s, Total time: 167.5min
+Writing problem data to '/tmp/tmpoqgutg7t.glpk'...
+33879 lines were written
+    Progress: 30/75 chunks (13260/33150 simulations, 40.0%)
+    Chunk time: 38.1s, Total time: 168.2min
+Writing problem data to '/tmp/tmpkrfj230y.glpk'...
+33879 lines were written
+    Progress: 31/75 chunks (13702/33150 simulations, 41.3%)
+    Chunk time: 894.9s, Total time: 183.1min
+Writing problem data to '/tmp/tmpnsnrb4xd.glpk'...
+33879 lines were written
+    Progress: 32/75 chunks (14144/33150 simulations, 42.7%)
+    Chunk time: 35.9s, Total time: 183.7min
+Writing problem data to '/tmp/tmpq5su4xc1.glpk'...
+33879 lines were written
+    Progress: 33/75 chunks (14586/33150 simulations, 44.0%)
+    Chunk time: 46.1s, Total time: 184.4min
+Writing problem data to '/tmp/tmp4_j6fjb0.glpk'...
+33879 lines were written
+    Progress: 34/75 chunks (15028/33150 simulations, 45.3%)
+    Chunk time: 875.3s, Total time: 199.0min
+Writing problem data to '/tmp/tmpqn5t3crk.glpk'...
+33879 lines were written
+    Progress: 35/75 chunks (15470/33150 simulations, 46.7%)
+    Chunk time: 36.3s, Total time: 199.6min
+Writing problem data to '/tmp/tmpschd42a8.glpk'...
+33879 lines were written
+    Progress: 36/75 chunks (15912/33150 simulations, 48.0%)
+    Chunk time: 52.0s, Total time: 200.5min
+Writing problem data to '/tmp/tmpm60x07p7.glpk'...
+33879 lines were written
+Writing problem data to '/tmp/tmpk847_maz.glpk'...
+33879 lines were written
+    Progress: 37/75 chunks (16354/33150 simulations, 49.3%)
+    Chunk time: 902.6s, Total time: 215.5min
+Writing problem data to '/tmp/tmpzl1jav2t.glpk'...
+33879 lines were written
+    Progress: 38/75 chunks (16796/33150 simulations, 50.7%)
+    Chunk time: 51.1s, Total time: 216.4min
+Writing problem data to '/tmp/tmpfgayy_1f.glpk'...
+33879 lines were written
+    Progress: 39/75 chunks (17238/33150 simulations, 52.0%)
+    Chunk time: 357.1s, Total time: 222.3min
+Writing problem data to '/tmp/tmp10z8dk5_.glpk'...
+33879 lines were written
+    Progress: 40/75 chunks (17680/33150 simulations, 53.3%)
+    Chunk time: 491.5s, Total time: 230.5min
+Writing problem data to '/tmp/tmpeoop3hi3.glpk'...
+33879 lines were written
+    Progress: 41/75 chunks (18122/33150 simulations, 54.7%)
+    Chunk time: 56.5s, Total time: 231.5min
+Writing problem data to '/tmp/tmpfk9shcq9.glpk'...
+33879 lines were written
+    Progress: 42/75 chunks (18564/33150 simulations, 56.0%)
+    Chunk time: 323.5s, Total time: 236.9min
+Writing problem data to '/tmp/tmp9211nvp5.glpk'...
+33879 lines were written
+    Progress: 43/75 chunks (19006/33150 simulations, 57.3%)
+    Chunk time: 545.8s, Total time: 246.0min
+Writing problem data to '/tmp/tmp42ossqrr.glpk'...
+33879 lines were written
+    Progress: 44/75 chunks (19448/33150 simulations, 58.7%)
+    Chunk time: 67.8s, Total time: 247.1min
+Writing problem data to '/tmp/tmpyidmk24n.glpk'...
+33879 lines were written
+    Progress: 45/75 chunks (19890/33150 simulations, 60.0%)
+    Chunk time: 284.9s, Total time: 251.8min
+Writing problem data to '/tmp/tmpmvofqnyf.glpk'...
+33879 lines were written
+    Progress: 46/75 chunks (20332/33150 simulations, 61.3%)
+    Chunk time: 625.6s, Total time: 262.3min
+Writing problem data to '/tmp/tmpp_5ygga3.glpk'...
+33879 lines were written
+    Progress: 47/75 chunks (20774/33150 simulations, 62.7%)
+    Chunk time: 53.0s, Total time: 263.2min
+Writing problem data to '/tmp/tmp2a57hiu_.glpk'...
+33879 lines were written
+    Progress: 48/75 chunks (21216/33150 simulations, 64.0%)
+    Chunk time: 355.2s, Total time: 269.1min
+Writing problem data to '/tmp/tmpqm5tsk_p.glpk'...
+33879 lines were written
+Writing problem data to '/tmp/tmprj5xx_sa.glpk'...
+33879 lines were written
+    Progress: 49/75 chunks (21658/33150 simulations, 65.3%)
+    Chunk time: 796.5s, Total time: 282.3min
+Writing problem data to '/tmp/tmplcpxcn3w.glpk'...
+33879 lines were written
+    Progress: 50/75 chunks (22100/33150 simulations, 66.7%)
+    Chunk time: 215.3s, Total time: 285.9min
+Writing problem data to '/tmp/tmpw0fmrepk.glpk'...
+33879 lines were written
+    Progress: 51/75 chunks (22542/33150 simulations, 68.0%)
+    Chunk time: 699.2s, Total time: 297.6min
+Writing problem data to '/tmp/tmpa0r0nmkq.glpk'...
+33879 lines were written
+    Progress: 52/75 chunks (22984/33150 simulations, 69.3%)
+    Chunk time: 254.2s, Total time: 301.8min
+Writing problem data to '/tmp/tmpqg4fm8vb.glpk'...
+33879 lines were written
+    Progress: 53/75 chunks (23426/33150 simulations, 70.7%)
+    Chunk time: 260.8s, Total time: 306.2min
+Writing problem data to '/tmp/tmp3px9topx.glpk'...
+33879 lines were written
+    Progress: 54/75 chunks (23868/33150 simulations, 72.0%)
+    Chunk time: 513.2s, Total time: 314.7min
+Writing problem data to '/tmp/tmpppt5xto0.glpk'...
+33879 lines were written
+    Progress: 55/75 chunks (24310/33150 simulations, 73.3%)
+    Chunk time: 567.8s, Total time: 324.2min
+Writing problem data to '/tmp/tmpnfqgv63s.glpk'...
+33879 lines were written
+    Progress: 56/75 chunks (24752/33150 simulations, 74.7%)
+    Chunk time: 336.9s, Total time: 329.8min
+Writing problem data to '/tmp/tmp6sn08__j.glpk'...
+33879 lines were written
+    Progress: 57/75 chunks (25194/33150 simulations, 76.0%)
+    Chunk time: 69.8s, Total time: 331.0min
+Writing problem data to '/tmp/tmpbu0p4buw.glpk'...
+33879 lines were written
+    Progress: 58/75 chunks (25636/33150 simulations, 77.3%)
+    Chunk time: 602.7s, Total time: 341.0min
+Writing problem data to '/tmp/tmpdwlyv30a.glpk'...
+33879 lines were written
+    Progress: 59/75 chunks (26078/33150 simulations, 78.7%)
+    Chunk time: 353.5s, Total time: 346.9min
+Writing problem data to '/tmp/tmp4b33vnh3.glpk'...
+33879 lines were written
+    Progress: 60/75 chunks (26520/33150 simulations, 80.0%)
+    Chunk time: 32.8s, Total time: 347.4min
+Writing problem data to '/tmp/tmpcq00p06s.glpk'...
+33879 lines were written
+    Progress: 61/75 chunks (26962/33150 simulations, 81.3%)
+    Chunk time: 557.8s, Total time: 356.7min
+Writing problem data to '/tmp/tmpvp_zr8e1.glpk'...
+33879 lines were written
+    Progress: 62/75 chunks (27404/33150 simulations, 82.7%)
+    Chunk time: 364.1s, Total time: 362.8min
+Writing problem data to '/tmp/tmp1w_t94cj.glpk'...
+33879 lines were written
+    Progress: 63/75 chunks (27846/33150 simulations, 84.0%)
+    Chunk time: 12.2s, Total time: 363.0min
+Writing problem data to '/tmp/tmp9uao2cvq.glpk'...
+33879 lines were written
+    Progress: 64/75 chunks (28288/33150 simulations, 85.3%)
+    Chunk time: 572.1s, Total time: 372.6min
+Writing problem data to '/tmp/tmpeyhbqxj9.glpk'...
+33879 lines were written
+Writing problem data to '/tmp/tmpf4eqw11r.glpk'...
+33879 lines were written
+    Progress: 65/75 chunks (28730/33150 simulations, 86.7%)
+    Chunk time: 410.0s, Total time: 379.4min
+Writing problem data to '/tmp/tmpoy8ncgpt.glpk'...
+33879 lines were written
+    Progress: 66/75 chunks (29172/33150 simulations, 88.0%)
+    Chunk time: 578.2s, Total time: 389.0min
+Writing problem data to '/tmp/tmpfq_pnmqu.glpk'...
+33879 lines were written
+    Progress: 67/75 chunks (29614/33150 simulations, 89.3%)
+    Chunk time: 112.2s, Total time: 390.9min
+Writing problem data to '/tmp/tmpa96zt9c9.glpk'...
+33879 lines were written
+    Progress: 68/75 chunks (30056/33150 simulations, 90.7%)
+    Chunk time: 372.2s, Total time: 397.1min
+Writing problem data to '/tmp/tmpwa6d61vi.glpk'...
+33879 lines were written
+    Progress: 69/75 chunks (30498/33150 simulations, 92.0%)
+    Chunk time: 584.1s, Total time: 406.8min
+    Progress: 70/75 chunks (30940/33150 simulations, 93.3%)
+    Chunk time: 12.3s, Total time: 407.0min
+    Progress: 71/75 chunks (31382/33150 simulations, 94.7%)
+    Chunk time: 418.9s, Total time: 414.0min
+    Progress: 72/75 chunks (31824/33150 simulations, 96.0%)
+    Chunk time: 500.0s, Total time: 422.3min

@@ -1,7 +1,0 @@
-2025-10-24 07:41:45.120 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
-2025-10-24 07:43:47.636 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
-2025-10-24 07:43:47.652 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
-2025-10-24 07:43:47.654 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
-2025-10-24 11:22:43.507 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
-slurmstepd: error: *** JOB 8737037 ON fc30544 CANCELLED AT 2025-10-24T11:39:29 ***
-slurmstepd: error: Detected 1 oom_kill event in StepId=8737037.batch. Some of the step tasks have been OOM Killed.
