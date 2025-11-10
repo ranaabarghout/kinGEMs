@@ -12,10 +12,9 @@
     "stress": "none",
     "medium": {
       "EX_glc__D_e": -10,
-      "EX_so4_e": -1.699,
-      "EX_o2_e": -14.49,
-      "EX_nh4_e": -5.229,
-      "EX_h2o_e": -6.96
+      "EX_so4_e": -0.175297,
+      "EX_o2_e": -14.2804,
+      "EX_nh4_e": -5.23859
     }
   },
   "simulated_annealing": {
@@ -29,11 +28,10 @@
     "verbose": false,
     "medium": {
       "EX_glc__D_e": -10,
-      "EX_so4_e": -1.699,
-      "EX_o2_e": -14.49,
-      "EX_nh4_e": -5.229,
-      "EX_h2o_e": -6.96
-    },
+      "EX_so4_e": -0.175297,
+      "EX_o2_e": -14.2804,
+      "EX_nh4_e": -5.23859
+    }
     "medium_upper_bound": false
   }
 }
