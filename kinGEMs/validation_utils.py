@@ -2,26 +2,11 @@
 import copy
 import os
 
-import cobra
-import fastcluster
-import lightgbm as lgbm
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from scipy.cluster.hierarchy import dendrogram, linkage
-from scipy.sparse.csgraph import connected_components, shortest_path
-from scipy.stats import mannwhitneyu, pearsonr, spearmanr, ttest_ind
-from seaborn import clustermap
-import shap
-from sklearn.decomposition import PCA
-from sklearn.metrics import auc as sk_auc
-from sklearn.metrics import average_precision_score, mean_squared_error, r2_score, roc_auc_score
 from sklearn.metrics import confusion_matrix as confusion_matrix
-from sklearn.metrics import precision_recall_curve as pre_rec
-from sklearn.model_selection import train_test_split
-from statsmodels.nonparametric.smoothers_lowess import lowess
 
-from kinGEMs.config import ECOLI_VALIDATION_DIR, MODELS_DIR
+from kinGEMs.config import ECOLI_VALIDATION_DIR
 from kinGEMs.modeling.optimize import run_optimization_with_dataframe
 
 
@@ -77,9 +62,9 @@ def load_data(base_directory):
     # Loading the fitness data
     fit_path = os.path.join(ECOLI_VALIDATION_DIR, 'fit_organism_Keio.tsv')
     df_fit = pd.read_table(fit_path)
-    
+
     data_genes = df_fit.loc[:,'sysName'].to_list()
-    
+
     data_envs = df_fit.columns
     data_envs = data_envs[5:]
     data_experiments = []
@@ -88,7 +73,7 @@ def load_data(base_directory):
         data_experiments.append(tmp[0])
 
     data_fitness = df_fit.iloc[:,5:].to_numpy()
-    
+
     return(data_experiments,data_genes,data_fitness)
 
 def match_model_data(model, name_carbon_model, name_carbon_experiment, data_experiments, data_genes, data_fitness):
@@ -152,7 +137,7 @@ def model_adjustments(adj_strain, adj_essential, adj_carbon, model, name_genes_m
 
         print("Removing strain genes:")
         tmp_inds = [i for i, g in enumerate(name_genes_matched_adj) if g in strain_gene_remove_id]
-        
+
         name_genes_matched_adj = np.delete(name_genes_matched_adj, tmp_inds, 0)
         print(name_genes_matched_adj[tmp_inds])
         data_fitness_matched_adj = np.delete(data_fitness_matched_adj, tmp_inds, 0)
@@ -471,3 +456,556 @@ def calculate_phenotypes_with_dataframe(
         print_reaction_conditions=print_reaction_conditions,
         verbose=verbose
     )
+
+# ============================================================================
+# PARALLEL VALIDATION SIMULATION FUNCTIONS
+# ============================================================================
+
+def _simulate_gene_carbon(model, processed_df, gene, carbon_idx, carbon_name,
+                                medium_ex_inds, carbon_ex_inds, objective_reaction,
+                                enzyme_upper_bound, mode='baseline', solver_name='glpk'):
+    """
+    Simulate a single gene knockout × carbon source combination.
+
+    Parameters
+    ----------
+    model : cobra.Model
+        Model copy for this task
+    processed_df : pandas.DataFrame
+        Enzyme constraint data (only used for enzyme mode)
+    gene : str
+        Gene ID to knockout
+    carbon_idx : int
+        Index of carbon source
+    carbon_name : str
+        Name of carbon source
+    medium_ex_inds : list
+        Medium exchange reaction indices
+    carbon_ex_inds : list
+        Carbon source exchange reaction indices
+    objective_reaction : str
+        Biomass reaction ID
+    enzyme_upper_bound : float
+        Enzyme constraint
+    mode : str
+        'baseline' for slim_optimize or 'enzyme' for enzyme-constrained
+    solver_name : str, optional
+        Solver to use for optimization (default: 'glpk')
+
+    Returns
+    -------
+    tuple
+        (gene, carbon_idx, growth_value)
+    """
+    from kinGEMs.modeling.optimize import run_optimization_with_dataframe
+
+    # Set up medium
+    for e in medium_ex_inds:
+        if e != -1:
+            model.exchanges[e].lower_bound = -1000
+
+    # Set carbon source
+    if carbon_ex_inds[carbon_idx] != -1:
+        model.exchanges[carbon_ex_inds[carbon_idx]].lower_bound = -10
+
+    # Knockout gene
+    try:
+        gene_obj = model.genes.get_by_id(gene)
+        gene_obj.knock_out()
+    except Exception:
+        return (gene, carbon_idx, 0.0)
+
+    # Simulate growth
+    if mode == 'baseline':
+        try:
+            solution = model.slim_optimize()
+            if np.isnan(solution):
+                solution = 0.0
+            return (gene, carbon_idx, solution)
+        except Exception:
+            return (gene, carbon_idx, 0.0)
+
+    else:  # enzyme-constrained
+        try:
+            solution_value, _, _, _ = run_optimization_with_dataframe(
+                model=model,
+                processed_df=processed_df,
+                objective_reaction=objective_reaction,
+                enzyme_upper_bound=enzyme_upper_bound,
+                enzyme_ratio=True,
+                maximization=True,
+                multi_enzyme_off=False,
+                isoenzymes_off=False,
+                promiscuous_off=False,
+                complexes_off=False,
+                output_dir=None,
+                save_results=False,
+                print_reaction_conditions=False,
+                verbose=False,
+                solver_name=solver_name
+            )
+            if solution_value is None or np.isnan(solution_value):
+                solution_value = 0.0
+            return (gene, carbon_idx, solution_value)
+        except Exception:
+            return (gene, carbon_idx, 0.0)
+
+
+def _simulate_gene_carbon_chunk(model, processed_df, tasks, medium_ex_inds,
+                                carbon_ex_inds, objective_reaction,
+                                enzyme_upper_bound, mode='baseline', solver_name='glpk'):
+    """
+    Process a chunk of gene × carbon combinations.
+
+    Parameters
+    ----------
+    model : cobra.Model
+        Model copy for this worker
+    processed_df : pandas.DataFrame
+        Enzyme constraint data
+    tasks : list of tuples
+        List of (gene, carbon_idx, carbon_name) tuples
+    medium_ex_inds : list
+        Medium exchange indices
+    carbon_ex_inds : list
+        Carbon exchange indices
+    objective_reaction : str
+        Biomass reaction ID
+    enzyme_upper_bound : float
+        Enzyme constraint
+    mode : str
+        'baseline' or 'enzyme'
+    solver_name : str, optional
+        Solver to use (default: 'glpk')
+
+    Returns
+    -------
+    list of tuples
+        Results as (gene, carbon_idx, growth_value)
+    """
+    results = []
+    for gene, carbon_idx, carbon_name in tasks:
+        result = _simulate_gene_carbon(
+            model=model.copy(),
+            processed_df=processed_df,
+            gene=gene,
+            carbon_idx=carbon_idx,
+            carbon_name=carbon_name,
+            medium_ex_inds=medium_ex_inds,
+            carbon_ex_inds=carbon_ex_inds,
+            objective_reaction=objective_reaction,
+            enzyme_upper_bound=enzyme_upper_bound,
+            mode=mode,
+            solver_name=solver_name
+        )
+        results.append(result)
+    return results
+
+
+def simulate_phenotype_parallel(
+    model_run,
+    name_genes_matched_adj,
+    name_carbon_model_matched_adj,
+    medium_ex_inds,
+    carbon_ex_inds,
+    processed_df,
+    objective_reaction,
+    enzyme_upper_bound,
+    thresh=0.001,
+    n_workers=None,
+    chunk_size=None,
+    method='dask',
+    skip_baseline=False,
+    solver_name='glpk'
+):
+    """
+    Parallel version of simulate_phenotype using Dask or multiprocessing.
+
+    Simulates growth/no-growth phenotypes for each gene and carbon source combination:
+    1. Baseline GEM (slim_optimize) - run in parallel
+    2. Enzyme-constrained GEM (run_optimization_with_dataframe) - run in parallel
+
+    Parameters
+    ----------
+    model_run : cobra.Model
+        COBRA model
+    name_genes_matched_adj : list
+        List of gene IDs
+    name_carbon_model_matched_adj : list
+        List of carbon source names
+    medium_ex_inds : list
+        Medium exchange reaction indices
+    carbon_ex_inds : list
+        Carbon source exchange reaction indices
+    processed_df : pandas.DataFrame
+        Enzyme constraint data
+    objective_reaction : str
+        Biomass reaction ID
+    enzyme_upper_bound : float
+        Enzyme constraint (default: 0.15)
+    thresh : float
+        Growth threshold (default: 0.001)
+    n_workers : int, optional
+        Number of parallel workers (default: auto-detect)
+    chunk_size : int, optional
+        Tasks per chunk (default: auto-calculate)
+    method : str
+        'dask' or 'multiprocessing' (default: 'dask')
+    skip_baseline : bool, optional
+        If True, skip baseline simulation and only run enzyme-constrained (default: False)
+
+    Returns
+    -------
+    tuple
+        (baseline_GEM, enzyme_constrained_GEM) as numpy arrays
+    """
+    import os
+
+    # Determine number of workers
+    if n_workers is None:
+        n_workers = os.cpu_count() or 4
+
+    n_genes = len(name_genes_matched_adj)
+    n_carbons = len(name_carbon_model_matched_adj)
+    total_tasks = n_genes * n_carbons
+
+    # Calculate optimal chunk size
+    if chunk_size is None:
+        # For validation, use moderate chunks for better performance
+        # Aim for ~20-50 chunks per worker
+        chunk_size = max(1, total_tasks // (n_workers * 30))
+
+    print("\n  Parallel validation configuration:")
+    print(f"    Method: {method}")
+    print(f"    Workers: {n_workers}")
+    print(f"    Total simulations: {total_tasks} ({n_genes} genes × {n_carbons} carbons)")
+    print(f"    Chunk size: {chunk_size}")
+    print(f"    Number of chunks: {(total_tasks + chunk_size - 1) // chunk_size}")
+
+    # Estimate memory
+    try:
+        model_size_mb = (len(model_run.reactions) * 0.05 +
+                        len(model_run.metabolites) * 0.02 +
+                        len(model_run.genes) * 0.01)
+        df_size_mb = len(processed_df) * 0.001 if processed_df is not None else 0
+        total_size_mb = model_size_mb + df_size_mb
+        estimated_memory_gb = (total_size_mb * n_workers) / 1000
+        print(f"    Estimated memory: ~{estimated_memory_gb:.1f} GB")
+        if estimated_memory_gb > 8:
+            print("    ⚠️  Warning: High memory usage expected")
+    except Exception:
+        pass
+
+    # Handle duplicate carbon sources (use cached results)
+    unique_carbons = []
+    carbon_cache_map = {}
+    for idx, carbon in enumerate(name_carbon_model_matched_adj):
+        if carbon in name_carbon_model_matched_adj[:idx]:
+            # This carbon was already processed
+            cached_idx = name_carbon_model_matched_adj[:idx].index(carbon)
+            carbon_cache_map[idx] = cached_idx
+        else:
+            unique_carbons.append((idx, carbon))
+
+    print(f"    Unique carbon sources: {len(unique_carbons)} (cached: {len(carbon_cache_map)})")
+
+    # Create tasks for unique carbons only
+    tasks = []
+    for carbon_idx, carbon_name in unique_carbons:
+        for gene in name_genes_matched_adj:
+            tasks.append((gene, carbon_idx, carbon_name))
+
+    # Create chunks
+    chunks = [tasks[i:i+chunk_size] for i in range(0, len(tasks), chunk_size)]
+
+    # ===== Baseline GEM Simulation (Parallel) =====
+    baseline_GEM = None
+
+    if skip_baseline:
+        print("\n  ⏭️  Skipping baseline GEM simulation (already completed)")
+        baseline_GEM = np.zeros((n_genes, n_carbons), dtype=float)
+    else:
+        print("\n  Starting parallel baseline GEM simulation...")
+
+        if method.lower() == 'multiprocessing':
+            baseline_results = _run_validation_multiprocessing(
+                model_run, processed_df, chunks, medium_ex_inds, carbon_ex_inds,
+                objective_reaction, enzyme_upper_bound, n_workers, mode='baseline', solver_name=solver_name
+            )
+        else:  # dask
+            try:
+                baseline_results = _run_validation_dask(
+                    model_run, processed_df, chunks, medium_ex_inds, carbon_ex_inds,
+                    objective_reaction, enzyme_upper_bound, n_workers, mode='baseline', solver_name=solver_name
+                )
+            except Exception:
+                print("    ⚠️  Dask failed, switching to multiprocessing")
+                baseline_results = _run_validation_multiprocessing(
+                    model_run, processed_df, chunks, medium_ex_inds, carbon_ex_inds,
+                    objective_reaction, enzyme_upper_bound, n_workers, mode='baseline', solver_name=solver_name
+                )
+
+        # Flatten results
+        flat_baseline = []
+        for chunk_results in baseline_results:
+            flat_baseline.extend(chunk_results)
+
+        # Build baseline matrix
+        baseline_GEM = np.zeros((n_genes, n_carbons), dtype=float)
+        # Convert to list if numpy array for indexing
+        genes_list = list(name_genes_matched_adj) if isinstance(name_genes_matched_adj, np.ndarray) else name_genes_matched_adj
+        for gene, carbon_idx, growth_value in flat_baseline:
+            gene_idx = genes_list.index(gene)
+            baseline_GEM[gene_idx, carbon_idx] = growth_value
+
+        # Fill in cached carbon sources
+        for cached_idx, original_idx in carbon_cache_map.items():
+            baseline_GEM[:, cached_idx] = baseline_GEM[:, original_idx]
+
+        print("  Baseline GEM simulation complete.")
+
+    # ===== Enzyme-constrained GEM Simulation (Parallel) =====
+    print("\n  Starting parallel enzyme-constrained GEM simulation...")
+
+    # Clean processed_df
+    if 'kcat_mean' in processed_df.columns:
+        processed_df['kcat_mean'] = processed_df['kcat_mean'].apply(
+            lambda x: float(x) if isinstance(x, str) and x.replace('.','',1).isdigit() else x
+        )
+
+    # Get genes_list for indexing (need it for enzyme section too)
+    genes_list = list(name_genes_matched_adj) if isinstance(name_genes_matched_adj, np.ndarray) else name_genes_matched_adj
+
+    if method.lower() == 'multiprocessing':
+        enzyme_results = _run_validation_multiprocessing(
+            model_run, processed_df, chunks, medium_ex_inds, carbon_ex_inds,
+            objective_reaction, enzyme_upper_bound, n_workers, mode='enzyme', solver_name=solver_name
+        )
+    else:  # dask
+        try:
+            enzyme_results = _run_validation_dask(
+                model_run, processed_df, chunks, medium_ex_inds, carbon_ex_inds,
+                objective_reaction, enzyme_upper_bound, n_workers, mode='enzyme', solver_name=solver_name
+            )
+        except Exception:
+            print("    ⚠️  Dask failed, switching to multiprocessing")
+            enzyme_results = _run_validation_multiprocessing(
+                model_run, processed_df, chunks, medium_ex_inds, carbon_ex_inds,
+                objective_reaction, enzyme_upper_bound, n_workers, mode='enzyme', solver_name=solver_name
+            )
+
+    # Flatten results
+    flat_enzyme = []
+    for chunk_results in enzyme_results:
+        flat_enzyme.extend(chunk_results)
+
+    # Build enzyme-constrained matrix
+    enzyme_constrained_GEM = np.zeros((n_genes, n_carbons), dtype=float)
+    # Use the same genes_list from baseline section
+    for gene, carbon_idx, growth_value in flat_enzyme:
+        gene_idx = genes_list.index(gene)
+        enzyme_constrained_GEM[gene_idx, carbon_idx] = growth_value
+
+    # Fill in cached carbon sources
+    for cached_idx, original_idx in carbon_cache_map.items():
+        enzyme_constrained_GEM[:, cached_idx] = enzyme_constrained_GEM[:, original_idx]
+
+    print("  Enzyme-constrained GEM simulation complete.")
+    print("\n  Parallel validation simulations finished!")
+
+    return baseline_GEM, enzyme_constrained_GEM
+
+
+def _run_validation_dask(model, processed_df, chunks, medium_ex_inds, carbon_ex_inds,
+                        objective_reaction, enzyme_upper_bound, n_workers, mode='baseline', solver_name='glpk'):
+    """Execute validation using Dask with HPC-friendly configuration."""
+    import logging
+    import tempfile
+
+    try:
+        from dask import delayed
+        from dask.distributed import Client, LocalCluster
+    except ImportError:
+        raise ImportError(
+            "Dask is required for parallel validation. Install with: pip install dask[distributed]"
+        )
+
+    # Create delayed tasks
+    tasks = []
+    for chunk in chunks:
+        tasks.append(
+            delayed(_simulate_gene_carbon_chunk)(
+                model.copy(),
+                processed_df,
+                chunk,
+                medium_ex_inds,
+                carbon_ex_inds,
+                objective_reaction,
+                enzyme_upper_bound,
+                mode,
+                solver_name
+            )
+        )
+
+    # Configure Dask for slow tasks and HPC environment
+    import dask
+    dask.config.set({
+        'distributed.comm.timeouts.connect': '120s',
+        'distributed.comm.timeouts.tcp': '120s',
+        'distributed.scheduler.idle-timeout': '7200s',
+        'distributed.worker.profile.interval': '10000ms',
+        'distributed.worker.profile.cycle': '100000ms',
+        'distributed.scheduler.allowed-failures': 10,  # Allow some task retries
+        'distributed.worker.daemon': False,  # Easier cleanup on HPC
+    })
+
+    cluster = None
+    client = None
+
+    try:
+        # Use SLURM_TMPDIR if available (Compute Canada standard), otherwise temp dir
+        import os
+        local_dir = os.environ.get('SLURM_TMPDIR', tempfile.gettempdir())
+
+        # Create cluster explicitly with HPC-friendly settings
+        cluster = LocalCluster(
+            n_workers=n_workers,
+            processes=True,
+            threads_per_worker=1,
+            silence_logs=logging.ERROR,
+            local_directory=local_dir,
+            death_timeout='7200s',  # 2 hours - increased to prevent premature worker death
+            memory_limit='18GB',  # Limit each worker to 18GB (3 workers × 18GB = 54GB + overhead = 60GB total)
+        )
+
+                # Connect client to cluster
+        client = Client(cluster, timeout='60s')
+
+        print(f"    Dask cluster created with {n_workers} workers")
+        print("    Worker memory limit: 18GB per worker")
+        print("    Death timeout: 7200s (2 hours)")
+        try:
+            print(f"    Dask dashboard: {client.dashboard_link}")
+        except Exception as e:
+            print("    Dask dashboard: (not available - install bokeh>=3.1.0)")
+
+        # Execute tasks with progress tracking
+        print(f"    Submitting {len(tasks)} chunks to Dask workers...")
+        import sys
+        sys.stdout.flush()  # Force print before compute
+        from dask.distributed import progress
+        futures = client.compute(tasks)
+
+        # Wait for results with progress
+        try:
+            progress(futures)
+        except Exception:
+            # Progress bar not available, just wait
+            pass
+
+        results = client.gather(futures)
+
+        print("    ✓ Results gathered successfully")
+
+        return results
+
+    except Exception as e:
+        print(f"    ⚠️  Dask execution failed: {e}")
+        print("    Falling back to sequential execution...")
+        raise
+
+    finally:
+        # Aggressive cleanup - close client and cluster separately
+        if client is not None:
+            try:
+                client.close(timeout=2)
+            except Exception:
+                pass
+
+        if cluster is not None:
+            try:
+                cluster.close(timeout=5)
+            except Exception:
+                pass
+def _run_validation_multiprocessing(model, processed_df, chunks, medium_ex_inds,
+                                    carbon_ex_inds, objective_reaction,
+                                    enzyme_upper_bound, n_workers, mode='baseline', solver_name='glpk'):
+    """Execute validation using multiprocessing.Pool with progress tracking."""
+    from functools import partial
+    from multiprocessing import Pool
+
+    # Create partial function
+    worker_func = partial(
+        _simulate_gene_carbon_chunk,
+        model.copy(),
+        processed_df,
+        medium_ex_inds=medium_ex_inds,
+        carbon_ex_inds=carbon_ex_inds,
+        objective_reaction=objective_reaction,
+        enzyme_upper_bound=enzyme_upper_bound,
+        mode=mode,
+        solver_name=solver_name
+    )
+
+    # Calculate total simulations
+    total_simulations = sum(len(chunk) for chunk in chunks)
+    total_chunks = len(chunks)
+
+    print(f"    Processing {total_chunks} chunks ({total_simulations} total simulations)...")
+    print(f"    Mode: {mode}, Solver: {solver_name}")
+    import sys
+    sys.stdout.flush()  # Force output before workers start
+
+    # Execute in parallel with progress tracking and health checks
+    results = []
+    completed_simulations = 0
+    completed_chunks = 0
+
+    with Pool(processes=n_workers) as pool:
+        # Use imap_unordered for better robustness with long tasks
+        import time
+
+        # Submit all chunks and get iterator (unordered for better performance)
+        chunk_iterator = pool.imap_unordered(worker_func, chunks)
+
+        print(f"    Submitted {total_chunks} chunks to workers...")
+        sys.stdout.flush()
+
+        start_time = time.time()
+        last_progress_time = start_time
+        timeout_seconds = 1800  # 30 minutes timeout per chunk
+
+        for result in chunk_iterator:
+            current_time = time.time()
+            completed_chunks += 1
+            results.append(result)
+            completed_simulations += len(result)
+            percent_complete = (completed_simulations / total_simulations) * 100
+
+            # Calculate timing
+            elapsed_total = current_time - start_time
+            elapsed_since_last = current_time - last_progress_time
+            last_progress_time = current_time
+
+            print(f"    Progress: {completed_chunks}/{total_chunks} chunks ({completed_simulations}/{total_simulations} simulations, {percent_complete:.1f}%)")
+            print(f"    Chunk time: {elapsed_since_last:.1f}s, Total time: {elapsed_total/60:.1f}min")
+            sys.stdout.flush()
+
+            # Health check: warn if chunk took too long
+            if elapsed_since_last > timeout_seconds:
+                print(f"    ⚠️  Warning: Last chunk took {elapsed_since_last/60:.1f} minutes (>{timeout_seconds/60:.1f}min)")
+
+            # Early exit check
+            if completed_chunks >= total_chunks:
+                break
+
+        # Estimate remaining time
+        if completed_chunks > 0:
+            avg_chunk_time = elapsed_total / completed_chunks
+            remaining_chunks = total_chunks - completed_chunks
+            estimated_remaining = (remaining_chunks * avg_chunk_time) / 60
+            print(f"    Estimated remaining time: {estimated_remaining:.1f} minutes")
+            sys.stdout.flush()
+
+    print(f"    ✓ All {total_simulations} simulations completed in {elapsed_total/3600:.1f} hours")
+    return results

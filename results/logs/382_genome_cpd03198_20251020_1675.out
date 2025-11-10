@@ -1,0 +1,134 @@
+2025-10-20 09:00:57.094 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+'382_genome' is not a valid SBML 'SId'.
+SBML errors in validation, check error log for details.
+COBRA errors in validation, check error log for details.
+'382_genome' is not a valid SBML 'SId'.
+Loading configuration from: configs/382_genome_cpd03198.json
+  Found predictions file: X06A_kinGEMs_382_genome_cpd03198_predictions.csv
+
+======================================================================
+=== kinGEMs Pipeline for 382_genome_cpd03198 ===
+======================================================================
+Run ID: 382_genome_cpd03198_20251020_1675
+Model type: ModelSEED
+Organism: E coli
+Results directory: /project/def-mahadeva/ranaab/kinGEMs_v2/results/tuning_results/382_genome_cpd03198_20251020_1675
+Solver: glpk
+======================================================================
+
+=== Configuration Summary ===
+Config file: configs/382_genome_cpd03198.json
+Model name: 382_genome_cpd03198
+Enzyme upper bound: 0.15
+Enable FVA: False
+Enable Biolog validation: False
+
+Simulated Annealing Settings:
+  Temperature: 1.0
+  Cooling rate: 0.95
+  Min temperature: 0.01
+  Max iterations: 100
+  Max unchanged iterations: 4
+  Change threshold: 0.009
+  Biomass goal: 1.0
+======================================================================
+
+Biomass reaction: EX_cpd11416_c0
+
+=== Step 1: Preparing model data ===
+  ✓ Found existing files, loading cached data:
+    - /project/def-mahadeva/ranaab/kinGEMs_v2/data/interim/382_genome_cpd03198/382_genome_cpd03198_substrates.csv
+    - /project/def-mahadeva/ranaab/kinGEMs_v2/data/interim/382_genome_cpd03198/382_genome_cpd03198_sequences.csv
+Warning: Model has 8 validation errors
+  Model: 1270 genes, 3011 reactions
+
+=== Step 2: Merging substrate and sequence data ===
+  ✓ Found existing file, loading cached data:
+    - /project/def-mahadeva/ranaab/kinGEMs_v2/data/interim/382_genome_cpd03198/382_genome_cpd03198_merged_data.csv
+  Merged data: 19473 rows
+
+=== Step 3: Processing CPI-Pred kcat values & annotating model ===
+  ✓ Found existing file, loading cached data:
+    - /project/def-mahadeva/ranaab/kinGEMs_v2/data/processed/382_genome_cpd03198/382_genome_cpd03198_processed_data.csv
+  Processed data: 398949 rows
+  Reactions with kcat: 2393/3011
+
+=== Step 4: Running optimization ===
+  Running standard COBRApy FBA (no enzyme constraints)...
+    COBRApy biomass: 0.6176
+  Running kinGEMs enzyme-constrained optimization...
+    kinGEMs biomass: 0.3200
+
+  Comparison:
+    Standard FBA:           0.6176
+    Enzyme-constrained FBA: 0.3200
+    Reduction due to enzyme budget: 48.2%
+  Using ModelSEED model - constraints handled by optimization framework
+
+=== Step 5: Running simulated annealing ===
+  Configuration:
+    - Temperature: 1.0
+    - Cooling rate: 0.95
+    - Max iterations: 100
+    - Max unchanged iterations: 4
+    - Change threshold: 0.009
+    - Biomass goal: 1.0
+  Starting optimization...
+
+  Iter 1/100: biomass=0.356285, temp=1.0000  Iter 2/100: biomass=0.442621, temp=0.9500  Iter 3/100: biomass=0.458031, temp=0.9025  Iter 4/100: biomass=0.467551, temp=0.8574  Iter 5/100: biomass=0.481116, temp=0.8145  Iter 6/100: biomass=0.492428, temp=0.7738  Iter 7/100: biomass=0.499250, temp=0.7351  Iter 8/100: biomass=0.500266, temp=0.6983  Iter 9/100: biomass=0.506930, temp=0.6634  Iter 10/100: biomass=0.510765, temp=0.6302  Iter 11/100: biomass=0.515274, temp=0.5987  Iter 12/100: biomass=0.518752, temp=0.5688  Iter 13/100: biomass=0.521884, temp=0.5404
+  Early stop: No change for 4 iterations
+
+
+  Annealing complete!
+  Initial biomass: 0.3200
+  Final biomass: 0.5219
+  Improvement: 63.1%
+  Total iterations: 14
+
+  Biomass progression:
+    Iter   0: 0.319955
+    Iter   1: 0.356285 (+11.35%)
+    Iter   2: 0.442621 (+24.23%)
+    Iter   3: 0.458031 (+3.48%)
+    Iter   4: 0.467551 (+2.08%)
+    Iter   5: 0.481116 (+2.90%)
+    Iter   6: 0.492428 (+2.35%)
+    Iter   7: 0.499250 (+1.39%)
+    Iter   8: 0.500266 (+0.20%)
+    Iter   9: 0.506930 (+1.33%)
+    Iter  10: 0.510765 (+0.76%)
+    Iter  11: 0.515274 (+0.88%)
+    Iter  12: 0.518752 (+0.67%)
+    Iter  13: 0.521884 (+0.60%)
+
+  Top 10 enzymes by mass contribution:
+     Reactions             Single_gene  enzyme_mass
+0  rxn00817_c0  NODE_1_2948594_2949946     0.035322
+1  rxn00818_c0  NODE_1_2948594_2949946     0.035322
+2  rxn00819_c0  NODE_1_2948594_2949946     0.035322
+3  rxn00890_c0  NODE_1_2948594_2949946     0.035322
+4  rxn00977_c0  NODE_1_2948594_2949946     0.035322
+5  rxn02093_c0  NODE_1_2948594_2949946     0.035322
+6  rxn02596_c0  NODE_1_2948594_2949946     0.035322
+7  rxn02822_c0  NODE_1_2948594_2949946     0.035322
+8  rxn03838_c0  NODE_1_2948594_2949946     0.035322
+9  rxn06701_c0  NODE_1_2948594_2949946     0.035322
+
+  Saved merged DataFrame to: /project/def-mahadeva/ranaab/kinGEMs_v2/results/tuning_results/382_genome_cpd03198_20251020_1675/final_model_info.csv
+
+=== Step 7: Saving final model ===
+  Final GEM saved to: /project/def-mahadeva/ranaab/kinGEMs_v2/models/382_genome_cpd03198_20251020_1675.xml
+
+======================================================================
+=== Pipeline Complete ===
+======================================================================
+Run ID: 382_genome_cpd03198_20251020_1675
+Model: 382_genome_cpd03198 (ModelSEED)
+Initial biomass: 0.3200
+Final biomass: 0.5219
+Improvement: 63.1%
+Iterations: 14
+
+Results directory: /project/def-mahadeva/ranaab/kinGEMs_v2/results/tuning_results/382_genome_cpd03198_20251020_1675
+Final model: /project/def-mahadeva/ranaab/kinGEMs_v2/models/382_genome_cpd03198_20251020_1675.xml
+======================================================================

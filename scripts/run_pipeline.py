@@ -36,7 +36,6 @@ import cobra
 from cobra.flux_analysis import flux_variability_analysis as cobra_fva
 from cobra.io import write_sbml_model
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 
 # Add parent directory to Python path
@@ -53,6 +52,7 @@ from kinGEMs.dataset import (
 from kinGEMs.dataset_modelseed import prepare_modelseed_model_data
 from kinGEMs.modeling.fva import (
     flux_variability_analysis,
+    flux_variability_analysis_parallel,
     plot_cumulative_fvi_distribution,
     plot_flux_variability,
 )
@@ -236,22 +236,39 @@ def simulate_enzyme_rate(base_model, processed_df, biomass_reaction, blocked_cpd
 
 
 def run_fva_analysis(model, processed_df, biomass_reaction, enzyme_upper_bound,
-                     tuning_results_dir, organism_strain_GEMname):
+                     tuning_results_dir, organism_strain_GEMname, fva_config=None):
     """Run flux variability analysis and generate plots."""
     print("\n=== Step 6: Running Flux Variability Analysis ===")
+
+    # Get FVA configuration
+    fva_config = fva_config or {}
+    use_parallel = fva_config.get('parallel', False)
+    n_workers = fva_config.get('workers', None)
 
     fva_results_path = os.path.join(tuning_results_dir, f"{organism_strain_GEMname}_fva_results.csv")
     fva_plot_path = os.path.join(tuning_results_dir, f"{organism_strain_GEMname}_fva_flux_range_plot.png")
     fva_cumulative_path = os.path.join(tuning_results_dir, f"{organism_strain_GEMname}_fva_cumulative_plot.png")
 
     # Run kinGEMs FVA
-    fva_results, _, _ = flux_variability_analysis(
-        model=model,
-        processed_df=processed_df,
-        biomass_reaction=biomass_reaction,
-        output_file=fva_results_path,
-        enzyme_upper_bound=enzyme_upper_bound
-    )
+    if use_parallel:
+        print(f"  Using parallel FVA with {n_workers or 'auto'} workers...")
+        fva_results, _, _ = flux_variability_analysis_parallel(
+            model=model,
+            processed_df=processed_df,
+            biomass_reaction=biomass_reaction,
+            output_file=fva_results_path,
+            enzyme_upper_bound=enzyme_upper_bound,
+            n_workers=n_workers
+        )
+    else:
+        print("  Using sequential FVA...")
+        fva_results, _, _ = flux_variability_analysis(
+            model=model,
+            processed_df=processed_df,
+            biomass_reaction=biomass_reaction,
+            output_file=fva_results_path,
+            enzyme_upper_bound=enzyme_upper_bound
+        )
     print(f"  kinGEMs FVA completed: {len(fva_results)} reactions analyzed")
 
     # Run COBRApy FVA for comparison
@@ -397,8 +414,7 @@ def main():
     # File paths
     model_path = os.path.join(raw_data_dir, f"{model_name}.xml")
 
-    # Find predictions file with flexible naming
-    predictions_csv_path = find_predictions_file(model_name, CPIPred_data_dir)
+    
 
     substrates_output = os.path.join(interim_data_dir, f"{model_name}_substrates.csv")
     sequences_output = os.path.join(interim_data_dir, f"{model_name}_sequences.csv")
@@ -424,6 +440,15 @@ def main():
     print(f"Enzyme upper bound: {enzyme_upper_bound}")
     print(f"Enable FVA: {enable_fva}")
     print(f"Enable Biolog validation: {enable_biolog}")
+
+    # Print FVA config if enabled
+    if enable_fva:
+        fva_config = config.get('fva', {})
+        print("\nFVA Settings:")
+        print(f"  Parallel execution: {fva_config.get('parallel', False)}")
+        if fva_config.get('parallel'):
+            print(f"  Workers: {fva_config.get('workers', 'auto')}")
+            print(f"  Method: {fva_config.get('method', 'dask')}")
 
     # Print simulated annealing config
     sa_config = config.get('simulated_annealing', {})
@@ -509,6 +534,8 @@ def main():
     print(f"  Merged data: {len(merged_data)} rows")
 
     # === Step 3: Process kcat predictions ===
+    # Find predictions file with flexible naming
+    predictions_csv_path = find_predictions_file(model_name, CPIPred_data_dir)
     print("\n=== Step 3: Processing CPI-Pred kcat values & annotating model ===")
     if not FORCE_REGENERATE and os.path.exists(processed_data_output):
         print("  ✓ Found existing file, loading cached data:")
@@ -698,10 +725,10 @@ def main():
     print(f"\n  Saved merged DataFrame to: {final_info_path}")
 
     # === Step 6: Optional analyses ===
-    # Temporarily disabled during debugging
-    # if enable_fva:
-    #     run_fva_analysis(model, df_new, biomass_reaction, enzyme_upper_bound,
-    #                     tuning_results_dir, model_name)
+    if enable_fva:
+        fva_config = config.get('fva', {})
+        run_fva_analysis(model, df_new, biomass_reaction, enzyme_upper_bound,
+                        tuning_results_dir, model_name, fva_config)
 
     if enable_biolog:
         biolog_config = config.get('biolog_validation', {})
