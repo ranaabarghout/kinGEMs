@@ -175,6 +175,7 @@ def identify_reactions_causing_imbalance(model: cobra.Model,
         # Find all reactions involving this metabolite 
         # and have experimental measurements
         constrained_rxns = []
+        rxns_not_in_exp = [] #wip
         for rxn in met.reactions:
             if rxn.id in experimental_flux_dict:
                 coeff = rxn.get_coefficient(met_id)
@@ -187,6 +188,15 @@ def identify_reactions_causing_imbalance(model: cobra.Model,
                     'net_effect': net_contribution,
                     'formula': rxn.reaction
                 })
+            else:
+                coeff = rxn.get_coefficient(met_id)
+                rxns_not_in_exp.append({
+                        'reaction': rxn.id,
+                        'coefficient': coeff,
+                        'formula': rxn.reaction
+                    })
+                
+                
         
         if constrained_rxns:
             problematic_reactions[met_id] = constrained_rxns
@@ -198,6 +208,12 @@ def identify_reactions_causing_imbalance(model: cobra.Model,
                 for info in constrained_rxns:
                     print(f"  {info['reaction']}: coeff={info['coefficient']:+.2f}, "
                         f"flux={info['exp_flux']:.4f}, net={info['net_effect']:+.4f}")
+                    print(f"    {info['formula']}")
+        if rxns_not_in_exp:
+            if verbose:
+                print(f"\nReactions not in experimental data with this metabolite:")
+                for info in rxns_not_in_exp:
+                    print(f"  {info['reaction']}: coeff={info['coefficient']:+.2f}")
                     print(f"    {info['formula']}")
     
     return problematic_reactions
