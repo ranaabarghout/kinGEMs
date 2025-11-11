@@ -874,16 +874,13 @@ def _run_validation_dask(model, processed_df, chunks, medium_ex_inds, carbon_ex_
             threads_per_worker=1,
             silence_logs=logging.ERROR,
             local_directory=local_dir,
-            death_timeout='7200s',  # 2 hours - increased to prevent premature worker death
-            memory_limit='18GB',  # Limit each worker to 18GB (3 workers × 18GB = 54GB + overhead = 60GB total)
+            death_timeout='30s',  # Kill workers faster if they hang
         )
 
                 # Connect client to cluster
         client = Client(cluster, timeout='60s')
 
         print(f"    Dask cluster created with {n_workers} workers")
-        print("    Worker memory limit: 18GB per worker")
-        print("    Death timeout: 7200s (2 hours)")
         try:
             print(f"    Dask dashboard: {client.dashboard_link}")
         except Exception as e:
@@ -930,7 +927,7 @@ def _run_validation_dask(model, processed_df, chunks, medium_ex_inds, carbon_ex_
 def _run_validation_multiprocessing(model, processed_df, chunks, medium_ex_inds,
                                     carbon_ex_inds, objective_reaction,
                                     enzyme_upper_bound, n_workers, mode='baseline', solver_name='glpk'):
-    """Execute validation using multiprocessing.Pool with progress tracking."""
+    """Execute validation using multiprocessing.Pool."""
     from functools import partial
     from multiprocessing import Pool
 
@@ -947,65 +944,8 @@ def _run_validation_multiprocessing(model, processed_df, chunks, medium_ex_inds,
         solver_name=solver_name
     )
 
-    # Calculate total simulations
-    total_simulations = sum(len(chunk) for chunk in chunks)
-    total_chunks = len(chunks)
-
-    print(f"    Processing {total_chunks} chunks ({total_simulations} total simulations)...")
-    print(f"    Mode: {mode}, Solver: {solver_name}")
-    import sys
-    sys.stdout.flush()  # Force output before workers start
-
-    # Execute in parallel with progress tracking and health checks
-    results = []
-    completed_simulations = 0
-    completed_chunks = 0
-
+    # Execute in parallel
     with Pool(processes=n_workers) as pool:
-        # Use imap_unordered for better robustness with long tasks
-        import time
+        results = pool.map(worker_func, chunks)
 
-        # Submit all chunks and get iterator (unordered for better performance)
-        chunk_iterator = pool.imap_unordered(worker_func, chunks)
-
-        print(f"    Submitted {total_chunks} chunks to workers...")
-        sys.stdout.flush()
-
-        start_time = time.time()
-        last_progress_time = start_time
-        timeout_seconds = 1800  # 30 minutes timeout per chunk
-
-        for result in chunk_iterator:
-            current_time = time.time()
-            completed_chunks += 1
-            results.append(result)
-            completed_simulations += len(result)
-            percent_complete = (completed_simulations / total_simulations) * 100
-
-            # Calculate timing
-            elapsed_total = current_time - start_time
-            elapsed_since_last = current_time - last_progress_time
-            last_progress_time = current_time
-
-            print(f"    Progress: {completed_chunks}/{total_chunks} chunks ({completed_simulations}/{total_simulations} simulations, {percent_complete:.1f}%)")
-            print(f"    Chunk time: {elapsed_since_last:.1f}s, Total time: {elapsed_total/60:.1f}min")
-            sys.stdout.flush()
-
-            # Health check: warn if chunk took too long
-            if elapsed_since_last > timeout_seconds:
-                print(f"    ⚠️  Warning: Last chunk took {elapsed_since_last/60:.1f} minutes (>{timeout_seconds/60:.1f}min)")
-
-            # Early exit check
-            if completed_chunks >= total_chunks:
-                break
-
-        # Estimate remaining time
-        if completed_chunks > 0:
-            avg_chunk_time = elapsed_total / completed_chunks
-            remaining_chunks = total_chunks - completed_chunks
-            estimated_remaining = (remaining_chunks * avg_chunk_time) / 60
-            print(f"    Estimated remaining time: {estimated_remaining:.1f} minutes")
-            sys.stdout.flush()
-
-    print(f"    ✓ All {total_simulations} simulations completed in {elapsed_total/3600:.1f} hours")
     return results

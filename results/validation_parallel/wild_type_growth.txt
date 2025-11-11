@@ -1,0 +1,34 @@
+# Wild-Type Growth Rates (no gene knockouts)
+# Carbon Source | Growth Rate
+#==================================================
+ac                             0.210099
+acgam                          1.131312
+akg                            0.547390
+fru                            0.876997
+fuc__L                         0.862123
+g6p                            0.905210
+gal                            0.867593
+galur                          0.704686
+gam                            0.877309
+glc__D                         0.876997
+glcn                           0.797137
+glcur                          0.704686
+glyc                           0.494713
+glyclt                         0.153091
+lac__D                         0.377356
+mal__L                         0.411165
+malt                           1.779800
+mnl                            0.942827
+pyr                            0.313940
+rib__D                         0.688913
+sbt__D                         0.942827
+ser__D                         0.318051
+succ                           0.450086
+tre                            1.779800
+xyl__D                         0.717126
+
+# Summary Statistics
+# Mean: 0.749249
+# Std:  0.396241
+# Min:  0.153091
+# Max:  1.779800

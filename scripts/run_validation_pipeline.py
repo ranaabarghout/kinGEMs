@@ -31,6 +31,18 @@ import seaborn as sns
 from sklearn.metrics import auc as sk_auc
 from sklearn.metrics import confusion_matrix, roc_auc_score
 from sklearn.metrics import precision_recall_curve as pre_rec
+from sklearn.metrics import (
+    accuracy_score,
+    balanced_accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    average_precision_score,
+    matthews_corrcoef,
+    roc_curve,
+    precision_recall_curve,
+)
+from scipy.stats import pearsonr, spearmanr
 
 # Add parent directory to Python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -425,16 +437,169 @@ def main():
     # === Step 4: Calculate Metrics ===
     print("\n=== Step 4: Calculating performance metrics ===")
 
-    exp_binary = (data_fitness_matched_adj > 0).astype(float)
+    # Use fit_thresh from config to classify experimental fitness into growth/no-growth
+    exp_binary = (data_fitness_matched_adj > fit_thresh).astype(int)
 
     # Store all metrics
     all_metrics = {}
 
-    print("\n--- Basic Metrics ---")
+    print("\n--- Basic & Classification Metrics ---")
+    def compute_and_print_metrics(sim_data, label, mask=None):
+        """Compute correlation, classification metrics and plots for a single simulated matrix.
+
+        Parameters
+        - sim_data: numpy array shape (genes, carbons) with simulated growth values
+        - label: string label for printing/file names
+        - mask: optional boolean mask for genes (shape: genes,) to restrict evaluation
+        """
+        # Optionally subset by mask (genes)
+        if mask is not None:
+            sim = sim_data[mask, :]
+            exp = data_fitness_matched_adj[mask, :]
+        else:
+            sim = sim_data
+            exp = data_fitness_matched_adj
+
+        # Flatten and drop NaNs
+        sim_flat = sim.flatten()
+        exp_flat = exp.flatten()
+        valid = ~np.isnan(sim_flat) & ~np.isnan(exp_flat)
+        sim_flat = sim_flat[valid]
+        exp_flat = exp_flat[valid]
+
+        # Correlations
+        try:
+            pearson_r, pearson_p = pearsonr(sim_flat, exp_flat)
+        except Exception:
+            pearson_r, pearson_p = (np.nan, np.nan)
+        try:
+            spearman_r, spearman_p = spearmanr(sim_flat, exp_flat)
+        except Exception:
+            spearman_r, spearman_p = (np.nan, np.nan)
+
+        # Binary labels
+        y_true = (exp_flat > fit_thresh).astype(int)
+        # Use raw simulated values as scores for ROC/AUPR
+        y_score = sim_flat
+        # Binary predictions using sim_thresh
+        y_pred = (sim_flat > sim_thresh).astype(int)
+
+        # Basic classification metrics
+        acc = accuracy_score(y_true, y_pred)
+        bal_acc = balanced_accuracy_score(y_true, y_pred)
+        prec = precision_score(y_true, y_pred, zero_division=0)
+        rec = recall_score(y_true, y_pred, zero_division=0)
+        f1 = f1_score(y_true, y_pred, zero_division=0)
+        mcc = matthews_corrcoef(y_true, y_pred) if len(np.unique(y_true)) > 1 else np.nan
+
+        # ROC AUC and Average Precision (PR AUC) — only if both classes present
+        try:
+            roc_auc = roc_auc_score(y_true, y_score) if len(np.unique(y_true)) > 1 else np.nan
+        except Exception:
+            roc_auc = np.nan
+        try:
+            ap = average_precision_score(y_true, y_score) if len(np.unique(y_true)) > 1 else np.nan
+        except Exception:
+            ap = np.nan
+
+        # Optimal threshold via Youden's J (maximize TPR-FPR)
+        try:
+            fpr, tpr, thr = roc_curve(y_true, y_score)
+            youden_idx = np.nanargmax(tpr - fpr)
+            optimal_thr = thr[youden_idx]
+            y_pred_opt = (y_score >= optimal_thr).astype(int)
+            acc_opt = accuracy_score(y_true, y_pred_opt)
+            bal_acc_opt = balanced_accuracy_score(y_true, y_pred_opt)
+        except Exception:
+            optimal_thr = np.nan
+            acc_opt = np.nan
+            bal_acc_opt = np.nan
+
+        # Print summary
+        print(f"{label}:")
+        print(f"  Pearson r: {pearson_r:.3f} (p={pearson_p:.2g})")
+        print(f"  Spearman rho: {spearman_r:.3f} (p={spearman_p:.2g})")
+        print(f"  Accuracy (sim_thresh={sim_thresh}): {acc:.3f}")
+        print(f"  Balanced Accuracy: {bal_acc:.3f}")
+        print(f"  Precision: {prec:.3f}")
+        print(f"  Recall: {rec:.3f}")
+        print(f"  F1 Score: {f1:.3f}")
+        print(f"  MCC: {mcc:.3f}")
+        print(f"  ROC AUC: {roc_auc:.3f}")
+        print(f"  Average Precision (AUPR): {ap:.3f}")
+        print(f"  Optimal threshold (Youden): {optimal_thr}")
+        print(f"  Accuracy (optimal_thr): {acc_opt:.3f} | Balanced Accuracy (optimal): {bal_acc_opt:.3f}")
+
+        # Save metrics
+        metrics = dict(
+            pearson_r=pearson_r, pearson_p=pearson_p,
+            spearman_r=spearman_r, spearman_p=spearman_p,
+            accuracy=acc, balanced_accuracy=bal_acc,
+            precision=prec, recall=rec, f1_score=f1, mcc=mcc,
+            roc_auc=roc_auc, average_precision=ap,
+            optimal_threshold=optimal_thr, accuracy_opt=acc_opt, balanced_accuracy_opt=bal_acc_opt
+        )
+
+        # Create plots: scatter, ROC, PR, confusion matrix
+        try:
+            import matplotlib.pyplot as plt
+            import seaborn as sns
+            # Scatter plot: sim vs exp
+            fig, ax = plt.subplots(figsize=(6, 5))
+            sns.regplot(x=sim_flat, y=exp_flat, scatter_kws={'s': 6}, ax=ax)
+            ax.set_xlabel('Simulated growth value')
+            ax.set_ylabel('Experimental fitness')
+            ax.set_title(f'{label}: Simulated vs Experimental\nPearson r={pearson_r:.3f}')
+            fig.tight_layout()
+            fig.savefig(os.path.join(validation_dir, f'{label}_scatter_sim_vs_exp.png'), dpi=300, bbox_inches='tight')
+            plt.close(fig)
+
+            # ROC curve
+            if len(np.unique(y_true)) > 1:
+                fpr, tpr, _ = roc_curve(y_true, y_score)
+                fig, ax = plt.subplots(figsize=(5, 5))
+                ax.plot(fpr, tpr, label=f'AUC={roc_auc:.3f}')
+                ax.plot([0, 1], [0, 1], '--', color='grey')
+                ax.set_xlabel('False Positive Rate')
+                ax.set_ylabel('True Positive Rate')
+                ax.set_title(f'{label}: ROC Curve')
+                ax.legend()
+                fig.tight_layout()
+                fig.savefig(os.path.join(validation_dir, f'{label}_roc_curve.png'), dpi=300, bbox_inches='tight')
+                plt.close(fig)
+
+                # PR curve
+                precision_vals, recall_vals, _ = precision_recall_curve(y_true, y_score)
+                ap_val = average_precision_score(y_true, y_score)
+                fig, ax = plt.subplots(figsize=(5, 5))
+                ax.plot(recall_vals, precision_vals, label=f'AP={ap_val:.3f}')
+                ax.set_xlabel('Recall')
+                ax.set_ylabel('Precision')
+                ax.set_title(f'{label}: Precision-Recall Curve')
+                ax.legend()
+                fig.tight_layout()
+                fig.savefig(os.path.join(validation_dir, f'{label}_pr_curve.png'), dpi=300, bbox_inches='tight')
+                plt.close(fig)
+
+            # Confusion matrix (using sim_thresh)
+            cm = confusion_matrix(y_true, y_pred)
+            fig, ax = plt.subplots(figsize=(4, 4))
+            sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax)
+            ax.set_xlabel('Predicted')
+            ax.set_ylabel('Actual')
+            ax.set_title(f'{label}: Confusion Matrix (sim_thresh={sim_thresh})')
+            fig.tight_layout()
+            fig.savefig(os.path.join(validation_dir, f'{label}_confusion_matrix.png'), dpi=300, bbox_inches='tight')
+            plt.close(fig)
+        except Exception as e:
+            print(f'  ⚠️  Plotting failed for {label}: {e}')
+
+        return metrics
+
     for model_type, sim_data in simulation_results.items():
-        sim_binary = (sim_data > sim_thresh).astype(float)
-        acc, prec, rec, f1 = print_basic_metrics(exp_binary, sim_binary, model_type.replace('_', ' ').title())
-        all_metrics[model_type] = {'accuracy': acc, 'precision': prec, 'recall': rec, 'f1_score': f1}
+        metrics = compute_and_print_metrics(sim_data, model_type.replace('_', ' ').title(), mask=None)
+        # Store in all_metrics
+        all_metrics[model_type] = metrics
 
     print("\n--- Advanced Metrics ---")
     for model_type, sim_data in simulation_results.items():

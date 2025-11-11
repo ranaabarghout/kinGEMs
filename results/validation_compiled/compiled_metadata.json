@@ -1,7 +1,9 @@
 {
-  "compilation_timestamp": "2025-11-05T11:15:11.021919",
+  "compilation_timestamp": "2025-11-11T05:50:51.858033",
   "input_directory": "results/validation_parallel",
   "output_directory": "results/validation_compiled",
+  "fit_threshold": -2,
+  "sim_threshold": 0.001,
   "baseline": {
     "mode": "baseline",
     "model_name": "iML1515_GEM",
@@ -35,7 +37,7 @@
     "method": "multiprocessing",
     "workers": 6
   },
-  "metrics": {
+  "correlation_metrics": {
     "Baseline GEM": {
       "pearson_r": 0.28299248785893316,
       "pearson_p": 0.0,
@@ -62,6 +64,65 @@
       "rmse": 1.2943716602799784,
       "mae": 0.6259552982101575,
       "n_points": 33150
+    }
+  },
+  "classification_metrics": {
+    "Baseline GEM": {
+      "accuracy": 0.9384313725490196,
+      "balanced_accuracy": 0.7509955979067496,
+      "precision": 0.9529035798444108,
+      "recall": 0.9806657364959139,
+      "f1_score": 0.9665853538743635,
+      "mcc": 0.5863239686612758,
+      "roc_auc": 0.7782364708460177,
+      "average_precision": 0.9577973089824267,
+      "pr_auc_notebook": 0.6133685158563316,
+      "optimal_threshold": 0.15309063711162618,
+      "accuracy_optimal": 0.936078431372549,
+      "balanced_accuracy_optimal": 0.7550075478281978,
+      "true_negatives": 1589,
+      "false_positives": 1459,
+      "false_negatives": 582,
+      "true_positives": 29520,
+      "n_samples": 33150
+    },
+    "Pre-tuning kinGEMs": {
+      "accuracy": 0.938552036199095,
+      "balanced_accuracy": 0.7507671750693312,
+      "precision": 0.9528511956626973,
+      "recall": 0.9808650588000797,
+      "f1_score": 0.9666552079752492,
+      "mcc": 0.5867969049468015,
+      "roc_auc": 0.7329478068530253,
+      "average_precision": 0.9509887533777152,
+      "pr_auc_notebook": 0.6132623516518576,
+      "optimal_threshold": 0.0023315523962543264,
+      "accuracy_optimal": 0.9384615384615385,
+      "balanced_accuracy_optimal": 0.7513070717042372,
+      "true_negatives": 1587,
+      "false_positives": 1461,
+      "false_negatives": 576,
+      "true_positives": 29526,
+      "n_samples": 33150
+    },
+    "Post-tuning kinGEMs": {
+      "accuracy": 0.9384313725490196,
+      "balanced_accuracy": 0.7509955979067496,
+      "precision": 0.9529035798444108,
+      "recall": 0.9806657364959139,
+      "f1_score": 0.9665853538743635,
+      "mcc": 0.5863239686612758,
+      "roc_auc": 0.7648331357984778,
+      "average_precision": 0.9556185274387693,
+      "pr_auc_notebook": 0.6133685158563316,
+      "optimal_threshold": 0.020368360113719702,
+      "accuracy_optimal": 0.9379185520361991,
+      "balanced_accuracy_optimal": 0.7514503836561988,
+      "true_negatives": 1589,
+      "false_positives": 1459,
+      "false_negatives": 582,
+      "true_positives": 29520,
+      "n_samples": 33150
     }
   }
 }

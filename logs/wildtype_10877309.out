@@ -1,0 +1,79 @@
+Loading configuration from: configs/validation_iML1515.json
+
+======================================================================
+=== kinGEMs Parallel Validation: WILDTYPE ===
+======================================================================
+Model: iML1515_GEM
+Mode: wildtype
+Output: results/validation_parallel
+Parallel: True (multiprocessing with 6 workers)
+======================================================================
+
+=== Step 1: Loading model ===
+  Genes: 1516
+  Reactions: 2712
+  ⚠️  WARNING: CPLEX requested but not available to Pyomo!
+  Pyomo will fall back to GLPK (slower)
+  ⚠️  Could not set solver to cplex: cplex is not a valid solver interface. Pick one from glpk_exact, glpk, scipy.
+  Using default solver: optlang.glpk_interface
+  ⚠️  WARNING: Using GLPK solver (slow)
+  ⚠️  Consider loading CPLEX: module load cplex
+  Objective: BIOMASS_Ec_iML1515_core_75p37M
+
+=== Step 2: Preparing validation environment ===
+Matching model genes to data genes...
+Matched 1339 genes.
+Matching experimental carbon sources to model carbon sources...
+Matched 54 carbon sources.
+Shape of matched fitness data: (1339, 54)
+Averaging fitness data for replicate carbon sources...
+Final shape of averaged fitness data: (1339, 27)
+Unique carbon sources after averaging: 27
+Removing strain genes:
+['b0066' 'b0348' 'b3909']
+Removing essential genes: 
+b0142
+b0641
+b0908
+b2329
+b2687
+b3040
+b3196
+b3198
+b3199
+b3368
+Removing carbon sources: 
+['man' 'sucr']
+  Matched genes: 1326
+  Carbon sources: 25
+
+=== Step 3: Running WILDTYPE simulation ===
+Calculating Wild-Type Growth (no gene knockouts)...
+  Calculating wild-type growth for 25 carbon sources...
+  Wild-type growth progress: 1/25  Wild-type growth progress: 2/25  Wild-type growth progress: 3/25  Wild-type growth progress: 4/25  Wild-type growth progress: 5/25  Wild-type growth progress: 5/25 carbon sources completed
+  Wild-type growth progress: 6/25  Wild-type growth progress: 7/25  Wild-type growth progress: 8/25  Wild-type growth progress: 9/25  Wild-type growth progress: 10/25  Wild-type growth progress: 10/25 carbon sources completed
+  Wild-type growth progress: 11/25  Wild-type growth progress: 12/25  Wild-type growth progress: 13/25  Wild-type growth progress: 14/25  Wild-type growth progress: 15/25  Wild-type growth progress: 15/25 carbon sources completed
+  Wild-type growth progress: 16/25  Wild-type growth progress: 17/25  Wild-type growth progress: 18/25  Wild-type growth progress: 19/25  Wild-type growth progress: 20/25  Wild-type growth progress: 20/25 carbon sources completed
+  Wild-type growth progress: 21/25  Wild-type growth progress: 22/25  Wild-type growth progress: 23/25  Wild-type growth progress: 24/25  Wild-type growth progress: 25/25  Wild-type growth progress: 25/25 carbon sources completed
+
+  Wild-type growth calculation complete (25 carbon sources).
+  Mean growth rate: 0.749249
+  Range: 0.153091 to 1.779800
+  Saved: results/validation_parallel/wild_type_growth.npy
+  Saved: results/validation_parallel/wild_type_growth.txt
+  Saved: results/validation_parallel/wildtype_metadata.json
+
+======================================================================
+=== WILDTYPE Validation Complete ===
+======================================================================
+Results saved to: results/validation_parallel
+======================================================================
+Wild-type growth calculation complete!
+Results saved to: results/validation_parallel/wild_type_growth.npy
+
+Next steps:
+  1. Inspect: cat results/validation_parallel/wild_type_growth.txt
+  2. Run baseline: sbatch slurm_jobs/run_validation_baseline.sh
+  3. Run pretuning: sbatch slurm_jobs/run_validation_pretuning.sh
+  4. Run posttuning: sbatch slurm_jobs/run_validation_posttuning.sh
+  5. Compile results: python scripts/compile_validation_results.py
