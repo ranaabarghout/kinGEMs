@@ -1,0 +1,12 @@
+=========================================
+Job: Pre-tuning kinGEMs Validation
+Job ID: 10902924
+Node: fc30370
+Current working directory: /project/def-mahadeva/ranaab/kinGEMs_v2
+Starting run at: Tue Nov 11 09:23:11 PST 2025
+=========================================
+Checking CPLEX availability...
+/home/ranaab/cplex_studio2211/cplex/bin/x86-64_linux/cplex
+✓ CPLEX found: /home/ranaab/cplex_studio2211/cplex/bin/x86-64_linux/cplex
+CPLEX_STUDIO_DIR: /home/ranaab/cplex_studio2211
+Running Pre-tuning kinGEMs validation...

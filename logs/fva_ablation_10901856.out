@@ -1,0 +1,145 @@
+=========================================
+Job: FVA Ablation Study
+Job ID: 10901856
+Node: fc30560
+Current working directory: /project/def-mahadeva/ranaab/kinGEMs_v2
+Starting run at: Tue Nov 11 09:12:10 PST 2025
+=========================================
+
+Configuration: configs/iML1515_GEM.json
+Workers: 8
+
+Running FVA ablation study...
+Loading configuration from: configs/iML1515_GEM.json
+
+================================================================================
+=== kinGEMs FVA Ablation Study: iML1515_GEM ===
+================================================================================
+Run ID: iML1515_GEM_FVA_ablation_20251111_8627
+Organism: E coli
+Enzyme upper bound: 0.15
+Parallel FVA: True
+Workers: 8
+Results directory: /project/6000502/ranaab/kinGEMs_v2/results/fva_ablation/iML1515_GEM_FVA_ablation_20251111_8627
+================================================================================
+
+=== Loading Model and Data ===
+Warning: Model has 8 validation errors
+Biomass reaction: BIOMASS_Ec_iML1515_core_75p37M
+Loaded processed data: 33657 rows
+
+=== Level 1: Baseline GEM (no enzyme constraints) ===
+  Biomass: 0.8770
+  Reactions analyzed: 2712
+
+=== Level 2: Single enzyme constraint only ===
+  (multi_enzyme_off=True, isoenzymes_off=True, promiscuous_off=True, complexes_off=True)
+  Parallel FVA configuration:
+    Method: dask
+    Workers: 8
+    Reactions: 2712
+    Chunk size: 22
+    Number of chunks: 124
+    Estimated memory: ~1.8 GB
+
+  Running baseline optimization...
+  Optimal biomass: 0.039351
+
+  Starting parallel FVA with 124 chunks...
+[FVA] Starting optimization for reaction: RNDR3
+[FVA] Starting optimization for reaction: CLPNS141pp
+[FVA] Starting optimization for reaction: AACPS4
+[FVA] Starting optimization for reaction: EX_LalaDgluMdapDala_e
+[FVA] Starting optimization for reaction: MALCOAMT
+[FVA] Starting optimization for reaction: 23CGMPtex
+[FVA] Starting optimization for reaction: ThDPAT
+[FVA] Starting optimization for reaction: ALATA_D2
+[FVA] Max optimization done for ThDPAT: 0.0
+[FVA] Max optimization done for MALCOAMT: 7.87024377973088e-08
+[FVA] Max optimization done for 23CGMPtex: 0.0
+[FVA] Min optimization done for MALCOAMT: 7.87024377973088e-08
+[FVA] Finished optimization for reaction: MALCOAMT
+[FVA] Starting optimization for reaction: OGMEACPS
+[FVA] Min optimization done for ThDPAT: 0.0
+[FVA] Finished optimization for reaction: ThDPAT
+[FVA] Starting optimization for reaction: GHBDHx
+[FVA] Min optimization done for 23CGMPtex: 0.0
+[FVA] Finished optimization for reaction: 23CGMPtex
+[FVA] Starting optimization for reaction: 3AMPtex
+[FVA] Max optimization done for GHBDHx: 0.0
+[FVA] Max optimization done for OGMEACPS: 7.87024377973088e-08
+[FVA] Max optimization done for 3AMPtex: 0.0
+[FVA] Min optimization done for GHBDHx: 0.0
+[FVA] Finished optimization for reaction: GHBDHx
+[FVA] Starting optimization for reaction: APPLDHr
+[FVA] Min optimization done for 3AMPtex: 0.0
+[FVA] Finished optimization for reaction: 3AMPtex
+[FVA] Starting optimization for reaction: 3CMPtex
+[FVA] Min optimization done for OGMEACPS: 7.87024377973088e-08
+[FVA] Finished optimization for reaction: OGMEACPS
+[FVA] Starting optimization for reaction: OGMEACPR
+[FVA] Max optimization done for APPLDHr: 0.0
+[FVA] Max optimization done for 3CMPtex: 0.0
+[FVA] Max optimization done for OGMEACPR: 7.87024377973088e-08
+[FVA] Min optimization done for APPLDHr: 0.0
+[FVA] Finished optimization for reaction: APPLDHr
+[FVA] Starting optimization for reaction: SPMDt3pp
+[FVA] Min optimization done for 3CMPtex: 0.0
+[FVA] Finished optimization for reaction: 3CMPtex
+[FVA] Starting optimization for reaction: LADGMDH
+[FVA] Min optimization done for OGMEACPR: 7.87024377973088e-08
+[FVA] Finished optimization for reaction: OGMEACPR
+[FVA] Starting optimization for reaction: OPMEACPS
+[FVA] Max optimization done for LADGMDH: 5.67425171178814e-05
+[FVA] Max optimization done for OPMEACPS: 7.87024377973088e-08
+[FVA] Min optimization done for LADGMDH: 0.0
+[FVA] Finished optimization for reaction: LADGMDH
+[FVA] Starting optimization for reaction: ALAGLUE
+[FVA] Min optimization done for OPMEACPS: 7.87024377973088e-08
+[FVA] Finished optimization for reaction: OPMEACPS
+[FVA] Starting optimization for reaction: LIPAabctex
+[FVA] Max optimization done for LIPAabctex: 0.0
+[FVA] Min optimization done for LIPAabctex: 0.0
+[FVA] Finished optimization for reaction: LIPAabctex
+[FVA] Starting optimization for reaction: DGUNC
+[FVA] Max optimization done for RNDR3: 47.36926258623695
+[FVA] Max optimization done for AACPS4: 108.97957587465284
+[FVA] Max optimization done for EX_LalaDgluMdapDala_e: 2.616289446986519
+[FVA] Max optimization done for CLPNS141pp: 43.589462539798596
+[FVA] Max optimization done for ALATA_D2: 106.577160327237
+[FVA] Min optimization done for EX_LalaDgluMdapDala_e: 0.0
+[FVA] Finished optimization for reaction: EX_LalaDgluMdapDala_e
+[FVA] Starting optimization for reaction: EX_LalaDgluMdap_e
+[FVA] Min optimization done for RNDR3: 0.0
+[FVA] Finished optimization for reaction: RNDR3
+[FVA] Starting optimization for reaction: RNDR4
+[FVA] Min optimization done for CLPNS141pp: 0.0
+[FVA] Finished optimization for reaction: CLPNS141pp
+[FVA] Starting optimization for reaction: PG120abcpp
+[FVA] Min optimization done for ALATA_D2: 0.0
+[FVA] Finished optimization for reaction: ALATA_D2
+[FVA] Starting optimization for reaction: SHCHD2
+[FVA] Max optimization done for SHCHD2: 8.77532181439993e-06
+[FVA] Min optimization done for SHCHD2: 8.77532181439993e-06
+[FVA] Finished optimization for reaction: SHCHD2
+[FVA] Starting optimization for reaction: CPPPGO
+[FVA] Max optimization done for SPMDt3pp: 174.3578501591934
+[FVA] Min optimization done for SPMDt3pp: 0.0
+[FVA] Finished optimization for reaction: SPMDt3pp
+[FVA] Starting optimization for reaction: PHEtipp
+[FVA] Max optimization done for ALAGLUE: 16.325821871017734
+[FVA] Max optimization done for PHEtipp: 0.00163046340067876
+[FVA] Min optimization done for ALAGLUE: 0.0
+[FVA] Finished optimization for reaction: ALAGLUE
+[FVA] Starting optimization for reaction: FEENTERtpp
+[FVA] Min optimization done for PHEtipp: 0.0
+[FVA] Finished optimization for reaction: PHEtipp
+[FVA] Starting optimization for reaction: G2PP
+[FVA] Max optimization done for G2PP: 0.0
+[FVA] Max optimization done for DGUNC: 54.48682817474861
+[FVA] Min optimization done for G2PP: 0.0
+[FVA] Finished optimization for reaction: G2PP
+[FVA] Starting optimization for reaction: MALt3pp
+[FVA] Min optimization done for DGUNC: 0.0
+[FVA] Finished optimization for reaction: DGUNC
+[FVA] Starting optimization for reaction: CDGUNPD

@@ -35,6 +35,7 @@ import pandas as pd
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from kinGEMs.config import ECOLI_VALIDATION_DIR
+from kinGEMs.modeling.optimize import run_optimization_with_dataframe
 from kinGEMs.validation_utils import (
     check_environment,
     load_data,
@@ -45,7 +46,6 @@ from kinGEMs.validation_utils import (
     simulate_phenotype,
     simulate_phenotype_parallel,
 )
-from kinGEMs.modeling.optimize import run_optimization_with_dataframe
 
 # Silence warnings
 warnings.filterwarnings('ignore')

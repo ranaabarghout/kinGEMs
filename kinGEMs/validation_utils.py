@@ -927,9 +927,10 @@ def _run_validation_dask(model, processed_df, chunks, medium_ex_inds, carbon_ex_
 def _run_validation_multiprocessing(model, processed_df, chunks, medium_ex_inds,
                                     carbon_ex_inds, objective_reaction,
                                     enzyme_upper_bound, n_workers, mode='baseline', solver_name='glpk'):
-    """Execute validation using multiprocessing.Pool."""
+    """Execute validation using multiprocessing.Pool with progress tracking."""
     from functools import partial
     from multiprocessing import Pool
+    import time
 
     # Create partial function
     worker_func = partial(
@@ -944,8 +945,40 @@ def _run_validation_multiprocessing(model, processed_df, chunks, medium_ex_inds,
         solver_name=solver_name
     )
 
-    # Execute in parallel
+    # Execute in parallel with progress tracking
+    total_chunks = len(chunks)
+    total_tasks = sum(len(chunk) for chunk in chunks)
+    results = []
+    
+    start_time = time.time()
+    chunk_times = []
+    
     with Pool(processes=n_workers) as pool:
-        results = pool.map(worker_func, chunks)
+        # Use imap_unordered for progress tracking
+        for i, result in enumerate(pool.imap_unordered(worker_func, chunks), 1):
+            results.append(result)
+            
+            # Track timing
+            current_time = time.time()
+            elapsed_time = current_time - start_time
+            chunk_times.append(elapsed_time / i)  # Average time per chunk
+            
+            # Calculate completed tasks (approximate)
+            completed_tasks = sum(len(chunks[j]) for j in range(min(i, len(chunks))))
+            
+            # Progress message
+            percent = (i / total_chunks) * 100
+            avg_chunk_time = sum(chunk_times[-10:]) / min(len(chunk_times), 10)  # Moving average
+            
+            # Format time
+            if elapsed_time < 60:
+                time_str = f"{elapsed_time:.1f}s"
+            else:
+                mins = int(elapsed_time / 60)
+                secs = elapsed_time % 60
+                time_str = f"{mins}m {secs:.0f}s"
+            
+            print(f"    Progress: {i}/{total_chunks} chunks ({completed_tasks}/{total_tasks} simulations, {percent:.1f}%)")
+            print(f"    Chunk time: {avg_chunk_time:.1f}s, Total time: {time_str}")
 
     return results
