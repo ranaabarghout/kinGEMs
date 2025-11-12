@@ -1,4 +1,4 @@
-,pearson_r,pearson_p,spearman_r,spearman_p,rmse,mae,n_points
-Baseline GEM,0.283,0.0,0.1505,0.0,1.5968,1.1385,33150.0
-Pre-tuning kinGEMs,0.1271,0.0,0.1721,0.0,1.3292,0.6766,33150.0
-Post-tuning kinGEMs,0.2604,0.0,0.1475,0.0,1.2944,0.626,33150.0
+,pearson_r,pearson_p,spearman_r,spearman_p,kendall_tau,kendall_p,r2,rmse,mae,n_points
+Baseline GEM,0.283,0.0,0.15,0.0,0.0992,0.0,-0.8049,1.5968,1.1385,33150.0
+Pre-tuning kinGEMs,0.1271,0.0,0.1721,0.0,0.1163,0.0,-0.2506,1.3292,0.6766,33150.0
+Post-tuning kinGEMs,0.2604,0.0,0.1475,0.0,0.0979,0.0,-0.1859,1.2944,0.626,33150.0

@@ -100,6 +100,9 @@ def load_wild_type_growth(input_dir, mode='baseline'):
 
 def calculate_correlations(experimental, predicted):
     """Calculate correlation metrics between experimental and predicted fitness."""
+    from scipy.stats import kendalltau
+    from sklearn.metrics import r2_score
+    
     # Flatten arrays
     exp_flat = experimental.flatten()
     pred_flat = predicted.flatten()
@@ -113,6 +116,18 @@ def calculate_correlations(experimental, predicted):
     # Calculate correlations
     pearson_r, pearson_p = pearsonr(exp_clean, pred_clean)
     spearman_r, spearman_p = spearmanr(exp_clean, pred_clean)
+    
+    # Calculate Kendall's tau
+    try:
+        kendall_tau, kendall_p = kendalltau(exp_clean, pred_clean)
+    except Exception:
+        kendall_tau, kendall_p = np.nan, np.nan
+    
+    # Calculate R² (coefficient of determination)
+    try:
+        r2 = r2_score(exp_clean, pred_clean)
+    except Exception:
+        r2 = np.nan
 
     # Calculate RMSE
     rmse = np.sqrt(np.mean((exp_clean - pred_clean) ** 2))
@@ -125,6 +140,9 @@ def calculate_correlations(experimental, predicted):
         'pearson_p': pearson_p,
         'spearman_r': spearman_r,
         'spearman_p': spearman_p,
+        'kendall_tau': kendall_tau,
+        'kendall_p': kendall_p,
+        'r2': r2,
         'rmse': rmse,
         'mae': mae,
         'n_points': len(exp_clean)
@@ -204,8 +222,23 @@ def calculate_fitness_correlations(experimental, predicted, wild_type_growth=Non
     pred_fitness = np.log2(pred_clean_safe / wt_clean_safe)
     
     # Calculate correlations with fitness-converted predictions
+    from scipy.stats import kendalltau
+    from sklearn.metrics import r2_score
+    
     pearson_r, pearson_p = pearsonr(exp_clean, pred_fitness)
     spearman_r, spearman_p = spearmanr(exp_clean, pred_fitness)
+    
+    # Calculate Kendall's tau on fitness scale
+    try:
+        kendall_tau, kendall_p = kendalltau(exp_clean, pred_fitness)
+    except Exception:
+        kendall_tau, kendall_p = np.nan, np.nan
+    
+    # Calculate R² on fitness scale
+    try:
+        r2 = r2_score(exp_clean, pred_fitness)
+    except Exception:
+        r2 = np.nan
     
     # Calculate RMSE on fitness scale
     rmse = np.sqrt(np.mean((exp_clean - pred_fitness) ** 2))
@@ -226,6 +259,9 @@ def calculate_fitness_correlations(experimental, predicted, wild_type_growth=Non
         'pearson_p_fitness': pearson_p,
         'spearman_r_fitness': spearman_r,
         'spearman_p_fitness': spearman_p,
+        'kendall_tau_fitness': kendall_tau,
+        'kendall_p_fitness': kendall_p,
+        'r2_fitness': r2,
         'rmse_fitness': rmse,
         'mae_fitness': mae,
         'wild_type_growth_used': wt_repr,
@@ -395,6 +431,429 @@ def create_comparison_plot(experimental, baseline, pretuning, posttuning, output
     plt.close()
 
 
+def create_fitness_comparison_plots(experimental, baseline, pretuning, posttuning, 
+                                   baseline_wt, pretuning_wt, posttuning_wt, output_dir):
+    """Create scatter plots comparing predicted fitness vs experimental fitness.
+    
+    This converts predicted growth rates to fitness values using:
+    fitness = log2(mutant_growth / wildtype_growth)
+    
+    Then creates scatter plots showing predicted fitness vs experimental fitness
+    for each model. This is the proper comparison since experimental data are
+    already fitness values (log2 ratios).
+    
+    Parameters
+    ----------
+    experimental : numpy.ndarray
+        Experimental fitness values (genes × carbons), already log2 ratios
+    baseline : numpy.ndarray or None
+        Baseline GEM predictions (growth rates)
+    pretuning : numpy.ndarray or None
+        Pre-tuning kinGEMs predictions (growth rates)
+    posttuning : numpy.ndarray or None
+        Post-tuning kinGEMs predictions (growth rates)
+    baseline_wt : numpy.ndarray or None
+        Baseline wild-type growth rates
+    pretuning_wt : numpy.ndarray or None
+        Pre-tuning wild-type growth rates
+    posttuning_wt : numpy.ndarray or None
+        Post-tuning wild-type growth rates
+    output_dir : str
+        Directory to save plots
+    """
+    # Collect available models
+    models_data = []
+    model_names = []
+    model_wt = []
+    
+    if baseline is not None and baseline_wt is not None:
+        models_data.append(baseline)
+        model_names.append('Baseline GEM')
+        model_wt.append(baseline_wt)
+    
+    if pretuning is not None and pretuning_wt is not None:
+        models_data.append(pretuning)
+        model_names.append('Pre-tuning kinGEMs')
+        model_wt.append(pretuning_wt)
+    
+    if posttuning is not None and posttuning_wt is not None:
+        models_data.append(posttuning)
+        model_names.append('Post-tuning kinGEMs')
+        model_wt.append(posttuning_wt)
+    
+    if not models_data:
+        print("  ⚠️  No model data with wild-type growth available for fitness comparison plots")
+        return
+    
+    # Create figure with subplots
+    n_models = len(models_data)
+    fig, axes = plt.subplots(1, n_models, figsize=(6*n_models, 5))
+    if n_models == 1:
+        axes = [axes]
+    
+    exp_flat = experimental.flatten()
+    
+    for idx, (predicted, wt_growth, name, ax) in enumerate(zip(models_data, model_wt, model_names, axes)):
+        pred_flat = predicted.flatten()
+        
+        # Expand wild-type growth to match flattened data
+        if wt_growth.ndim == 1:
+            n_genes = predicted.shape[0]
+            wt_expanded = np.tile(wt_growth, n_genes)
+        else:
+            wt_expanded = wt_growth.flatten()
+        
+        # Clean data
+        mask = ~(np.isnan(exp_flat) | np.isnan(pred_flat) | 
+                np.isinf(exp_flat) | np.isinf(pred_flat) |
+                np.isnan(wt_expanded) | np.isinf(wt_expanded))
+        exp_clean = exp_flat[mask]
+        pred_clean = pred_flat[mask]
+        wt_clean = wt_expanded[mask]
+        
+        # Convert predicted growth to fitness
+        epsilon = 1e-10
+        pred_clean_safe = np.maximum(pred_clean, epsilon)
+        wt_clean_safe = np.maximum(wt_clean, epsilon)
+        pred_fitness = np.log2(pred_clean_safe / wt_clean_safe)
+        
+        # Calculate correlation on fitness scale
+        from scipy.stats import kendalltau
+        from sklearn.metrics import r2_score
+        
+        pearson_r, pearson_p = pearsonr(exp_clean, pred_fitness)
+        spearman_r, _ = spearmanr(exp_clean, pred_fitness)
+        
+        # Calculate Kendall's tau
+        try:
+            kendall_tau, _ = kendalltau(exp_clean, pred_fitness)
+        except Exception:
+            kendall_tau = np.nan
+        
+        # Calculate R²
+        try:
+            r2 = r2_score(exp_clean, pred_fitness)
+        except Exception:
+            r2 = np.nan
+        
+        # Calculate RMSE
+        rmse = np.sqrt(np.mean((exp_clean - pred_fitness) ** 2))
+        
+        # Create scatter plot
+        ax.scatter(exp_clean, pred_fitness, alpha=0.3, s=10, color='steelblue', edgecolors='none')
+        
+        # Add diagonal line (perfect prediction)
+        min_val = min(exp_clean.min(), pred_fitness.min())
+        max_val = max(exp_clean.max(), pred_fitness.max())
+        ax.plot([min_val, max_val], [min_val, max_val], 
+               'r--', lw=2, label='Perfect prediction', zorder=10)
+        
+        # Add horizontal and vertical lines at zero
+        ax.axhline(0, color='gray', linestyle=':', linewidth=1, alpha=0.5)
+        ax.axvline(0, color='gray', linestyle=':', linewidth=1, alpha=0.5)
+        
+        # Labels and title
+        ax.set_xlabel('Experimental Fitness (log₂ ratio)', fontsize=12)
+        ax.set_ylabel('Predicted Fitness (log₂ ratio)', fontsize=12)
+        ax.set_title(f'{name}\nR² = {r2:.4f}, RMSE = {rmse:.4f}', fontsize=13)
+        ax.legend(fontsize=10)
+        ax.grid(True, alpha=0.3)
+        
+        # Add statistics box
+        stats_text = (f'Pearson r = {pearson_r:.4f}\n'
+                     f'Spearman ρ = {spearman_r:.4f}\n'
+                     f'Kendall τ = {kendall_tau:.4f}\n'
+                     f'R² = {r2:.4f}\n'
+                     f'RMSE = {rmse:.4f}\n'
+                     f'p < {pearson_p:.2e}\n'
+                     f'n = {len(exp_clean):,}')
+        ax.text(0.02, 0.98, stats_text, transform=ax.transAxes,
+               fontsize=9, verticalalignment='top', horizontalalignment='left',
+               bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.7))
+        
+        # Equal aspect ratio for fair comparison
+        ax.set_aspect('equal', adjustable='box')
+    
+    plt.tight_layout()
+    plot_file = os.path.join(output_dir, 'fitness_comparison_scatter.png')
+    plt.savefig(plot_file, dpi=300, bbox_inches='tight')
+    print(f"  ✓ Saved fitness comparison scatter plots: {plot_file}")
+    plt.close()
+    
+    # Also create a single combined plot if multiple models
+    if n_models > 1:
+        fig, ax = plt.subplots(figsize=(10, 10))
+        colors = ['#1f77b4', '#ff7f0e', '#2ca02c']  # Blue, Orange, Green
+        
+        for idx, (predicted, wt_growth, name, color) in enumerate(zip(models_data, model_wt, model_names, colors)):
+            pred_flat = predicted.flatten()
+            
+            # Expand wild-type growth
+            if wt_growth.ndim == 1:
+                n_genes = predicted.shape[0]
+                wt_expanded = np.tile(wt_growth, n_genes)
+            else:
+                wt_expanded = wt_growth.flatten()
+            
+            # Clean data
+            mask = ~(np.isnan(exp_flat) | np.isnan(pred_flat) | 
+                    np.isinf(exp_flat) | np.isinf(pred_flat) |
+                    np.isnan(wt_expanded) | np.isinf(wt_expanded))
+            exp_clean = exp_flat[mask]
+            pred_clean = pred_flat[mask]
+            wt_clean = wt_expanded[mask]
+            
+            # Convert to fitness
+            epsilon = 1e-10
+            pred_clean_safe = np.maximum(pred_clean, epsilon)
+            wt_clean_safe = np.maximum(wt_clean, epsilon)
+            pred_fitness = np.log2(pred_clean_safe / wt_clean_safe)
+            
+            # Calculate correlation
+            pearson_r, _ = pearsonr(exp_clean, pred_fitness)
+            
+            # Plot with transparency
+            ax.scatter(exp_clean, pred_fitness, alpha=0.2, s=8, 
+                      color=color, label=f'{name} (r={pearson_r:.3f})', edgecolors='none')
+        
+        # Add diagonal line
+        min_val = min(exp_flat[~(np.isnan(exp_flat) | np.isinf(exp_flat))].min(), -10)
+        max_val = max(exp_flat[~(np.isnan(exp_flat) | np.isinf(exp_flat))].max(), 2)
+        ax.plot([min_val, max_val], [min_val, max_val], 
+               'r--', lw=2, label='Perfect prediction', zorder=10)
+        
+        # Add zero lines
+        ax.axhline(0, color='gray', linestyle=':', linewidth=1, alpha=0.5)
+        ax.axvline(0, color='gray', linestyle=':', linewidth=1, alpha=0.5)
+        
+        ax.set_xlabel('Experimental Fitness (log₂ ratio)', fontsize=13)
+        ax.set_ylabel('Predicted Fitness (log₂ ratio)', fontsize=13)
+        ax.set_title('Fitness Comparison Across All Models', fontsize=14)
+        ax.legend(fontsize=11, loc='best')
+        ax.grid(True, alpha=0.3)
+        ax.set_aspect('equal', adjustable='box')
+        
+        plt.tight_layout()
+        plot_file = os.path.join(output_dir, 'fitness_comparison_combined.png')
+        plt.savefig(plot_file, dpi=300, bbox_inches='tight')
+        print(f"  ✓ Saved combined fitness comparison plot: {plot_file}")
+        plt.close()
+
+
+def create_distribution_plots(experimental, baseline, pretuning, posttuning, output_dir):
+    """Create distribution plots comparing predicted growth rates across models.
+    
+    Generates:
+    1. Histograms of predicted growth rates for each model
+    2. Overlaid density plots comparing all three models
+    3. Box plots showing distribution statistics
+    
+    Parameters
+    ----------
+    experimental : numpy.ndarray
+        Experimental fitness values (for reference statistics)
+    baseline : numpy.ndarray or None
+        Baseline GEM predictions
+    pretuning : numpy.ndarray or None
+        Pre-tuning kinGEMs predictions
+    posttuning : numpy.ndarray or None
+        Post-tuning kinGEMs predictions
+    output_dir : str
+        Directory to save plots
+    """
+    # Collect available models
+    models_data = []
+    model_names = []
+    model_colors = []
+    
+    if baseline is not None:
+        models_data.append(baseline.flatten())
+        model_names.append('Baseline GEM')
+        model_colors.append('#1f77b4')  # Blue
+    
+    if pretuning is not None:
+        models_data.append(pretuning.flatten())
+        model_names.append('Pre-tuning kinGEMs')
+        model_colors.append('#ff7f0e')  # Orange
+    
+    if posttuning is not None:
+        models_data.append(posttuning.flatten())
+        model_names.append('Post-tuning kinGEMs')
+        model_colors.append('#2ca02c')  # Green
+    
+    if not models_data:
+        print("  ⚠️  No model data available for distribution plots")
+        return
+    
+    # Clean data (remove NaN/Inf)
+    models_clean = []
+    for data in models_data:
+        mask = ~(np.isnan(data) | np.isinf(data))
+        models_clean.append(data[mask])
+    
+    # === 1. Individual Histograms ===
+    n_models = len(models_clean)
+    fig, axes = plt.subplots(1, n_models, figsize=(6*n_models, 5))
+    if n_models == 1:
+        axes = [axes]
+    
+    for idx, (data, name, color, ax) in enumerate(zip(models_clean, model_names, model_colors, axes)):
+        ax.hist(data, bins=50, color=color, alpha=0.7, edgecolor='black', linewidth=0.5)
+        ax.axvline(np.mean(data), color='red', linestyle='--', linewidth=2, label=f'Mean = {np.mean(data):.4f}')
+        ax.axvline(np.median(data), color='darkred', linestyle=':', linewidth=2, label=f'Median = {np.median(data):.4f}')
+        ax.set_xlabel('Predicted Growth Rate', fontsize=12)
+        ax.set_ylabel('Frequency', fontsize=12)
+        ax.set_title(f'{name}\nDistribution of Predictions', fontsize=13)
+        ax.legend(fontsize=10)
+        ax.grid(True, alpha=0.3, axis='y')
+        
+        # Add statistics text box
+        stats_text = (f'n = {len(data):,}\n'
+                     f'μ = {np.mean(data):.4f}\n'
+                     f'σ = {np.std(data):.4f}\n'
+                     f'min = {np.min(data):.4f}\n'
+                     f'max = {np.max(data):.4f}')
+        ax.text(0.98, 0.98, stats_text, transform=ax.transAxes,
+               fontsize=9, verticalalignment='top', horizontalalignment='right',
+               bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+    
+    plt.tight_layout()
+    plot_file = os.path.join(output_dir, 'prediction_distributions_histograms.png')
+    plt.savefig(plot_file, dpi=300, bbox_inches='tight')
+    print(f"  ✓ Saved distribution histograms: {plot_file}")
+    plt.close()
+    
+    # === 2. Overlaid Density Plots ===
+    fig, ax = plt.subplots(figsize=(10, 6))
+    
+    for data, name, color in zip(models_clean, model_names, model_colors):
+        # Kernel Density Estimation
+        from scipy.stats import gaussian_kde
+        density = gaussian_kde(data)
+        xs = np.linspace(min(data), max(data), 200)
+        ax.plot(xs, density(xs), label=name, color=color, linewidth=2)
+        ax.fill_between(xs, density(xs), alpha=0.2, color=color)
+    
+    ax.set_xlabel('Predicted Growth Rate', fontsize=13)
+    ax.set_ylabel('Density', fontsize=13)
+    ax.set_title('Distribution of Predicted Growth Rates\nComparison Across Models', fontsize=14)
+    ax.legend(fontsize=11, loc='best')
+    ax.grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    plot_file = os.path.join(output_dir, 'prediction_distributions_density.png')
+    plt.savefig(plot_file, dpi=300, bbox_inches='tight')
+    print(f"  ✓ Saved density plot: {plot_file}")
+    plt.close()
+    
+    # === 3. Box Plots ===
+    fig, ax = plt.subplots(figsize=(8, 6))
+    
+    bp = ax.boxplot(models_clean, labels=model_names, patch_artist=True,
+                    showmeans=True, meanline=True,
+                    medianprops=dict(color='red', linewidth=2),
+                    meanprops=dict(color='blue', linewidth=2, linestyle='--'),
+                    flierprops=dict(marker='o', markerfacecolor='gray', markersize=4, alpha=0.5))
+    
+    # Color the boxes
+    for patch, color in zip(bp['boxes'], model_colors):
+        patch.set_facecolor(color)
+        patch.set_alpha(0.6)
+    
+    ax.set_ylabel('Predicted Growth Rate', fontsize=13)
+    ax.set_title('Distribution Statistics\nPredicted Growth Rates Across Models', fontsize=14)
+    ax.grid(True, alpha=0.3, axis='y')
+    
+    # Add legend for mean and median
+    from matplotlib.lines import Line2D
+    legend_elements = [
+        Line2D([0], [0], color='red', linewidth=2, label='Median'),
+        Line2D([0], [0], color='blue', linewidth=2, linestyle='--', label='Mean')
+    ]
+    ax.legend(handles=legend_elements, fontsize=11, loc='best')
+    
+    plt.tight_layout()
+    plot_file = os.path.join(output_dir, 'prediction_distributions_boxplot.png')
+    plt.savefig(plot_file, dpi=300, bbox_inches='tight')
+    print(f"  ✓ Saved box plot: {plot_file}")
+    plt.close()
+    
+    # === 4. Cumulative Distribution Functions ===
+    fig, ax = plt.subplots(figsize=(10, 6))
+    
+    for data, name, color in zip(models_clean, model_names, model_colors):
+        sorted_data = np.sort(data)
+        cumulative = np.arange(1, len(sorted_data) + 1) / len(sorted_data)
+        ax.plot(sorted_data, cumulative, label=name, color=color, linewidth=2)
+    
+    ax.set_xlabel('Predicted Growth Rate', fontsize=13)
+    ax.set_ylabel('Cumulative Probability', fontsize=13)
+    ax.set_title('Cumulative Distribution Function\nPredicted Growth Rates', fontsize=14)
+    ax.legend(fontsize=11, loc='best')
+    ax.grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    plot_file = os.path.join(output_dir, 'prediction_distributions_cdf.png')
+    plt.savefig(plot_file, dpi=300, bbox_inches='tight')
+    print(f"  ✓ Saved CDF plot: {plot_file}")
+    plt.close()
+    
+    # === 5. Violin Plots (alternative to box plots) ===
+    fig, ax = plt.subplots(figsize=(10, 6))
+    
+    parts = ax.violinplot(models_clean, showmeans=True, showmedians=True)
+    
+    # Color the violin plots
+    for idx, (pc, color) in enumerate(zip(parts['bodies'], model_colors)):
+        pc.set_facecolor(color)
+        pc.set_alpha(0.6)
+    
+    ax.set_xticks(np.arange(1, len(model_names) + 1))
+    ax.set_xticklabels(model_names, fontsize=11)
+    ax.set_ylabel('Predicted Growth Rate', fontsize=13)
+    ax.set_title('Distribution Shape\nPredicted Growth Rates (Violin Plot)', fontsize=14)
+    ax.grid(True, alpha=0.3, axis='y')
+    
+    plt.tight_layout()
+    plot_file = os.path.join(output_dir, 'prediction_distributions_violin.png')
+    plt.savefig(plot_file, dpi=300, bbox_inches='tight')
+    print(f"  ✓ Saved violin plot: {plot_file}")
+    plt.close()
+    
+    # === 6. Summary Statistics Table ===
+    stats_dict = {}
+    for data, name in zip(models_clean, model_names):
+        stats_dict[name] = {
+            'count': len(data),
+            'mean': np.mean(data),
+            'std': np.std(data),
+            'min': np.min(data),
+            '25%': np.percentile(data, 25),
+            'median': np.median(data),
+            '75%': np.percentile(data, 75),
+            'max': np.max(data),
+            'zeros': np.sum(data == 0),
+            'zeros_pct': (np.sum(data == 0) / len(data)) * 100
+        }
+    
+    stats_df = pd.DataFrame(stats_dict).T
+    stats_df = stats_df.round({
+        'mean': 6, 'std': 6, 'min': 6,
+        '25%': 6, 'median': 6, '75%': 6, 'max': 6,
+        'zeros_pct': 2
+    })
+    
+    stats_file = os.path.join(output_dir, 'prediction_distribution_statistics.csv')
+    stats_df.to_csv(stats_file)
+    print(f"  ✓ Saved distribution statistics: {stats_file}")
+    
+    print("\n" + "="*70)
+    print("=== Prediction Distribution Statistics ===")
+    print("="*70)
+    print(stats_df.to_string())
+    print("="*70)
+
+
 def create_classification_plots(experimental, predicted, model_name, output_dir,
                                 fit_thresh=-2, sim_thresh=0.001):
     """Create classification plots (ROC, PR, confusion matrix) for a single model.
@@ -520,6 +979,9 @@ def create_metrics_table(metrics_dict, output_dir):
         'pearson_p': 6,
         'spearman_r': 4,
         'spearman_p': 6,
+        'kendall_tau': 4,
+        'kendall_p': 6,
+        'r2': 4,
         'rmse': 4,
         'mae': 4
     })
@@ -691,6 +1153,18 @@ def main():
 
     create_comparison_plot(experimental, baseline_GEM, pretuning_GEM, posttuning_GEM, args.output)
 
+    # === Step 4a: Create fitness-scale scatter plots ===
+    print("\n=== Step 4a: Creating fitness-scale scatter plots ===")
+    
+    create_fitness_comparison_plots(experimental, baseline_GEM, pretuning_GEM, posttuning_GEM,
+                                   baseline_wildtype, pretuning_wildtype, posttuning_wildtype, 
+                                   args.output)
+
+    # === Step 4b: Create distribution plots ===
+    print("\n=== Step 4b: Creating distribution plots ===")
+    
+    create_distribution_plots(experimental, baseline_GEM, pretuning_GEM, posttuning_GEM, args.output)
+
     # === Step 5: Create classification visualizations ===
     print("\n=== Step 5: Creating classification visualizations ===")
 
@@ -722,6 +1196,9 @@ def main():
             'pearson_p_fitness': 6,
             'spearman_r_fitness': 4,
             'spearman_p_fitness': 6,
+            'kendall_tau_fitness': 4,
+            'kendall_p_fitness': 6,
+            'r2_fitness': 4,
             'rmse_fitness': 4,
             'mae_fitness': 4,
             'wild_type_growth_used': 6,
@@ -817,7 +1294,15 @@ def main():
     print("  - validation_metrics_fitness.csv (correlation metrics in fitness space)")
     print("  - classification_metrics.csv (classification metrics)")
     print("  - validation_improvements.csv")
-    print("  - validation_comparison.png (scatter plots)")
+    print("  - validation_comparison.png (scatter: experimental fitness vs predicted growth)")
+    print("  - fitness_comparison_scatter.png (scatter: experimental fitness vs predicted fitness)")
+    print("  - fitness_comparison_combined.png (combined fitness scatter for all models)")
+    print("  - prediction_distributions_histograms.png (individual histograms)")
+    print("  - prediction_distributions_density.png (overlaid density plots)")
+    print("  - prediction_distributions_boxplot.png (box plot comparison)")
+    print("  - prediction_distributions_cdf.png (cumulative distribution)")
+    print("  - prediction_distributions_violin.png (violin plot)")
+    print("  - prediction_distribution_statistics.csv (distribution stats)")
     print("  - *_roc_curve.png (ROC curves for each model)")
     print("  - *_pr_curve.png (Precision-Recall curves)")
     print("  - *_confusion_matrix.png (confusion matrices)")
