@@ -45,6 +45,9 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from kinGEMs.dataset import (
     load_model,
+    merge_substrate_sequences,
+    prepare_model_data,
+    process_kcat_predictions,
 )
 from kinGEMs.dataset_modelseed import prepare_modelseed_model_data
 from kinGEMs.modeling.fva import (

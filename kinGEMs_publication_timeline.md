@@ -19,10 +19,10 @@ Target submission: **December 2025**
 
 ### Nov 7–14 (This Week)
 - [x] Lock **E. coli validation** status and summary bullets.
-- [ ] Implement **regression/correlation conversions** for E. coli (e.g., Pearson/Spearman vs. references; precision deltas vs. baseline).
-- [ ] Sync with **Noor** on whether any correlation-adjacent signals can be surfaced from Biolog; if not, keep strictly **binary classification** in paper.
-- [ ] Coordinate with **Lya** on the 26-flux set: data schema, units, comparators, and QC gates.
-- [ ] **Design enzyme ablation protocol** (levels, metrics, datasets) and prepare run scripts.
+- [x] Implement **regression/correlation conversions** for E. coli (e.g., Pearson/Spearman vs. references; precision deltas vs. baseline).
+- [x] Sync with **Noor** on whether any correlation-adjacent signals can be surfaced from Biolog; if not, keep strictly **binary classification** in paper.
+- [x] Coordinate with **Lya** on the 26-flux set: data schema, units, comparators, and QC gates.
+- [x] **Design enzyme ablation protocol** (levels, metrics, datasets) and prepare run scripts.
 
 ### Nov 15–24
 - Writing:

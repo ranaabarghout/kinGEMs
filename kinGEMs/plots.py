@@ -912,46 +912,49 @@ def plot_fva_ablation_cumulative(fva_results_dict, biomass_dict, model_name,
                 'biomass': biomass_dict[label]
             }
 
-    # Add horizontal line at cumulative probability 0.5
+    # Add horizontal reference line at cumulative probability 0.5
     ax1.axhline(0.5, color='gray', linestyle='--', linewidth=1.5, alpha=0.7)
-
-    # Plot biomass lines on bottom subplot if enhanced mode
-    if enhanced and fvi_stats:
-        # Get the FVi range for x-axis reference
-        all_fvi_min = min(all_fvi_values) if all_fvi_values else 1e-15
-        all_fvi_max = max(all_fvi_values) if all_fvi_values else 1e3
-
-        for label, stats in fvi_stats.items():
-            color = colors.get(label, '#000000')
-            biomass_value = stats['biomass']
-            ax2.plot([all_fvi_min, all_fvi_max],
-                    [biomass_value, biomass_value],
-                    color=color, linestyle='--', linewidth=2, alpha=0.8)
-
-        # Format bottom plot
-        ax2.set_xscale('log')
-        ax2.set_xlim(ax1.get_xlim())  # Match x-axis limits with top plot
-        ax2.set_ylabel('Biomass (1/hr)', fontsize=13)
-        ax2.tick_params(axis='both', labelsize=12)
-        ax2.grid(True, alpha=0.3)
 
     # Format main plot
     ax1.set_xscale('log')
+    ax1.set_xlim(1e-6, 1e3)
+    ax1.set_ylim(0, 1)
     ax1.set_xlabel('Flux Variability (FVi)', fontsize=13)
     ax1.set_ylabel('Cumulative Probability', fontsize=13)
-
-    # Set title
-    title = f'{model_name}: Cumulative Flux Variability Distribution'
-    ax1.set_title(title, fontsize=16, fontweight='bold')
-
-    # Configure ticks and grid
-    ax1.tick_params(axis='both', labelsize=12)
+    ax1.set_title(f'{model_name}: Cumulative Flux Variability Distribution', fontsize=16, fontweight='bold')
+    ax1.legend(loc=legend_position, fontsize=12)
     ax1.grid(True, alpha=0.3)
 
-    # Add legend
-    ax1.legend(loc=legend_position, fontsize=12, framealpha=0.9)
+    # Bottom subplot: Bar chart with Median FVi and Biomass
+    if enhanced:
+        # Prepare data for bar chart
+        labels = list(fvi_stats.keys())
+        median_fvis = [fvi_stats[label]['median'] for label in labels]
+        biomass_values = [fvi_stats[label]['biomass'] for label in labels]
 
-    plt.tight_layout()
+        # Create bar chart for Median FVi
+        x_pos = np.arange(len(labels))
+        bars = ax2.bar(x_pos, median_fvis, color=[colors.get(label, '#1f77b4') for label in labels], alpha=0.7)
+
+        # Set up left y-axis for Median FVi
+        ax2.set_ylabel('Median FVi', fontsize=13)
+        ax2.set_yscale('log')
+        ax2.set_ylim(bottom=1e-6)
+        ax2.set_xticks(x_pos)
+        ax2.set_xticklabels([label.replace('Level ', 'L').replace(': ', '\n') for label in labels],
+                           rotation=45, ha='right', fontsize=10)
+
+        # Create second y-axis for biomass
+        ax2_biomass = ax2.twinx()
+        line = ax2_biomass.plot(x_pos, biomass_values, 'ko-', linewidth=2, markersize=6, label='Biomass')
+        ax2_biomass.set_ylabel('Biomass (1/hr)', fontsize=13)
+        ax2_biomass.set_ylim(0, max(biomass_values) * 1.1)
+
+        # Add subplot title
+        ax2.set_title('Mean Flux Variability and Biomass by Constraint Level', fontsize=12, fontweight='bold')
+
+        # Adjust layout
+        plt.tight_layout()
 
     # Save if output path provided
     if output_path:

@@ -53,8 +53,10 @@ from kinGEMs.dataset_modelseed import prepare_modelseed_model_data
 from kinGEMs.modeling.fva import (
     flux_variability_analysis,
     flux_variability_analysis_parallel,
-    plot_cumulative_fvi_distribution,
     plot_flux_variability,
+)
+from kinGEMs.plots import (
+    plot_cumulative_fvi_distribution,
 )
 from kinGEMs.modeling.optimize import run_optimization_with_dataframe
 from kinGEMs.modeling.tuning import simulated_annealing
@@ -414,7 +416,7 @@ def main():
     # File paths
     model_path = os.path.join(raw_data_dir, f"{model_name}.xml")
 
-    
+
 
     substrates_output = os.path.join(interim_data_dir, f"{model_name}_substrates.csv")
     sequences_output = os.path.join(interim_data_dir, f"{model_name}_sequences.csv")

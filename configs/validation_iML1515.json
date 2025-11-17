@@ -5,7 +5,7 @@
   "model_name": "iML1515_GEM",
   "model_path": "models/iML1515_GEM_20251020_7262.xml",
   "objective_reaction": "BIOMASS_Ec_iML1515_core_75p37M",
-  "enzyme_upper_bound": 0.15,
+  "enzyme_upper_bound": 0.20,
 
   "_comment_solver": "Solver to use (cplex, gurobi, scip, glpk). null = auto-detect best",
   "solver": "cplex",

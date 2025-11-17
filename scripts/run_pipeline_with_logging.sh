@@ -15,7 +15,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 # Create logs directory
-LOGS_DIR="$PROJECT_ROOT/results/logs"
+LOGS_DIR="$PROJECT_ROOT/logs"
 mkdir -p "$LOGS_DIR"
 
 # Generate a run ID (will be overwritten by actual ID from Python script, but needed for temp file)

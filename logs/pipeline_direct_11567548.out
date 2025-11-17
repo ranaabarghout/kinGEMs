@@ -1,0 +1,3193 @@
+=========================================
+Job: kinGEMs General Pipeline (Direct)
+Job ID: 11567548
+Node: fc20170
+Current working directory: /project/def-mahadeva/ranaab/kinGEMs_v2
+Starting run at: Mon Nov 17 07:40:44 PST 2025
+=========================================
+
+Configuration: configs/iML1515_GEM_parallel_fva.json
+CPUs allocated: 8
+
+Updated FVA workers to match SLURM CPUs: 8
+Using temporary config: /tmp/tmp.7detnNGD9r.json
+
+Running kinGEMs pipeline...
+Loading configuration from: /tmp/tmp.7detnNGD9r.json
+
+======================================================================
+=== kinGEMs Pipeline for iML1515_GEM ===
+======================================================================
+Run ID: iML1515_GEM_20251117_4048
+Model type: Standard
+Organism: E coli
+Results directory: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/iML1515_GEM_20251117_4048
+Solver: glpk
+======================================================================
+
+=== Configuration Summary ===
+Config file: /tmp/tmp.7detnNGD9r.json
+Model name: iML1515_GEM
+Enzyme upper bound: 0.2
+Enable FVA: True
+Enable Biolog validation: False
+
+FVA Settings:
+  Parallel execution: True
+  Workers: 8
+  Method: dask
+
+Simulated Annealing Settings:
+  Temperature: 1.0
+  Cooling rate: 0.975
+  Min temperature: 0.001
+  Max iterations: 100
+  Max unchanged iterations: 5
+  Change threshold: 0.009
+  Biomass goal: 0.5
+======================================================================
+
+Biomass reaction: BIOMASS_Ec_iML1515_core_75p37M
+
+=== Step 1: Preparing model data ===
+  ✓ Found existing files, loading cached data:
+    - /project/6000502/ranaab/kinGEMs_v2/data/interim/iML1515_GEM/iML1515_GEM_substrates.csv
+    - /project/6000502/ranaab/kinGEMs_v2/data/interim/iML1515_GEM/iML1515_GEM_sequences.csv
+Warning: Model has 8 validation errors
+  Model: 1516 genes, 2712 reactions
+
+=== Step 2: Merging substrate and sequence data ===
+  ✓ Found existing file, loading cached data:
+    - /project/6000502/ranaab/kinGEMs_v2/data/interim/iML1515_GEM/iML1515_GEM_merged_data.csv
+  Merged data: 12229 rows
+  Found predictions file: X06A_kinGEMs_ecoli_iML1515_predictions.csv
+
+=== Step 3: Processing CPI-Pred kcat values & annotating model ===
+  ✓ Found existing file, loading cached data:
+    - /project/6000502/ranaab/kinGEMs_v2/data/processed/iML1515_GEM/iML1515_GEM_processed_data.csv
+  Processed data: 33657 rows
+  Reactions with kcat: 2136/2712
+
+=== Step 4: Running optimization ===
+  Running standard COBRApy FBA (no enzyme constraints)...
+    COBRApy biomass: 0.8770
+  Running kinGEMs enzyme-constrained optimization...
+    kinGEMs biomass: 0.0705
+
+  Comparison:
+    Standard FBA:           0.8770
+    Enzyme-constrained FBA: 0.0705
+    Reduction due to enzyme budget: 92.0%
+  Using standard model - may need additional constraint processing
+
+=== Step 5: Running simulated annealing ===
+  Configuration:
+    - Temperature: 1.0
+    - Cooling rate: 0.975
+    - Max iterations: 100
+    - Max unchanged iterations: 5
+    - Change threshold: 0.009
+    - Biomass goal: 0.5
+  Starting optimization...
+
+  Iter 1/100: biomass=0.063921, temp=1.0000  Iter 2/100: biomass=0.106370, temp=0.9750  Iter 3/100: biomass=0.132476, temp=0.9506  Iter 4/100: biomass=0.146292, temp=0.9269  Iter 5/100: biomass=0.153280, temp=0.9037  Iter 6/100: biomass=0.158329, temp=0.8811  Iter 7/100: biomass=0.165450, temp=0.8591  Iter 8/100: biomass=0.167505, temp=0.8376  Iter 9/100: biomass=0.170903, temp=0.8167  Iter 10/100: biomass=0.174960, temp=0.7962  Iter 11/100: biomass=0.178191, temp=0.7763  Iter 12/100: biomass=0.181398, temp=0.7569  Iter 13/100: biomass=0.183540, temp=0.7380  Iter 14/100: biomass=0.185738, temp=0.7195  Iter 15/100: biomass=0.187904, temp=0.7016  Iter 16/100: biomass=0.189776, temp=0.6840  Iter 17/100: biomass=0.190641, temp=0.6669  Iter 18/100: biomass=0.191982, temp=0.6502  Iter 19/100: biomass=0.193490, temp=0.6340  Iter 20/100: biomass=0.194689, temp=0.6181  Iter 21/100: biomass=0.195820, temp=0.6027
+  Early stop: No change for 5 iterations
+
+
+  Annealing complete!
+  Initial biomass: 0.0705
+  Final biomass: 0.1958
+  Improvement: 177.8%
+  Total iterations: 22
+
+  Biomass progression:
+    Iter   0: 0.070477
+    Iter   2: 0.106370 (+50.93%)
+    Iter   4: 0.146292 (+37.53%)
+    Iter   6: 0.158329 (+8.23%)
+    Iter   8: 0.167505 (+5.80%)
+    Iter  10: 0.174960 (+4.45%)
+    Iter  12: 0.181398 (+3.68%)
+    Iter  14: 0.185738 (+2.39%)
+    Iter  16: 0.189776 (+2.17%)
+    Iter  18: 0.191982 (+1.16%)
+    Iter  20: 0.194689 (+1.41%)
+    Iter  21: 0.195820 (+0.58%)
+
+  Top 10 enzymes by mass contribution:
+     Reactions Single_gene  enzyme_mass
+0        DHAPT       b1200     0.027970
+1        DHAPT       b1198     0.020405
+2        DHAPT       b2416     0.017457
+3     SUCptspp       b2416     0.017457
+4     TREptspp       b2416     0.017457
+5    ACGAptspp       b2416     0.017457
+6  ACMANAptspp       b2416     0.017457
+7    ASCBptspp       b2416     0.017457
+8     SBTptspp       b2416     0.017457
+9     FRUptspp       b2416     0.017457
+
+  Saved merged DataFrame to: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/iML1515_GEM_20251117_4048/final_model_info.csv
+
+=== Step 6: Running Flux Variability Analysis ===
+  Using parallel FVA with 8 workers...
+  Parallel FVA configuration:
+    Method: dask
+    Workers: 8
+    Reactions: 2712
+    Chunk size: 22
+    Number of chunks: 124
+    Estimated memory: ~1.8 GB
+
+  Running baseline optimization...
+  Optimal biomass: 0.195820
+
+  Starting parallel FVA with 124 chunks...
+[FVA] Starting optimization for reaction: PSCLYStex
+[FVA] Starting optimization for reaction: PDE4
+[FVA] Starting optimization for reaction: ACGAtex
+[FVA] Starting optimization for reaction: PROt2rpp
+[FVA] Starting optimization for reaction: H2tex
+[FVA] Starting optimization for reaction: AGMt2pp
+[FVA] Starting optimization for reaction: AKGt2rpp
+[FVA] Starting optimization for reaction: GTPCII2
+[FVA] Max optimization done for PDE4: 0.000231559428935546
+[FVA] Max optimization done for PSCLYStex: 0.0
+[FVA] Max optimization done for ACGAtex: 0.0
+[FVA] Max optimization done for H2tex: 0.0
+[FVA] Max optimization done for PROt2rpp: 0.0
+[FVA] Max optimization done for AGMt2pp: 3.16670747416292e-05
+[FVA] Max optimization done for AKGt2rpp: 0.0
+[FVA] Max optimization done for GTPCII2: 0.000104362690808144
+[FVA] Min optimization done for PSCLYStex: 0.0
+[FVA] Finished optimization for reaction: PSCLYStex
+[FVA] Starting optimization for reaction: THYMtex
+[FVA] Min optimization done for PDE4: 0.0
+[FVA] Finished optimization for reaction: PDE4
+[FVA] Starting optimization for reaction: AGM4PH
+[FVA] Min optimization done for PROt2rpp: -0.00314103526659437
+[FVA] Finished optimization for reaction: PROt2rpp
+[FVA] Starting optimization for reaction: PROt4pp
+[FVA] Min optimization done for H2tex: 0.0
+[FVA] Finished optimization for reaction: H2tex
+[FVA] Starting optimization for reaction: H2Otex
+[FVA] Min optimization done for ACGAtex: 0.0
+[FVA] Finished optimization for reaction: ACGAtex
+[FVA] Starting optimization for reaction: DDCAtexi
+[FVA] Min optimization done for AKGt2rpp: -0.000295159806455558
+[FVA] Finished optimization for reaction: AKGt2rpp
+[FVA] Starting optimization for reaction: XYLt2pp
+[FVA] Min optimization done for AGMt2pp: 0.0
+[FVA] Finished optimization for reaction: AGMt2pp
+[FVA] Starting optimization for reaction: FECRMexs
+[FVA] Min optimization done for GTPCII2: 8.73357184266972e-05
+[FVA] Finished optimization for reaction: GTPCII2
+[FVA] Starting optimization for reaction: URIC
+[FVA] Max optimization done for THYMtex: 0.0
+[FVA] Max optimization done for H2Otex: -21.2485012499468
+[FVA] Max optimization done for PROt4pp: 0.00314103435300161
+[FVA] Max optimization done for AGM4PH: 3.85594948121036e-05
+[FVA] Max optimization done for XYLt2pp: 0.0
+[FVA] Max optimization done for FECRMexs: 0.000278780400428147
+[FVA] Max optimization done for DDCAtexi: 0.0
+[FVA] Max optimization done for URIC: 4.15135687958715e-05
+[FVA] Min optimization done for THYMtex: -6.3303420575131e-05
+[FVA] Finished optimization for reaction: THYMtex
+[FVA] Starting optimization for reaction: CU2tpp
+[FVA] Min optimization done for H2Otex: -23.07208841882
+[FVA] Finished optimization for reaction: H2Otex
+[FVA] Starting optimization for reaction: FACOAL160t2pp
+[FVA] Min optimization done for PROt4pp: 0.0
+[FVA] Finished optimization for reaction: PROt4pp
+[FVA] Starting optimization for reaction: PTRCabcpp
+[FVA] Min optimization done for AGM4PH: 0.0
+[FVA] Finished optimization for reaction: AGM4PH
+[FVA] Starting optimization for reaction: AM4PA
+[FVA] Min optimization done for XYLt2pp: 0.0
+[FVA] Finished optimization for reaction: XYLt2pp
+[FVA] Starting optimization for reaction: EX_ascb__L_e
+[FVA] Min optimization done for DDCAtexi: 0.0
+[FVA] Finished optimization for reaction: DDCAtexi
+[FVA] Starting optimization for reaction: TTDCAtexi
+[FVA] Min optimization done for FECRMexs: 0.0
+[FVA] Finished optimization for reaction: FECRMexs
+[FVA] Starting optimization for reaction: ARBTNR1
+[FVA] Min optimization done for URIC: 0.0
+[FVA] Finished optimization for reaction: URIC
+[FVA] Starting optimization for reaction: SADT2
+[FVA] Max optimization done for FACOAL160t2pp: 8.85317289168731e-05
+[FVA] Max optimization done for CU2tpp: 0.000462210273401553
+[FVA] Max optimization done for AM4PA: 3.85545154790206e-05
+[FVA] Max optimization done for PTRCabcpp: 0.000210406092269211
+[FVA] Max optimization done for EX_ascb__L_e: 0.0
+[FVA] Max optimization done for TTDCAtexi: 0.0
+[FVA] Max optimization done for ARBTNR1: 0.000197410598422478
+[FVA] Max optimization done for SADT2: 0.0485611371191476
+[FVA] Min optimization done for FACOAL160t2pp: 0.0
+[FVA] Finished optimization for reaction: FACOAL160t2pp
+[FVA] Starting optimization for reaction: FACOAL180t2pp
+[FVA] Min optimization done for CU2tpp: 0.000138836377798324
+[FVA] Finished optimization for reaction: CU2tpp
+[FVA] Starting optimization for reaction: FE2t3pp
+[FVA] Min optimization done for AM4PA: 0.0
+[FVA] Finished optimization for reaction: AM4PA
+[FVA] Starting optimization for reaction: EX_dump_e
+[FVA] Min optimization done for PTRCabcpp: 0.0
+[FVA] Finished optimization for reaction: PTRCabcpp
+[FVA] Starting optimization for reaction: ASNNpp
+[FVA] Min optimization done for EX_ascb__L_e: 0.0
+[FVA] Finished optimization for reaction: EX_ascb__L_e
+[FVA] Starting optimization for reaction: EX_ala_B_e
+[FVA] Min optimization done for TTDCAtexi: 0.0
+[FVA] Finished optimization for reaction: TTDCAtexi
+[FVA] Starting optimization for reaction: HDCAtexi
+[FVA] Min optimization done for ARBTNR1: 0.0
+[FVA] Finished optimization for reaction: ARBTNR1
+[FVA] Starting optimization for reaction: ARBTNR2
+[FVA] Max optimization done for FACOAL180t2pp: 8.55226202652382e-05
+[FVA] Max optimization done for EX_dump_e: 0.0
+[FVA] Max optimization done for FE2t3pp: 0.00176448021358476
+[FVA] Min optimization done for SADT2: 0.0484619244721447
+[FVA] Finished optimization for reaction: SADT2
+[FVA] Starting optimization for reaction: LCARS
+[FVA] Max optimization done for ASNNpp: 0.000163147048125117
+[FVA] Max optimization done for HDCAtexi: 0.0
+[FVA] Max optimization done for LCARS: 0.000409818232469661
+[FVA] Max optimization done for EX_ala_B_e: 0.0
+[FVA] Max optimization done for ARBTNR2: 0.000195352030917618
+[FVA] Min optimization done for FE2t3pp: 0.0
+[FVA] Finished optimization for reaction: FE2t3pp
+[FVA] Starting optimization for reaction: MN2t3pp
+[FVA] Min optimization done for FACOAL180t2pp: 0.0
+[FVA] Finished optimization for reaction: FACOAL180t2pp
+[FVA] Starting optimization for reaction: SPODMpp
+[FVA] Min optimization done for EX_dump_e: 0.0
+[FVA] Finished optimization for reaction: EX_dump_e
+[FVA] Starting optimization for reaction: EX_o2s_e
+[FVA] Min optimization done for ASNNpp: 0.0
+[FVA] Finished optimization for reaction: ASNNpp
+[FVA] Starting optimization for reaction: GLUNpp
+[FVA] Max optimization done for SPODMpp: 0.0
+[FVA] Max optimization done for MN2t3pp: 0.00131938358091156
+[FVA] Max optimization done for EX_o2s_e: 0.0
+[FVA] Min optimization done for EX_ala_B_e: 0.0
+[FVA] Finished optimization for reaction: EX_ala_B_e
+[FVA] Starting optimization for reaction: EX_agm_e
+[FVA] Min optimization done for HDCAtexi: 0.0
+[FVA] Finished optimization for reaction: HDCAtexi
+[FVA] Starting optimization for reaction: GUACYC
+[FVA] Max optimization done for GLUNpp: 0.0
+[FVA] Min optimization done for ARBTNR2: 0.0
+[FVA] Finished optimization for reaction: ARBTNR2
+[FVA] Starting optimization for reaction: ARBTNR3
+[FVA] Min optimization done for LCARS: -0.00313329274376883
+[FVA] Finished optimization for reaction: LCARS
+[FVA] Starting optimization for reaction: ALCD19
+[FVA] Min optimization done for SPODMpp: 0.0
+[FVA] Finished optimization for reaction: SPODMpp
+[FVA] Starting optimization for reaction: NO3R1bpp
+[FVA] Max optimization done for EX_agm_e: 6.22388012686619e-05
+[FVA] Min optimization done for MN2t3pp: 0.0
+[FVA] Finished optimization for reaction: MN2t3pp
+[FVA] Starting optimization for reaction: MG2t3_2pp
+[FVA] Max optimization done for GUACYC: 0.000231559369461953
+[FVA] Min optimization done for EX_o2s_e: 0.0
+[FVA] Finished optimization for reaction: EX_o2s_e
+[FVA] Starting optimization for reaction: EX_gal1p_e
+[FVA] Max optimization done for ARBTNR3: 0.000197278476387165
+[FVA] Max optimization done for ALCD19: 0.000417470189859159
+[FVA] Min optimization done for GLUNpp: 0.0
+[FVA] Finished optimization for reaction: GLUNpp
+[FVA] Starting optimization for reaction: NTD12
+[FVA] Max optimization done for MG2t3_2pp: 0.00169873847289637
+[FVA] Max optimization done for NO3R1bpp: 0.0
+[FVA] Max optimization done for EX_gal1p_e: 0.0
+[FVA] Max optimization done for NTD12: 0.000114229162378802
+[FVA] Min optimization done for EX_agm_e: 0.0
+[FVA] Finished optimization for reaction: EX_agm_e
+[FVA] Starting optimization for reaction: EX_minohp_e
+[FVA] Min optimization done for GUACYC: 0.0
+[FVA] Finished optimization for reaction: GUACYC
+[FVA] Starting optimization for reaction: 23PDE2pp
+[FVA] Min optimization done for ARBTNR3: 0.0
+[FVA] Finished optimization for reaction: ARBTNR3
+[FVA] Starting optimization for reaction: ARBTNexs
+[FVA] Min optimization done for ALCD19: -0.000228630167839583
+[FVA] Finished optimization for reaction: ALCD19
+[FVA] Starting optimization for reaction: RMPA
+[FVA] Min optimization done for NO3R1bpp: 0.0
+[FVA] Finished optimization for reaction: NO3R1bpp
+[FVA] Starting optimization for reaction: O2tpp
+[FVA] Min optimization done for MG2t3_2pp: -0.00166402634692986
+[FVA] Finished optimization for reaction: MG2t3_2pp
+[FVA] Starting optimization for reaction: CD2tpp
+[FVA] Min optimization done for EX_gal1p_e: 0.0
+[FVA] Finished optimization for reaction: EX_gal1p_e
+[FVA] Starting optimization for reaction: EX_dcmp_e
+[FVA] Max optimization done for EX_minohp_e: 0.0
+[FVA] Max optimization done for 23PDE2pp: 0.0
+[FVA] Max optimization done for ARBTNexs: 0.000394821254950738
+[FVA] Max optimization done for RMPA: 0.0
+[FVA] Min optimization done for NTD12: 0.0
+[FVA] Finished optimization for reaction: NTD12
+[FVA] Starting optimization for reaction: FECRMtonex
+[FVA] Max optimization done for O2tpp: 10.80677883244
+[FVA] Max optimization done for CD2tpp: 0.00136439992407955
+[FVA] Max optimization done for EX_dcmp_e: 0.0
+[FVA] Max optimization done for FECRMtonex: 0.000278780321273669
+[FVA] Min optimization done for EX_minohp_e: 0.0
+[FVA] Finished optimization for reaction: EX_minohp_e
+[FVA] Starting optimization for reaction: EX_ppt_e
+[FVA] Min optimization done for ARBTNexs: 0.0
+[FVA] Finished optimization for reaction: ARBTNexs
+[FVA] Starting optimization for reaction: FEOXAMexs
+[FVA] Min optimization done for RMPA: 0.0
+[FVA] Finished optimization for reaction: RMPA
+[FVA] Starting optimization for reaction: SBTPD
+[FVA] Min optimization done for 23PDE2pp: 0.0
+[FVA] Finished optimization for reaction: 23PDE2pp
+[FVA] Starting optimization for reaction: 23PDE4pp
+[FVA] Min optimization done for O2tpp: 10.7575897422778
+[FVA] Finished optimization for reaction: O2tpp
+[FVA] Starting optimization for reaction: PHYTSpp
+[FVA] Min optimization done for EX_dcmp_e: 0.0
+[FVA] Finished optimization for reaction: EX_dcmp_e
+[FVA] Starting optimization for reaction: EX_23ccmp_e
+[FVA] Min optimization done for CD2tpp: 0.0
+[FVA] Finished optimization for reaction: CD2tpp
+[FVA] Starting optimization for reaction: ETHAt2pp
+[FVA] Max optimization done for EX_ppt_e: 0.0
+[FVA] Max optimization done for FEOXAMexs: 0.000275386406598852
+[FVA] Min optimization done for FECRMtonex: 0.0
+[FVA] Finished optimization for reaction: FECRMtonex
+[FVA] Starting optimization for reaction: ARBTNtonex
+[FVA] Max optimization done for 23PDE4pp: 0.0
+[FVA] Max optimization done for SBTPD: 0.0
+[FVA] Max optimization done for ETHAt2pp: 3.33056868057265e-05
+[FVA] Max optimization done for PHYTSpp: 0.0
+[FVA] Max optimization done for EX_23ccmp_e: 0.0
+[FVA] Max optimization done for ARBTNtonex: 0.000394821147411447
+[FVA] Min optimization done for EX_ppt_e: 0.0
+[FVA] Finished optimization for reaction: EX_ppt_e
+[FVA] Starting optimization for reaction: EX_hxa_e
+[FVA] Min optimization done for FEOXAMexs: 0.0
+[FVA] Finished optimization for reaction: FEOXAMexs
+[FVA] Starting optimization for reaction: FEOXAMR1
+[FVA] Min optimization done for SBTPD: 0.0
+[FVA] Finished optimization for reaction: SBTPD
+[FVA] Starting optimization for reaction: PFK_2
+[FVA] Min optimization done for 23PDE4pp: 0.0
+[FVA] Finished optimization for reaction: 23PDE4pp
+[FVA] Starting optimization for reaction: 23PDE9pp
+[FVA] Min optimization done for ETHAt2pp: 0.0
+[FVA] Finished optimization for reaction: ETHAt2pp
+[FVA] Starting optimization for reaction: FE3abcpp
+[FVA] Min optimization done for PHYTSpp: 0.0
+[FVA] Finished optimization for reaction: PHYTSpp
+[FVA] Starting optimization for reaction: PPTHpp
+[FVA] Min optimization done for EX_23ccmp_e: 0.0
+[FVA] Finished optimization for reaction: EX_23ccmp_e
+[FVA] Starting optimization for reaction: EX_3cmp_e
+[FVA] Max optimization done for EX_hxa_e: 0.000196578638880166
+[FVA] Max optimization done for PFK_2: 0.0
+[FVA] Min optimization done for ARBTNtonex: 0.0
+[FVA] Finished optimization for reaction: ARBTNtonex
+[FVA] Starting optimization for reaction: ADOCBLabcpp
+[FVA] Max optimization done for FEOXAMR1: 0.00013479514977111
+[FVA] Max optimization done for EX_3cmp_e: 0.0
+[FVA] Max optimization done for PPTHpp: 0.0
+[FVA] Max optimization done for 23PDE9pp: 0.0
+[FVA] Max optimization done for FE3abcpp: 0.0006029789694575
+[FVA] Max optimization done for ADOCBLabcpp: 0.0
+[FVA] Min optimization done for EX_hxa_e: 0.0
+[FVA] Finished optimization for reaction: EX_hxa_e
+[FVA] Starting optimization for reaction: EX_lyx__L_e
+[FVA] Min optimization done for PFK_2: 0.0
+[FVA] Finished optimization for reaction: PFK_2
+[FVA] Starting optimization for reaction: GLTPD
+[FVA] Min optimization done for FEOXAMR1: 0.0
+[FVA] Finished optimization for reaction: FEOXAMR1
+[FVA] Starting optimization for reaction: FEOXAMR2
+[FVA] Min optimization done for EX_3cmp_e: 0.0
+[FVA] Finished optimization for reaction: EX_3cmp_e
+[FVA] Starting optimization for reaction: ATHRDHr
+[FVA] Min optimization done for PPTHpp: 0.0
+[FVA] Finished optimization for reaction: PPTHpp
+[FVA] Starting optimization for reaction: PYRt2rpp
+[FVA] Min optimization done for 23PDE9pp: 0.0
+[FVA] Finished optimization for reaction: 23PDE9pp
+[FVA] Starting optimization for reaction: ATPHs
+[FVA] Max optimization done for EX_lyx__L_e: 0.0
+[FVA] Min optimization done for FE3abcpp: 0.0
+[FVA] Finished optimization for reaction: FE3abcpp
+[FVA] Starting optimization for reaction: THRA
+[FVA] Min optimization done for ADOCBLabcpp: 0.0
+[FVA] Finished optimization for reaction: ADOCBLabcpp
+[FVA] Starting optimization for reaction: EX_enter_e
+[FVA] Max optimization done for GLTPD: 0.0
+[FVA] Max optimization done for FEOXAMR2: 0.000133898084686366
+[FVA] Max optimization done for ATHRDHr: 0.0
+[FVA] Max optimization done for PYRt2rpp: -9.70370773293359
+[FVA] Max optimization done for ATPHs: 0.000141706670064394
+[FVA] Max optimization done for THRA: 0.00015656297131214
+[FVA] Max optimization done for EX_enter_e: 1.41105581853472e-05
+[FVA] Min optimization done for EX_lyx__L_e: 0.0
+[FVA] Finished optimization for reaction: EX_lyx__L_e
+[FVA] Starting optimization for reaction: EX_acmum_e
+[FVA] Min optimization done for GLTPD: 0.0
+[FVA] Finished optimization for reaction: GLTPD
+[FVA] Starting optimization for reaction: TGBPA
+[FVA] Min optimization done for PYRt2rpp: -13.4399937665669
+[FVA] Finished optimization for reaction: PYRt2rpp
+[FVA] Starting optimization for reaction: NO3R2pp
+[FVA] Min optimization done for FEOXAMR2: 0.0
+[FVA] Finished optimization for reaction: FEOXAMR2
+[FVA] Starting optimization for reaction: FEOXAMR3
+[FVA] Min optimization done for ATHRDHr: -0.000542674824941969
+[FVA] Finished optimization for reaction: ATHRDHr
+[FVA] Starting optimization for reaction: LSERDHr
+[FVA] Min optimization done for ATPHs: 0.0
+[FVA] Finished optimization for reaction: ATPHs
+[FVA] Starting optimization for reaction: SARCOX
+[FVA] Max optimization done for EX_acmum_e: 0.0
+[FVA] Max optimization done for TGBPA: 0.0
+[FVA] Min optimization done for THRA: 0.0
+[FVA] Finished optimization for reaction: THRA
+[FVA] Starting optimization for reaction: XYLK2
+[FVA] Min optimization done for EX_enter_e: 0.0
+[FVA] Finished optimization for reaction: EX_enter_e
+[FVA] Starting optimization for reaction: EX_fecrm_un_e
+[FVA] Max optimization done for NO3R2pp: 0.0
+[FVA] Max optimization done for FEOXAMR3: 0.000137693222845885
+[FVA] Max optimization done for LSERDHr: 0.000255125899229824
+[FVA] Max optimization done for EX_fecrm_un_e: 0.0
+[FVA] Max optimization done for SARCOX: 0.0
+[FVA] Max optimization done for XYLK2: 0.0
+[FVA] Min optimization done for EX_acmum_e: 0.0
+[FVA] Finished optimization for reaction: EX_acmum_e
+[FVA] Starting optimization for reaction: EX_dca_e
+[FVA] Min optimization done for NO3R2pp: 0.0
+[FVA] Finished optimization for reaction: NO3R2pp
+[FVA] Starting optimization for reaction: NTP3pp
+[FVA] Min optimization done for TGBPA: 0.0
+[FVA] Finished optimization for reaction: TGBPA
+[FVA] Starting optimization for reaction: MANAO
+[FVA] Min optimization done for LSERDHr: 0.0
+[FVA] Finished optimization for reaction: LSERDHr
+[FVA] Starting optimization for reaction: DSERDHr
+[FVA] Min optimization done for FEOXAMR3: 0.0
+[FVA] Finished optimization for reaction: FEOXAMR3
+[FVA] Starting optimization for reaction: PTHRpp
+[FVA] Max optimization done for EX_dca_e: 0.0
+[FVA] Min optimization done for EX_fecrm_un_e: 0.0
+[FVA] Finished optimization for reaction: EX_fecrm_un_e
+[FVA] Starting optimization for reaction: EX_cgly_e
+[FVA] Min optimization done for SARCOX: 0.0
+[FVA] Finished optimization for reaction: SARCOX
+[FVA] Starting optimization for reaction: GTPHs
+[FVA] Max optimization done for MANAO: 0.0
+[FVA] Max optimization done for NTP3pp: 0.0
+[FVA] Min optimization done for XYLK2: 0.0
+[FVA] Finished optimization for reaction: XYLK2
+[FVA] Starting optimization for reaction: GLDBRAN2
+[FVA] Max optimization done for DSERDHr: 0.0
+[FVA] Max optimization done for PTHRpp: 0.0
+[FVA] Max optimization done for GTPHs: 0.00011939410196633
+[FVA] Max optimization done for EX_cgly_e: 4.49519842033372e-05
+[FVA] Max optimization done for GLDBRAN2: 0.000969556917982868
+[FVA] Min optimization done for NTP3pp: 0.0
+[FVA] Finished optimization for reaction: NTP3pp
+[FVA] Starting optimization for reaction: NO3R2bpp
+[FVA] Min optimization done for MANAO: 0.0
+[FVA] Finished optimization for reaction: MANAO
+[FVA] Starting optimization for reaction: TAGURr
+[FVA] Min optimization done for EX_dca_e: 0.0
+[FVA] Finished optimization for reaction: EX_dca_e
+[FVA] Starting optimization for reaction: EX_all__D_e
+[FVA] Min optimization done for DSERDHr: -0.00025512594504562
+[FVA] Finished optimization for reaction: DSERDHr
+[FVA] Starting optimization for reaction: EX_skm_e
+[FVA] Min optimization done for GTPHs: 0.0
+[FVA] Finished optimization for reaction: GTPHs
+[FVA] Starting optimization for reaction: MN6PP
+[FVA] Min optimization done for PTHRpp: 0.0
+[FVA] Finished optimization for reaction: PTHRpp
+[FVA] Starting optimization for reaction: ARABDI
+[FVA] Max optimization done for TAGURr: 0.0
+[FVA] Max optimization done for NO3R2bpp: 0.0
+[FVA] Min optimization done for GLDBRAN2: 0.0
+[FVA] Finished optimization for reaction: GLDBRAN2
+[FVA] Starting optimization for reaction: CLt3_2pp
+[FVA] Max optimization done for EX_all__D_e: 0.0
+[FVA] Max optimization done for MN6PP: 0.000393917769063812
+[FVA] Max optimization done for ARABDI: 0.0
+[FVA] Max optimization done for EX_skm_e: 0.0
+[FVA] Min optimization done for EX_cgly_e: 0.0
+[FVA] Finished optimization for reaction: EX_cgly_e
+[FVA] Starting optimization for reaction: EX_chtbs_e
+[FVA] Max optimization done for CLt3_2pp: 0.000509621541918389
+[FVA] Min optimization done for TAGURr: 0.0
+[FVA] Finished optimization for reaction: TAGURr
+[FVA] Starting optimization for reaction: PGLYCP
+[FVA] Min optimization done for NO3R2bpp: 0.0
+[FVA] Finished optimization for reaction: NO3R2bpp
+[FVA] Starting optimization for reaction: THD2pp
+[FVA] Max optimization done for EX_chtbs_e: 0.0
+[FVA] Min optimization done for EX_all__D_e: 0.0
+[FVA] Finished optimization for reaction: EX_all__D_e
+[FVA] Starting optimization for reaction: EX_octa_e
+[FVA] Max optimization done for THD2pp: 2.39911115322468
+[FVA] Min optimization done for ARABDI: 0.0
+[FVA] Finished optimization for reaction: ARABDI
+[FVA] Starting optimization for reaction: AGt3
+[FVA] Min optimization done for MN6PP: 0.0
+[FVA] Finished optimization for reaction: MN6PP
+[FVA] Starting optimization for reaction: 3KGK
+[FVA] Min optimization done for EX_skm_e: 0.0
+[FVA] Finished optimization for reaction: EX_skm_e
+[FVA] Starting optimization for reaction: EX_ag_e
+[FVA] Max optimization done for PGLYCP: 0.0
+[FVA] Min optimization done for CLt3_2pp: 0.0
+[FVA] Finished optimization for reaction: CLt3_2pp
+[FVA] Starting optimization for reaction: EX_ppal_e
+[FVA] Max optimization done for EX_octa_e: 0.0
+[FVA] Max optimization done for EX_ag_e: 0.0
+[FVA] Min optimization done for EX_chtbs_e: 0.0
+[FVA] Finished optimization for reaction: EX_chtbs_e
+[FVA] Starting optimization for reaction: EX_gmp_e
+[FVA] Max optimization done for AGt3: 0.0
+[FVA] Max optimization done for 3KGK: 0.0
+[FVA] Min optimization done for THD2pp: 2.32409292388568
+[FVA] Finished optimization for reaction: THD2pp
+[FVA] Starting optimization for reaction: TMAOR1pp
+[FVA] Max optimization done for EX_ppal_e: 0.0
+[FVA] Min optimization done for PGLYCP: 0.0
+[FVA] Finished optimization for reaction: PGLYCP
+[FVA] Starting optimization for reaction: GLXCL
+[FVA] Max optimization done for EX_gmp_e: 0.0
+[FVA] Max optimization done for TMAOR1pp: 0.0
+[FVA] Max optimization done for GLXCL: 0.000159962965541843
+[FVA] Min optimization done for EX_ag_e: 0.0
+[FVA] Finished optimization for reaction: EX_ag_e
+[FVA] Starting optimization for reaction: EX_cys__D_e
+[FVA] Min optimization done for AGt3: 0.0
+[FVA] Finished optimization for reaction: AGt3
+[FVA] Starting optimization for reaction: CD2t3pp
+[FVA] Min optimization done for EX_octa_e: 0.0
+[FVA] Finished optimization for reaction: EX_octa_e
+[FVA] Starting optimization for reaction: EX_xylu__L_e
+[FVA] Min optimization done for EX_ppal_e: 0.0
+[FVA] Finished optimization for reaction: EX_ppal_e
+[FVA] Starting optimization for reaction: POR5
+[FVA] Min optimization done for 3KGK: 0.0
+[FVA] Finished optimization for reaction: 3KGK
+[FVA] Starting optimization for reaction: EX_cd2_e
+[FVA] Max optimization done for EX_cys__D_e: 0.0
+[FVA] Min optimization done for EX_gmp_e: 0.0
+[FVA] Finished optimization for reaction: EX_gmp_e
+[FVA] Starting optimization for reaction: EX_h2o2_e
+[FVA] Max optimization done for EX_xylu__L_e: 0.0
+[FVA] Max optimization done for CD2t3pp: 0.00136439991049263
+[FVA] Max optimization done for POR5: 0.0215808433998745
+[FVA] Min optimization done for GLXCL: 0.0
+[FVA] Finished optimization for reaction: GLXCL
+[FVA] Starting optimization for reaction: TARTD
+[FVA] Max optimization done for EX_h2o2_e: 0.0
+[FVA] Max optimization done for EX_cd2_e: 0.0
+[FVA] Min optimization done for TMAOR1pp: 0.0
+[FVA] Finished optimization for reaction: TMAOR1pp
+[FVA] Starting optimization for reaction: TMAOR2pp
+[FVA] Max optimization done for TARTD: 0.0
+[FVA] Min optimization done for EX_cys__D_e: 0.0
+[FVA] Finished optimization for reaction: EX_cys__D_e
+[FVA] Starting optimization for reaction: EX_acser_e
+[FVA] Min optimization done for CD2t3pp: 0.0
+[FVA] Finished optimization for reaction: CD2t3pp
+[FVA] Starting optimization for reaction: ZNabcpp
+[FVA] Min optimization done for POR5: 0.0207114489262494
+[FVA] Finished optimization for reaction: POR5
+[FVA] Starting optimization for reaction: HACD8
+[FVA] Min optimization done for EX_xylu__L_e: 0.0
+[FVA] Finished optimization for reaction: EX_xylu__L_e
+[FVA] Starting optimization for reaction: EX_gdp_e
+[FVA] Max optimization done for TMAOR2pp: 0.0
+[FVA] Min optimization done for EX_cd2_e: 0.0
+[FVA] Finished optimization for reaction: EX_cd2_e
+[FVA] Starting optimization for reaction: F6PP
+[FVA] Max optimization done for EX_acser_e: 0.000214840651037755
+[FVA] Min optimization done for EX_h2o2_e: 0.0
+[FVA] Finished optimization for reaction: EX_h2o2_e
+[FVA] Starting optimization for reaction: EX_ump_e
+[FVA] Max optimization done for EX_gdp_e: 0.0
+[FVA] Min optimization done for TARTD: 0.0
+[FVA] Finished optimization for reaction: TARTD
+[FVA] Starting optimization for reaction: GLCRAL
+[FVA] Max optimization done for ZNabcpp: 0.000357337418006645
+[FVA] Max optimization done for EX_ump_e: 0.0
+[FVA] Max optimization done for F6PP: 0.000344696813527035
+[FVA] Max optimization done for HACD8: 0.0
+[FVA] Min optimization done for TMAOR2pp: 0.0
+[FVA] Finished optimization for reaction: TMAOR2pp
+[FVA] Starting optimization for reaction: XANtpp
+[FVA] Min optimization done for EX_acser_e: 0.0
+[FVA] Finished optimization for reaction: EX_acser_e
+[FVA] Starting optimization for reaction: EX_cu_e
+[FVA] Max optimization done for GLCRAL: 0.0
+[FVA] Max optimization done for XANtpp: 0.0
+[FVA] Min optimization done for ZNabcpp: 0.0
+[FVA] Finished optimization for reaction: ZNabcpp
+[FVA] Starting optimization for reaction: SKMt2pp
+[FVA] Min optimization done for HACD8: -5.55302239035882e-05
+[FVA] Finished optimization for reaction: HACD8
+[FVA] Starting optimization for reaction: CTECOAI8
+[FVA] Min optimization done for EX_gdp_e: 0.0
+[FVA] Finished optimization for reaction: EX_gdp_e
+[FVA] Starting optimization for reaction: EX_gtp_e
+[FVA] Max optimization done for EX_cu_e: 0.0
+[FVA] Min optimization done for EX_ump_e: 0.0
+[FVA] Finished optimization for reaction: EX_ump_e
+[FVA] Starting optimization for reaction: EX_pydam_e
+[FVA] Min optimization done for F6PP: 0.0
+[FVA] Finished optimization for reaction: F6PP
+[FVA] Starting optimization for reaction: GDPMNH
+[FVA] Min optimization done for GLCRAL: 0.0
+[FVA] Finished optimization for reaction: GLCRAL
+[FVA] Starting optimization for reaction: KAS14
+[FVA] Max optimization done for CTECOAI8: 5.55302074189967e-05
+[FVA] Max optimization done for SKMt2pp: 0.0
+[FVA] Max optimization done for EX_pydam_e: 0.0
+[FVA] Max optimization done for EX_gtp_e: 0.0
+[FVA] Min optimization done for XANtpp: -0.000807858945563567
+[FVA] Finished optimization for reaction: XANtpp
+[FVA] Starting optimization for reaction: DAPtex
+[FVA] Max optimization done for GDPMNH: 0.000443585911232414
+[FVA] Min optimization done for EX_cu_e: 0.0
+[FVA] Finished optimization for reaction: EX_cu_e
+[FVA] Starting optimization for reaction: EX_arbtn_e
+[FVA] Max optimization done for KAS14: 3.23587305283265e-05
+[FVA] Max optimization done for DAPtex: 0.0
+[FVA] Min optimization done for CTECOAI8: 0.0
+[FVA] Finished optimization for reaction: CTECOAI8
+[FVA] Starting optimization for reaction: CTECOAI6
+[FVA] Min optimization done for EX_pydam_e: 0.0
+[FVA] Finished optimization for reaction: EX_pydam_e
+[FVA] Starting optimization for reaction: CRNabcpp
+[FVA] Min optimization done for SKMt2pp: 0.0
+[FVA] Finished optimization for reaction: SKMt2pp
+[FVA] Starting optimization for reaction: FE2t2pp
+[FVA] Max optimization done for EX_arbtn_e: 0.0
+[FVA] Min optimization done for GDPMNH: 0.0
+[FVA] Finished optimization for reaction: GDPMNH
+[FVA] Starting optimization for reaction: FACOAL60t2pp
+[FVA] Min optimization done for EX_gtp_e: 0.0
+[FVA] Finished optimization for reaction: EX_gtp_e
+[FVA] Starting optimization for reaction: THMabcpp
+[FVA] Min optimization done for KAS14: 0.0
+[FVA] Finished optimization for reaction: KAS14
+[FVA] Starting optimization for reaction: EDTXS1
+[FVA] Max optimization done for CTECOAI6: 3.14101242793186e-05
+[FVA] Max optimization done for FACOAL60t2pp: 0.000191092564013936
+[FVA] Min optimization done for DAPtex: -0.000107728193360769
+[FVA] Finished optimization for reaction: DAPtex
+[FVA] Starting optimization for reaction: 12PPDStex
+[FVA] Max optimization done for FE2t2pp: 0.00488106103262292
+[FVA] Max optimization done for THMabcpp: 0.0
+[FVA] Max optimization done for CRNabcpp: 0.000296715172541925
+[FVA] Max optimization done for EDTXS1: 5.1083698604849e-06
+[FVA] Min optimization done for EX_arbtn_e: 0.0
+[FVA] Finished optimization for reaction: EX_arbtn_e
+[FVA] Starting optimization for reaction: EX_dopa_e
+[FVA] Max optimization done for 12PPDStex: 0.0
+[FVA] Min optimization done for CTECOAI6: -0.000158880386948113
+[FVA] Finished optimization for reaction: CTECOAI6
+[FVA] Starting optimization for reaction: MTHTHFSs
+[FVA] Max optimization done for EX_dopa_e: 0.0
+[FVA] Min optimization done for FACOAL60t2pp: 0.0
+[FVA] Finished optimization for reaction: FACOAL60t2pp
+[FVA] Starting optimization for reaction: IDONt2rpp
+[FVA] Min optimization done for THMabcpp: 0.0
+[FVA] Finished optimization for reaction: THMabcpp
+[FVA] Starting optimization for reaction: THMDt2pp_copy2
+[FVA] Min optimization done for EDTXS1: 0.0
+[FVA] Finished optimization for reaction: EDTXS1
+[FVA] Starting optimization for reaction: EDTXS2
+[FVA] Min optimization done for FE2t2pp: 0.0
+[FVA] Finished optimization for reaction: FE2t2pp
+[FVA] Starting optimization for reaction: R5PPpp
+[FVA] Min optimization done for CRNabcpp: 0.0
+[FVA] Finished optimization for reaction: CRNabcpp
+[FVA] Starting optimization for reaction: CRNDabcpp
+[FVA] Max optimization done for MTHTHFSs: 0.000150867141305849
+[FVA] Min optimization done for 12PPDStex: -0.000409818232539155
+[FVA] Finished optimization for reaction: 12PPDStex
+[FVA] Starting optimization for reaction: DDGLCNtex
+[FVA] Max optimization done for IDONt2rpp: 0.0
+[FVA] Max optimization done for R5PPpp: 0.0
+[FVA] Max optimization done for CRNDabcpp: 0.000296715172541925
+[FVA] Max optimization done for EDTXS2: 5.15721135674709e-06
+[FVA] Max optimization done for THMDt2pp_copy2: 0.0
+[FVA] Min optimization done for EX_dopa_e: 0.0
+[FVA] Finished optimization for reaction: EX_dopa_e
+[FVA] Starting optimization for reaction: EX_hom__L_e
+[FVA] Max optimization done for DDGLCNtex: 0.0
+[FVA] Min optimization done for MTHTHFSs: 0.0
+[FVA] Finished optimization for reaction: MTHTHFSs
+[FVA] Starting optimization for reaction: SELGTHR
+[FVA] Min optimization done for EDTXS2: 0.0
+[FVA] Finished optimization for reaction: EDTXS2
+[FVA] Starting optimization for reaction: EDTXS3
+[FVA] Min optimization done for IDONt2rpp: -0.000193133226844111
+[FVA] Finished optimization for reaction: IDONt2rpp
+[FVA] Starting optimization for reaction: ILEabcpp
+[FVA] Min optimization done for R5PPpp: 0.0
+[FVA] Finished optimization for reaction: R5PPpp
+[FVA] Starting optimization for reaction: PSP_Lpp
+[FVA] Max optimization done for EX_hom__L_e: 0.000194667242457988
+[FVA] Min optimization done for CRNDabcpp: 0.0
+[FVA] Finished optimization for reaction: CRNDabcpp
+[FVA] Starting optimization for reaction: DNTPPA
+[FVA] Min optimization done for THMDt2pp_copy2: -0.00107545333037251
+[FVA] Finished optimization for reaction: THMDt2pp_copy2
+[FVA] Starting optimization for reaction: THRabcpp
+[FVA] Min optimization done for DDGLCNtex: 0.0
+[FVA] Finished optimization for reaction: DDGLCNtex
+[FVA] Starting optimization for reaction: 26DAHtex
+[FVA] Max optimization done for SELGTHR: 0.0
+[FVA] Max optimization done for EDTXS3: 0.0
+[FVA] Max optimization done for PSP_Lpp: 0.0
+[FVA] Max optimization done for ILEabcpp: 0.000241833539390242
+[FVA] Max optimization done for DNTPPA: 0.000131003578092265
+[FVA] Max optimization done for THRabcpp: 0.000229141751487686
+[FVA] Min optimization done for EX_hom__L_e: 0.0
+[FVA] Finished optimization for reaction: EX_hom__L_e
+[FVA] Starting optimization for reaction: OBTFL
+[FVA] Max optimization done for 26DAHtex: 0.0
+[FVA] Min optimization done for SELGTHR: 0.0
+[FVA] Finished optimization for reaction: SELGTHR
+[FVA] Starting optimization for reaction: SELGTHR3
+[FVA] Min optimization done for PSP_Lpp: 0.0
+[FVA] Finished optimization for reaction: PSP_Lpp
+[FVA] Starting optimization for reaction: TYRPpp
+[FVA] Min optimization done for EDTXS3: 0.0
+[FVA] Finished optimization for reaction: EDTXS3
+[FVA] Starting optimization for reaction: EDTXS4
+[FVA] Min optimization done for DNTPPA: 0.000131003578092265
+[FVA] Finished optimization for reaction: DNTPPA
+[FVA] Starting optimization for reaction: CTBTabcpp
+[FVA] Min optimization done for ILEabcpp: 0.0
+[FVA] Finished optimization for reaction: ILEabcpp
+[FVA] Starting optimization for reaction: INDOLEt2pp
+[FVA] Max optimization done for OBTFL: 9.36354970014517e-05
+[FVA] Min optimization done for 26DAHtex: 0.0
+[FVA] Finished optimization for reaction: 26DAHtex
+[FVA] Starting optimization for reaction: HCINNMtex
+[FVA] Min optimization done for THRabcpp: 0.0
+[FVA] Finished optimization for reaction: THRabcpp
+[FVA] Starting optimization for reaction: TREptspp
+[FVA] Max optimization done for SELGTHR3: 0.0
+[FVA] Max optimization done for EDTXS4: 0.0
+[FVA] Max optimization done for CTBTabcpp: 0.000287980872695967
+[FVA] Max optimization done for INDOLEt2pp: 0.000993432860598335
+[FVA] Max optimization done for TYRPpp: 0.0
+[FVA] Max optimization done for HCINNMtex: 0.0
+[FVA] Min optimization done for OBTFL: 0.0
+[FVA] Finished optimization for reaction: OBTFL
+[FVA] Starting optimization for reaction: THRt2pp
+[FVA] Max optimization done for TREptspp: 0.0
+[FVA] Min optimization done for TYRPpp: 0.0
+[FVA] Finished optimization for reaction: TYRPpp
+[FVA] Starting optimization for reaction: GLYC2Ptex
+[FVA] Min optimization done for EDTXS4: 0.0
+[FVA] Finished optimization for reaction: EDTXS4
+[FVA] Starting optimization for reaction: EX_tmao_e
+[FVA] Min optimization done for CTBTabcpp: 0.0
+[FVA] Finished optimization for reaction: CTBTabcpp
+[FVA] Starting optimization for reaction: NTPP9
+[FVA] Min optimization done for SELGTHR3: 0.0
+[FVA] Finished optimization for reaction: SELGTHR3
+[FVA] Starting optimization for reaction: EX_slnt_e
+[FVA] Min optimization done for INDOLEt2pp: 0.0
+[FVA] Finished optimization for reaction: INDOLEt2pp
+[FVA] Starting optimization for reaction: INSt2pp
+[FVA] Max optimization done for THRt2pp: 0.00206916478365947
+[FVA] Min optimization done for TREptspp: 0.0
+[FVA] Finished optimization for reaction: TREptspp
+[FVA] Starting optimization for reaction: TRPt2rpp
+[FVA] Min optimization done for HCINNMtex: 0.0
+[FVA] Finished optimization for reaction: HCINNMtex
+[FVA] Starting optimization for reaction: Zn2tex
+[FVA] Max optimization done for EX_slnt_e: 0.0
+[FVA] Max optimization done for EX_tmao_e: 0.0
+[FVA] Max optimization done for NTPP9: 0.000141706670000234
+[FVA] Max optimization done for GLYC2Ptex: 0.0
+[FVA] Max optimization done for INSt2pp: 0.000548990161425578
+[FVA] Max optimization done for Zn2tex: 6.67746189719765e-05
+[FVA] Max optimization done for TRPt2rpp: 0.000706314316516909
+[FVA] Min optimization done for THRt2pp: 0.0
+[FVA] Finished optimization for reaction: THRt2pp
+[FVA] Starting optimization for reaction: 2AGPGAT120
+[FVA] Min optimization done for INSt2pp: 0.0
+[FVA] Finished optimization for reaction: INSt2pp
+[FVA] Starting optimization for reaction: LYXt2pp
+[FVA] Min optimization done for GLYC2Ptex: 0.0
+[FVA] Finished optimization for reaction: GLYC2Ptex
+[FVA] Starting optimization for reaction: PSERtex
+[FVA] Min optimization done for EX_slnt_e: 0.0
+[FVA] Finished optimization for reaction: EX_slnt_e
+[FVA] Starting optimization for reaction: TTDCEAtexi
+[FVA] Min optimization done for EX_tmao_e: 0.0
+[FVA] Finished optimization for reaction: EX_tmao_e
+[FVA] Starting optimization for reaction: CYStex
+[FVA] Min optimization done for NTPP9: 0.0
+[FVA] Finished optimization for reaction: NTPP9
+[FVA] Starting optimization for reaction: OMPHHXy
+[FVA] Max optimization done for 2AGPGAT120: 8.6414419241846e-05
+[FVA] Min optimization done for Zn2tex: 6.67746189719765e-05
+[FVA] Finished optimization for reaction: Zn2tex
+[FVA] Starting optimization for reaction: MMETt2pp
+[FVA] Min optimization done for TRPt2rpp: -4.83782257560961e-05
+[FVA] Finished optimization for reaction: TRPt2rpp
+[FVA] Starting optimization for reaction: TYRt2rpp
+[FVA] Max optimization done for OMPHHXy: 5.06608198976621e-06
+[FVA] Max optimization done for PSERtex: 0.0
+[FVA] Max optimization done for CYStex: 0.0
+[FVA] Max optimization done for LYXt2pp: 0.0
+[FVA] Max optimization done for TTDCEAtexi: 0.0
+[FVA] Max optimization done for MMETt2pp: 0.0
+[FVA] Max optimization done for TYRt2rpp: 0.00114717737710635
+[FVA] Min optimization done for 2AGPGAT120: 0.0
+[FVA] Finished optimization for reaction: 2AGPGAT120
+[FVA] Starting optimization for reaction: LPLIPAL2ATE120
+[FVA] Min optimization done for CYStex: -6.55151232194859e-05
+[FVA] Finished optimization for reaction: CYStex
+[FVA] Starting optimization for reaction: CYTDtex
+[FVA] Min optimization done for MMETt2pp: 0.0
+[FVA] Finished optimization for reaction: MMETt2pp
+[FVA] Starting optimization for reaction: CD2tex
+[FVA] Min optimization done for TTDCEAtexi: 0.0
+[FVA] Finished optimization for reaction: TTDCEAtexi
+[FVA] Starting optimization for reaction: HDCEAtexi
+[FVA] Min optimization done for OMPHHXy: 0.0
+[FVA] Finished optimization for reaction: OMPHHXy
+[FVA] Starting optimization for reaction: CHLt3pp
+[FVA] Min optimization done for PSERtex: 0.0
+[FVA] Finished optimization for reaction: PSERtex
+[FVA] Starting optimization for reaction: HPPPNtex
+[FVA] Max optimization done for LPLIPAL2ATE120: 0.0
+[FVA] Min optimization done for LYXt2pp: 0.0
+[FVA] Finished optimization for reaction: LYXt2pp
+[FVA] Starting optimization for reaction: EX_malthx_e
+[FVA] Max optimization done for CHLt3pp: 0.00121325823947116
+[FVA] Max optimization done for CYTDtex: 0.0
+[FVA] Max optimization done for HPPPNtex: 0.0
+[FVA] Max optimization done for CD2tex: 0.0
+[FVA] Min optimization done for TYRt2rpp: -8.38002822547423e-05
+[FVA] Finished optimization for reaction: TYRt2rpp
+[FVA] Starting optimization for reaction: CYSTA
+[FVA] Max optimization done for HDCEAtexi: 0.0
+[FVA] Min optimization done for LPLIPAL2ATE120: 0.0
+[FVA] Finished optimization for reaction: LPLIPAL2ATE120
+[FVA] Starting optimization for reaction: LPLIPAL2ATE140
+[FVA] Max optimization done for EX_malthx_e: 0.0
+[FVA] Max optimization done for CYSTA: 0.0
+[FVA] Min optimization done for CYTDtex: -5.66979153128144e-05
+[FVA] Finished optimization for reaction: CYTDtex
+[FVA] Starting optimization for reaction: DCAtex
+[FVA] Min optimization done for CD2tex: 0.0
+[FVA] Finished optimization for reaction: CD2tex
+[FVA] Starting optimization for reaction: GLNabcpp
+[FVA] Min optimization done for CHLt3pp: 0.0
+[FVA] Finished optimization for reaction: CHLt3pp
+[FVA] Starting optimization for reaction: GLYBt3pp
+[FVA] Min optimization done for HDCEAtexi: 0.0
+[FVA] Finished optimization for reaction: HDCEAtexi
+[FVA] Starting optimization for reaction: ALAALAD
+[FVA] Min optimization done for HPPPNtex: 0.0
+[FVA] Finished optimization for reaction: HPPPNtex
+[FVA] Starting optimization for reaction: ACtex
+[FVA] Max optimization done for LPLIPAL2ATE140: 0.0
+[FVA] Max optimization done for DCAtex: 0.0
+[FVA] Min optimization done for EX_malthx_e: 0.0
+[FVA] Finished optimization for reaction: EX_malthx_e
+[FVA] Starting optimization for reaction: MLTG4
+[FVA] Max optimization done for ALAALAD: 0.000407899784613431
+[FVA] Max optimization done for ACtex: -3.59351531127345
+[FVA] Min optimization done for CYSTA: 0.0
+[FVA] Finished optimization for reaction: CYSTA
+[FVA] Starting optimization for reaction: FE3DCITR5
+[FVA] Max optimization done for GLNabcpp: 0.0
+[FVA] Max optimization done for GLYBt3pp: 0.00208213063365925
+[FVA] Min optimization done for DCAtex: 0.0
+[FVA] Finished optimization for reaction: DCAtex
+[FVA] Starting optimization for reaction: DCYTtex
+[FVA] Min optimization done for LPLIPAL2ATE140: 0.0
+[FVA] Finished optimization for reaction: LPLIPAL2ATE140
+[FVA] Starting optimization for reaction: LPLIPAL2ATE160
+[FVA] Max optimization done for FE3DCITR5: 0.0
+[FVA] Max optimization done for MLTG4: 0.000456146865700518
+[FVA] Min optimization done for GLYBt3pp: 0.0
+[FVA] Finished optimization for reaction: GLYBt3pp
+[FVA] Starting optimization for reaction: AI2tpp
+[FVA] Min optimization done for GLNabcpp: 0.0
+[FVA] Finished optimization for reaction: GLNabcpp
+[FVA] Starting optimization for reaction: GLUabcpp
+[FVA] Min optimization done for ALAALAD: 0.0
+[FVA] Finished optimization for reaction: ALAALAD
+[FVA] Starting optimization for reaction: 2AGPEAT180
+[FVA] Min optimization done for ACtex: -5.52853479583154
+[FVA] Finished optimization for reaction: ACtex
+[FVA] Starting optimization for reaction: ACALDtex
+[FVA] Max optimization done for DCYTtex: 0.0
+[FVA] Min optimization done for FE3DCITR5: 0.0
+[FVA] Finished optimization for reaction: FE3DCITR5
+[FVA] Starting optimization for reaction: 4HTHRA
+[FVA] Max optimization done for LPLIPAL2ATE160: 0.0
+[FVA] Max optimization done for AI2tpp: 0.000274568316803348
+[FVA] Max optimization done for 2AGPEAT180: 8.55226147095677e-05
+[FVA] Min optimization done for MLTG4: 0.0
+[FVA] Finished optimization for reaction: MLTG4
+[FVA] Starting optimization for reaction: UDPGDC
+[FVA] Max optimization done for GLUabcpp: 0.00038759495040473
+[FVA] Max optimization done for ACALDtex: 0.0
+[FVA] Min optimization done for DCYTtex: 0.0
+[FVA] Finished optimization for reaction: DCYTtex
+[FVA] Starting optimization for reaction: DGSNtex
+[FVA] Min optimization done for LPLIPAL2ATE160: 0.0
+[FVA] Finished optimization for reaction: LPLIPAL2ATE160
+[FVA] Starting optimization for reaction: LPLIPAL2ATE180
+[FVA] Max optimization done for 4HTHRA: 0.0
+[FVA] Min optimization done for GLUabcpp: 0.0
+[FVA] Finished optimization for reaction: GLUabcpp
+[FVA] Starting optimization for reaction: GLUABUTt7pp
+[FVA] Min optimization done for AI2tpp: 0.0
+[FVA] Finished optimization for reaction: AI2tpp
+[FVA] Starting optimization for reaction: Ftpp
+[FVA] Min optimization done for 2AGPEAT180: 0.0
+[FVA] Finished optimization for reaction: 2AGPEAT180
+[FVA] Starting optimization for reaction: 2AGPEAT181
+[FVA] Max optimization done for UDPGDC: 0.0
+[FVA] Min optimization done for ACALDtex: -0.000666627780525397
+[FVA] Finished optimization for reaction: ACALDtex
+[FVA] Starting optimization for reaction: ACMANAtex
+[FVA] Max optimization done for DGSNtex: 0.0
+[FVA] Max optimization done for LPLIPAL2ATE180: 0.0
+[FVA] Max optimization done for Ftpp: 0.0
+[FVA] Max optimization done for 2AGPEAT181: 8.47373309248309e-05
+[FVA] Max optimization done for GLUABUTt7pp: 0.00298189325303611
+[FVA] Min optimization done for UDPGDC: 0.0
+[FVA] Finished optimization for reaction: UDPGDC
+[FVA] Starting optimization for reaction: PUNP4
+[FVA] Min optimization done for 4HTHRA: -0.000131003577962474
+[FVA] Finished optimization for reaction: 4HTHRA
+[FVA] Starting optimization for reaction: GAPP
+[FVA] Max optimization done for ACMANAtex: 0.0
+[FVA] Min optimization done for LPLIPAL2ATE180: 0.0
+[FVA] Finished optimization for reaction: LPLIPAL2ATE180
+[FVA] Starting optimization for reaction: LPLIPAL2ATE141
+[FVA] Min optimization done for DGSNtex: 0.0
+[FVA] Finished optimization for reaction: DGSNtex
+[FVA] Starting optimization for reaction: MTHFR2
+[FVA] Min optimization done for Ftpp: 0.0
+[FVA] Finished optimization for reaction: Ftpp
+[FVA] Starting optimization for reaction: SQVOSI
+[FVA] Max optimization done for PUNP4: 0.000686961431938471
+[FVA] Min optimization done for GLUABUTt7pp: 0.0
+[FVA] Finished optimization for reaction: GLUABUTt7pp
+[FVA] Starting optimization for reaction: GLUt2rpp
+[FVA] Min optimization done for 2AGPEAT181: 0.0
+[FVA] Finished optimization for reaction: 2AGPEAT181
+[FVA] Starting optimization for reaction: 2AGPGAT140
+[FVA] Max optimization done for GAPP: 0.0004174701897922
+[FVA] Min optimization done for ACMANAtex: 0.0
+[FVA] Finished optimization for reaction: ACMANAtex
+[FVA] Starting optimization for reaction: ACMUMtex
+[FVA] Max optimization done for MTHFR2: 0.0302644496503391
+[FVA] Max optimization done for SQVOSI: 0.0
+[FVA] Max optimization done for GLUt2rpp: 7.72247745999266e-05
+[FVA] Max optimization done for 2AGPGAT140: 8.57416082176758e-05
+[FVA] Max optimization done for LPLIPAL2ATE141: 0.0
+[FVA] Min optimization done for PUNP4: 0.0
+[FVA] Finished optimization for reaction: PUNP4
+[FVA] Starting optimization for reaction: AMAOTr
+[FVA] Min optimization done for GAPP: 0.0
+[FVA] Finished optimization for reaction: GAPP
+[FVA] Starting optimization for reaction: METGLCURt2pp
+[FVA] Max optimization done for ACMUMtex: 0.0
+[FVA] Min optimization done for MTHFR2: 0.030226578900665
+[FVA] Finished optimization for reaction: MTHFR2
+[FVA] Starting optimization for reaction: ASPO3
+[FVA] Max optimization done for AMAOTr: 3.91639993789348e-07
+[FVA] Min optimization done for 2AGPGAT140: 0.0
+[FVA] Finished optimization for reaction: 2AGPGAT140
+[FVA] Starting optimization for reaction: PLIPA1E181pp
+[FVA] Min optimization done for GLUt2rpp: -0.00400113694115589
+[FVA] Finished optimization for reaction: GLUt2rpp
+[FVA] Starting optimization for reaction: GLUt4pp
+[FVA] Min optimization done for SQVOSI: 0.0
+[FVA] Finished optimization for reaction: SQVOSI
+[FVA] Starting optimization for reaction: 6D6SPA
+[FVA] Min optimization done for LPLIPAL2ATE141: 0.0
+[FVA] Finished optimization for reaction: LPLIPAL2ATE141
+[FVA] Starting optimization for reaction: LPLIPAL2ATE161
+[FVA] Max optimization done for METGLCURt2pp: 0.0
+[FVA] Min optimization done for ACMUMtex: 0.0
+[FVA] Finished optimization for reaction: ACMUMtex
+[FVA] Starting optimization for reaction: ACACT7r
+[FVA] Max optimization done for ASPO3: 0.000446077953375717
+[FVA] Max optimization done for GLUt4pp: 0.00342499646341787
+[FVA] Max optimization done for 6D6SPA: 0.0
+[FVA] Max optimization done for LPLIPAL2ATE161: 0.0
+[FVA] Max optimization done for PLIPA1E181pp: 8.47373403218342e-05
+[FVA] Min optimization done for AMAOTr: 3.91639993789348e-07
+[FVA] Finished optimization for reaction: AMAOTr
+[FVA] Starting optimization for reaction: EX_csn_e
+[FVA] Min optimization done for METGLCURt2pp: 0.0
+[FVA] Finished optimization for reaction: METGLCURt2pp
+[FVA] Starting optimization for reaction: METGLCURtex
+[FVA] Max optimization done for ACACT7r: 0.0544489250565903
+[FVA] Max optimization done for EX_csn_e: 0.0
+[FVA] Max optimization done for METGLCURtex: 0.0
+[FVA] Min optimization done for ASPO3: 0.000376117098834415
+[FVA] Finished optimization for reaction: ASPO3
+[FVA] Starting optimization for reaction: ASPO5
+[FVA] Min optimization done for GLUt4pp: 0.0
+[FVA] Finished optimization for reaction: GLUt4pp
+[FVA] Starting optimization for reaction: GLYALDtpp
+[FVA] Min optimization done for 6D6SPA: 0.0
+[FVA] Finished optimization for reaction: 6D6SPA
+[FVA] Starting optimization for reaction: DHPStr
+[FVA] Min optimization done for LPLIPAL2ATE161: 0.0
+[FVA] Finished optimization for reaction: LPLIPAL2ATE161
+[FVA] Starting optimization for reaction: LPLIPAL2ATE181
+[FVA] Min optimization done for PLIPA1E181pp: 0.0
+[FVA] Finished optimization for reaction: PLIPA1E181pp
+[FVA] Starting optimization for reaction: PLIPA1G180pp
+[FVA] Min optimization done for ACACT7r: 0.0542900475877559
+[FVA] Finished optimization for reaction: ACACT7r
+[FVA] Starting optimization for reaction: PSP_L
+[FVA] Max optimization done for GLYALDtpp: 0.0
+[FVA] Max optimization done for DHPStr: 0.0
+[FVA] Max optimization done for LPLIPAL2ATE181: 0.0
+[FVA] Max optimization done for PLIPA1G180pp: 8.53154882796337e-05
+[FVA] Min optimization done for EX_csn_e: 0.0
+[FVA] Finished optimization for reaction: EX_csn_e
+[FVA] Starting optimization for reaction: EX_etoh_e
+[FVA] Max optimization done for ASPO5: 6.77164977276086e-05
+[FVA] Min optimization done for METGLCURtex: 0.0
+[FVA] Finished optimization for reaction: METGLCURtex
+[FVA] Starting optimization for reaction: FMNt
+[FVA] Max optimization done for PSP_L: 0.347759447651649
+[FVA] Max optimization done for EX_etoh_e: 0.000666368080495059
+[FVA] Max optimization done for FMNt: 1.70269707515512e-05
+[FVA] Min optimization done for DHPStr: 0.0
+[FVA] Finished optimization for reaction: DHPStr
+[FVA] Starting optimization for reaction: SQtr
+[FVA] Min optimization done for GLYALDtpp: -0.000252465955668413
+[FVA] Finished optimization for reaction: GLYALDtpp
+[FVA] Starting optimization for reaction: EX_etha_e
+[FVA] Min optimization done for LPLIPAL2ATE181: 0.0
+[FVA] Finished optimization for reaction: LPLIPAL2ATE181
+[FVA] Starting optimization for reaction: FACOAL141t2pp
+[FVA] Min optimization done for PLIPA1G180pp: 0.0
+[FVA] Finished optimization for reaction: PLIPA1G180pp
+[FVA] Starting optimization for reaction: PLIPA1G181pp
+[FVA] Max optimization done for FACOAL141t2pp: 8.45983779422301e-05
+[FVA] Min optimization done for ASPO5: 0.0
+[FVA] Finished optimization for reaction: ASPO5
+[FVA] Starting optimization for reaction: ASPO4
+[FVA] Max optimization done for EX_etha_e: 3.33006413726527e-05
+[FVA] Max optimization done for SQtr: 0.0
+[FVA] Max optimization done for PLIPA1G181pp: 8.47544754902125e-05
+[FVA] Min optimization done for EX_etoh_e: 0.0
+[FVA] Finished optimization for reaction: EX_etoh_e
+[FVA] Starting optimization for reaction: EX_his__L_e
+[FVA] Min optimization done for PSP_L: 0.336164307535597
+[FVA] Finished optimization for reaction: PSP_L
+[FVA] Starting optimization for reaction: ACACT2r
+[FVA] Max optimization done for ASPO4: 6.84760924841506e-05
+[FVA] Min optimization done for FMNt: 0.0
+[FVA] Finished optimization for reaction: FMNt
+[FVA] Starting optimization for reaction: AI2tex
+[FVA] Max optimization done for EX_his__L_e: 4.46990571626416e-05
+[FVA] Max optimization done for ACACT2r: 0.0698849991875932
+[FVA] Min optimization done for FACOAL141t2pp: 0.0
+[FVA] Finished optimization for reaction: FACOAL141t2pp
+[FVA] Starting optimization for reaction: FACOAL161t2pp
+[FVA] Min optimization done for EX_etha_e: 0.0
+[FVA] Finished optimization for reaction: EX_etha_e
+[FVA] Starting optimization for reaction: ACGK
+[FVA] Min optimization done for SQtr: 0.0
+[FVA] Finished optimization for reaction: SQtr
+[FVA] Starting optimization for reaction: DHPStex
+[FVA] Min optimization done for PLIPA1G181pp: 0.0
+[FVA] Finished optimization for reaction: PLIPA1G181pp
+[FVA] Starting optimization for reaction: ALAALAabcpp
+[FVA] Max optimization done for AI2tex: 0.0
+[FVA] Max optimization done for FACOAL161t2pp: 8.87607572784013e-05
+[FVA] Max optimization done for ACGK: 0.0580400812586852
+[FVA] Max optimization done for DHPStex: 0.0
+[FVA] Max optimization done for ALAALAabcpp: 3.29730313562329e-05
+[FVA] Min optimization done for ASPO4: 0.0
+[FVA] Finished optimization for reaction: ASPO4
+[FVA] Starting optimization for reaction: ASPO6
+[FVA] Min optimization done for EX_his__L_e: 0.0
+[FVA] Finished optimization for reaction: EX_his__L_e
+[FVA] Starting optimization for reaction: EX_k_e
+[FVA] Min optimization done for ACACT2r: 0.0696541511795203
+[FVA] Finished optimization for reaction: ACACT2r
+[FVA] Starting optimization for reaction: ACACT3r
+[FVA] Min optimization done for AI2tex: -0.000142344371009708
+[FVA] Finished optimization for reaction: AI2tex
+[FVA] Starting optimization for reaction: PAI2T
+[FVA] Min optimization done for ACGK: 0.0579219885217411
+[FVA] Finished optimization for reaction: ACGK
+[FVA] Starting optimization for reaction: LCTSt3ipp
+[FVA] Min optimization done for ALAALAabcpp: 0.0
+[FVA] Finished optimization for reaction: ALAALAabcpp
+[FVA] Starting optimization for reaction: HEXt2rpp
+[FVA] Max optimization done for ASPO6: 6.98048994735195e-05
+[FVA] Max optimization done for EX_k_e: -0.0382226926537896
+[FVA] Max optimization done for ACACT3r: 0.0697190707122672
+[FVA] Min optimization done for DHPStex: 0.0
+[FVA] Finished optimization for reaction: DHPStex
+[FVA] Starting optimization for reaction: FMNtex
+[FVA] Min optimization done for FACOAL161t2pp: 0.0
+[FVA] Finished optimization for reaction: FACOAL161t2pp
+[FVA] Starting optimization for reaction: PA160abcpp
+[FVA] Max optimization done for PAI2T: 0.000164803403414897
+[FVA] Max optimization done for PA160abcpp: 0.000229667230384066
+[FVA] Max optimization done for LCTSt3ipp: 0.000637233392494118
+[FVA] Max optimization done for HEXt2rpp: 0.0
+[FVA] Max optimization done for FMNtex: 1.70269723814466e-05
+[FVA] Min optimization done for ASPO6: 0.0
+[FVA] Finished optimization for reaction: ASPO6
+[FVA] Starting optimization for reaction: LCTStex
+[FVA] Min optimization done for EX_k_e: -0.0382226926537896
+[FVA] Finished optimization for reaction: EX_k_e
+[FVA] Starting optimization for reaction: EX_na1_e
+[FVA] Min optimization done for ACACT3r: 0.0696541512008935
+[FVA] Finished optimization for reaction: ACACT3r
+[FVA] Starting optimization for reaction: ACACT4r
+[FVA] Min optimization done for PAI2T: 0.0
+[FVA] Finished optimization for reaction: PAI2T
+[FVA] Starting optimization for reaction: CUt2pp
+[FVA] Min optimization done for FMNtex: 0.0
+[FVA] Finished optimization for reaction: FMNtex
+[FVA] Starting optimization for reaction: EX_dxylnt_e
+[FVA] Min optimization done for LCTSt3ipp: 0.0
+[FVA] Finished optimization for reaction: LCTSt3ipp
+[FVA] Starting optimization for reaction: ARBt3ipp
+[FVA] Min optimization done for HEXt2rpp: -0.000196578590816898
+[FVA] Finished optimization for reaction: HEXt2rpp
+[FVA] Starting optimization for reaction: G3PEabcpp
+[FVA] Max optimization done for LCTStex: 0.0
+[FVA] Max optimization done for EX_na1_e: 0.0
+[FVA] Min optimization done for PA160abcpp: 0.0
+[FVA] Finished optimization for reaction: PA160abcpp
+[FVA] Starting optimization for reaction: PA181abcpp
+[FVA] Max optimization done for CUt2pp: 0.0
+[FVA] Max optimization done for ACACT4r: 0.0697193637718101
+[FVA] Max optimization done for ARBt3ipp: 0.00124971051282364
+[FVA] Max optimization done for G3PEabcpp: 3.16628929352031e-05
+[FVA] Min optimization done for LCTStex: 0.0
+[FVA] Finished optimization for reaction: LCTStex
+[FVA] Starting optimization for reaction: LEUtex
+[FVA] Max optimization done for PA181abcpp: 0.000230114337313705
+[FVA] Max optimization done for EX_dxylnt_e: 0.000131003577917719
+[FVA] Min optimization done for EX_na1_e: 0.0
+[FVA] Finished optimization for reaction: EX_na1_e
+[FVA] Starting optimization for reaction: ARGORNt7pp
+[FVA] Min optimization done for ACACT4r: 0.0696091098354827
+[FVA] Finished optimization for reaction: ACACT4r
+[FVA] Starting optimization for reaction: SUCCt2_2pp
+[FVA] Min optimization done for CUt2pp: 0.0
+[FVA] Finished optimization for reaction: CUt2pp
+[FVA] Starting optimization for reaction: DHCURR
+[FVA] Min optimization done for PA181abcpp: 0.0
+[FVA] Finished optimization for reaction: PA181abcpp
+[FVA] Starting optimization for reaction: 12DGR141tipp
+[FVA] Min optimization done for ARBt3ipp: 0.0
+[FVA] Finished optimization for reaction: ARBt3ipp
+[FVA] Starting optimization for reaction: 14GLUCANabcpp
+[FVA] Max optimization done for LEUtex: 0.0
+[FVA] Min optimization done for G3PEabcpp: 0.0
+[FVA] Finished optimization for reaction: G3PEabcpp
+[FVA] Starting optimization for reaction: G3PCabcpp
+[FVA] Min optimization done for EX_dxylnt_e: 0.0
+[FVA] Finished optimization for reaction: EX_dxylnt_e
+[FVA] Starting optimization for reaction: AI2K
+[FVA] Max optimization done for SUCCt2_2pp: 0.00494986858834432
+[FVA] Max optimization done for ARGORNt7pp: 0.00109347366731072
+[FVA] Max optimization done for DHCURR: 0.0
+[FVA] Max optimization done for 14GLUCANabcpp: 0.0
+[FVA] Max optimization done for AI2K: 0.00016480340653071
+[FVA] Max optimization done for G3PCabcpp: 0.0
+[FVA] Min optimization done for LEUtex: -0.000346693748742988
+[FVA] Finished optimization for reaction: LEUtex
+[FVA] Starting optimization for reaction: LYStex
+[FVA] Max optimization done for 12DGR141tipp: 0.000230114346802455
+[FVA] Min optimization done for SUCCt2_2pp: 0.0
+[FVA] Finished optimization for reaction: SUCCt2_2pp
+[FVA] Starting optimization for reaction: SUCFUMtpp
+[FVA] Min optimization done for ARGORNt7pp: 0.0
+[FVA] Finished optimization for reaction: ARGORNt7pp
+[FVA] Starting optimization for reaction: EX_dmso_e
+[FVA] Max optimization done for LYStex: 0.0
+[FVA] Min optimization done for DHCURR: 0.0
+[FVA] Finished optimization for reaction: DHCURR
+[FVA] Starting optimization for reaction: RHMND
+[FVA] Min optimization done for 14GLUCANabcpp: 0.0
+[FVA] Finished optimization for reaction: 14GLUCANabcpp
+[FVA] Starting optimization for reaction: 14GLUCANtexi
+[FVA] Min optimization done for AI2K: 0.0
+[FVA] Finished optimization for reaction: AI2K
+[FVA] Starting optimization for reaction: CLBtex
+[FVA] Min optimization done for 12DGR141tipp: 0.0
+[FVA] Finished optimization for reaction: 12DGR141tipp
+[FVA] Starting optimization for reaction: PGPP140pp
+[FVA] Min optimization done for G3PCabcpp: 0.0
+[FVA] Finished optimization for reaction: G3PCabcpp
+[FVA] Starting optimization for reaction: 2AGPGAT161
+[FVA] Max optimization done for SUCFUMtpp: 0.00241465983151556
+[FVA] Max optimization done for EX_dmso_e: 0.0
+[FVA] Max optimization done for RHMND: 0.0
+[FVA] Max optimization done for CLBtex: 0.0
+[FVA] Max optimization done for PGPP140pp: 8.70729695620319e-05
+[FVA] Max optimization done for 2AGPGAT161: 8.642224880683e-05
+[FVA] Min optimization done for LYStex: -0.000124443774884877
+[FVA] Finished optimization for reaction: LYStex
+[FVA] Starting optimization for reaction: LYXtex
+[FVA] Max optimization done for 14GLUCANtexi: 0.0
+[FVA] Min optimization done for SUCFUMtpp: -0.00522874408693497
+[FVA] Finished optimization for reaction: SUCFUMtpp
+[FVA] Starting optimization for reaction: SUCptspp
+[FVA] Max optimization done for LYXtex: 0.0
+[FVA] Min optimization done for EX_dmso_e: 0.0
+[FVA] Finished optimization for reaction: EX_dmso_e
+[FVA] Starting optimization for reaction: EX_12ppd__S_e
+[FVA] Min optimization done for RHMND: 0.0
+[FVA] Finished optimization for reaction: RHMND
+[FVA] Starting optimization for reaction: 3HBZCT
+[FVA] Min optimization done for 14GLUCANtexi: 0.0
+[FVA] Finished optimization for reaction: 14GLUCANtexi
+[FVA] Starting optimization for reaction: DHPTPE
+[FVA] Max optimization done for SUCptspp: 0.0
+[FVA] Min optimization done for CLBtex: 0.0
+[FVA] Finished optimization for reaction: CLBtex
+[FVA] Starting optimization for reaction: ACOXT
+[FVA] Min optimization done for 2AGPGAT161: 0.0
+[FVA] Finished optimization for reaction: 2AGPGAT161
+[FVA] Starting optimization for reaction: AMPTASEPG
+[FVA] Max optimization done for EX_12ppd__S_e: 0.000409818255358451
+[FVA] Min optimization done for PGPP140pp: 0.0
+[FVA] Finished optimization for reaction: PGPP140pp
+[FVA] Starting optimization for reaction: PGPP141pp
+[FVA] Max optimization done for 3HBZCT: 0.0
+[FVA] Max optimization done for ACOXT: 0.0
+[FVA] Max optimization done for AMPTASEPG: 0.0
+[FVA] Min optimization done for LYXtex: 0.0
+[FVA] Finished optimization for reaction: LYXtex
+[FVA] Starting optimization for reaction: MANtex
+[FVA] Max optimization done for PGPP141pp: 8.99699464852095e-05
+[FVA] Max optimization done for DHPTPE: 0.0
+[FVA] Min optimization done for SUCptspp: 0.0
+[FVA] Finished optimization for reaction: SUCptspp
+[FVA] Starting optimization for reaction: SULabcpp
+[FVA] Max optimization done for MANtex: 0.0
+[FVA] Min optimization done for AMPTASEPG: 0.0
+[FVA] Finished optimization for reaction: AMPTASEPG
+[FVA] Starting optimization for reaction: PROGLYabcpp
+[FVA] Min optimization done for EX_12ppd__S_e: 0.0
+[FVA] Finished optimization for reaction: EX_12ppd__S_e
+[FVA] Starting optimization for reaction: EX_pppn_e
+[FVA] Min optimization done for ACOXT: 0.0
+[FVA] Finished optimization for reaction: ACOXT
+[FVA] Starting optimization for reaction: EX_mththf_e
+[FVA] Min optimization done for 3HBZCT: 0.0
+[FVA] Finished optimization for reaction: 3HBZCT
+[FVA] Starting optimization for reaction: CXSAMS
+[FVA] Max optimization done for SULabcpp: 0.000242312774685026
+[FVA] Min optimization done for DHPTPE: 0.0
+[FVA] Finished optimization for reaction: DHPTPE
+[FVA] Starting optimization for reaction: NADPHQR2
+[FVA] Min optimization done for PGPP141pp: 0.0
+[FVA] Finished optimization for reaction: PGPP141pp
+[FVA] Starting optimization for reaction: PGPP160pp
+[FVA] Max optimization done for CXSAMS: 0.0
+[FVA] Max optimization done for EX_pppn_e: 0.0
+[FVA] Min optimization done for MANtex: 0.0
+[FVA] Finished optimization for reaction: MANtex
+[FVA] Starting optimization for reaction: MAN6Ptex
+[FVA] Max optimization done for NADPHQR2: 0.00359500092800162
+[FVA] Max optimization done for PROGLYabcpp: 0.0
+[FVA] Max optimization done for EX_mththf_e: 0.000142344399493816
+[FVA] Max optimization done for PGPP160pp: 8.98793444187727e-05
+[FVA] Min optimization done for SULabcpp: 0.0
+[FVA] Finished optimization for reaction: SULabcpp
+[FVA] Starting optimization for reaction: TSULabcpp
+[FVA] Min optimization done for PROGLYabcpp: 0.0
+[FVA] Finished optimization for reaction: PROGLYabcpp
+[FVA] Starting optimization for reaction: GTHRDabcpp
+[FVA] Max optimization done for MAN6Ptex: 0.0
+[FVA] Min optimization done for EX_mththf_e: 0.0
+[FVA] Finished optimization for reaction: EX_mththf_e
+[FVA] Starting optimization for reaction: 2HESR
+[FVA] Min optimization done for PGPP160pp: 0.0
+[FVA] Finished optimization for reaction: PGPP160pp
+[FVA] Starting optimization for reaction: PGPP180pp
+[FVA] Min optimization done for CXSAMS: 0.0
+[FVA] Finished optimization for reaction: CXSAMS
+[FVA] Starting optimization for reaction: EX_2dglc_e
+[FVA] Min optimization done for EX_pppn_e: 0.0
+[FVA] Finished optimization for reaction: EX_pppn_e
+[FVA] Starting optimization for reaction: EX_acgam1p_e
+[FVA] Min optimization done for NADPHQR2: 0.0
+[FVA] Finished optimization for reaction: NADPHQR2
+[FVA] Starting optimization for reaction: NADPHQR3
+[FVA] Max optimization done for TSULabcpp: 0.0
+[FVA] Max optimization done for GTHRDabcpp: 0.000177162084370913
+[FVA] Max optimization done for 2HESR: 0.0
+[FVA] Max optimization done for EX_2dglc_e: 0.0
+[FVA] Min optimization done for MAN6Ptex: 0.0
+[FVA] Finished optimization for reaction: MAN6Ptex
+[FVA] Starting optimization for reaction: MELIBtex
+[FVA] Max optimization done for NADPHQR3: 0.00358300192988303
+[FVA] Max optimization done for EX_acgam1p_e: 0.0
+[FVA] Max optimization done for PGPP180pp: 8.98920098693081e-05
+[FVA] Max optimization done for MELIBtex: 0.0
+[FVA] Min optimization done for TSULabcpp: 0.0
+[FVA] Finished optimization for reaction: TSULabcpp
+[FVA] Starting optimization for reaction: TARTRt7pp
+[FVA] Min optimization done for GTHRDabcpp: 0.0
+[FVA] Finished optimization for reaction: GTHRDabcpp
+[FVA] Starting optimization for reaction: 2AGPG140tipp
+[FVA] Min optimization done for 2HESR: 0.0
+[FVA] Finished optimization for reaction: 2HESR
+[FVA] Starting optimization for reaction: CHOLID
+[FVA] Min optimization done for EX_2dglc_e: 0.0
+[FVA] Finished optimization for reaction: EX_2dglc_e
+[FVA] Starting optimization for reaction: THRt2rpp
+[FVA] Min optimization done for NADPHQR3: 0.0
+[FVA] Finished optimization for reaction: NADPHQR3
+[FVA] Starting optimization for reaction: NADPHQR4
+[FVA] Min optimization done for EX_acgam1p_e: 0.0
+[FVA] Finished optimization for reaction: EX_acgam1p_e
+[FVA] Starting optimization for reaction: NTD11pp
+[FVA] Min optimization done for PGPP180pp: 0.0
+[FVA] Finished optimization for reaction: PGPP180pp
+[FVA] Starting optimization for reaction: CLPNH141pp
+[FVA] Max optimization done for CHOLID: 0.0
+[FVA] Max optimization done for 2AGPG140tipp: 8.5741612700277e-05
+[FVA] Max optimization done for TARTRt7pp: 0.0
+[FVA] Max optimization done for THRt2rpp: 0.00155605074573273
+[FVA] Max optimization done for NTD11pp: 0.0
+[FVA] Min optimization done for MELIBtex: 0.0
+[FVA] Finished optimization for reaction: MELIBtex
+[FVA] Starting optimization for reaction: DMSOtex
+[FVA] Max optimization done for NADPHQR4: 0.000566666189872892
+[FVA] Max optimization done for CLPNH141pp: 9.00117617293476e-05
+[FVA] Max optimization done for DMSOtex: 0.0
+[FVA] Min optimization done for THRt2rpp: 0.0
+[FVA] Finished optimization for reaction: THRt2rpp
+[FVA] Starting optimization for reaction: SERt2rpp
+[FVA] Min optimization done for TARTRt7pp: 0.0
+[FVA] Finished optimization for reaction: TARTRt7pp
+[FVA] Starting optimization for reaction: AHGDx
+[FVA] Min optimization done for NADPHQR4: 0.0
+[FVA] Finished optimization for reaction: NADPHQR4
+[FVA] Starting optimization for reaction: GLBRAN2
+[FVA] Min optimization done for NTD11pp: 0.0
+[FVA] Finished optimization for reaction: NTD11pp
+[FVA] Starting optimization for reaction: EX_galt_e
+[FVA] Min optimization done for CHOLID: 0.0
+[FVA] Finished optimization for reaction: CHOLID
+[FVA] Starting optimization for reaction: CHOLATEtpp
+[FVA] Min optimization done for 2AGPG140tipp: 0.0
+[FVA] Finished optimization for reaction: 2AGPG140tipp
+[FVA] Starting optimization for reaction: 2AGPG160tipp
+[FVA] Max optimization done for SERt2rpp: 0.00131117300829598
+[FVA] Max optimization done for EX_galt_e: 0.0
+[FVA] Max optimization done for AHGDx: 0.0
+[FVA] Max optimization done for CHOLATEtpp: 0.0
+[FVA] Min optimization done for CLPNH141pp: 0.0
+[FVA] Finished optimization for reaction: CLPNH141pp
+[FVA] Starting optimization for reaction: CLPNH160pp
+[FVA] Max optimization done for 2AGPG160tipp: 8.52900172223268e-05
+[FVA] Max optimization done for GLBRAN2: 0.000969557329415519
+[FVA] Min optimization done for DMSOtex: 0.0
+[FVA] Finished optimization for reaction: DMSOtex
+[FVA] Starting optimization for reaction: DURItex
+[FVA] Max optimization done for CLPNH160pp: 8.99109238062992e-05
+[FVA] Min optimization done for CHOLATEtpp: 0.0
+[FVA] Finished optimization for reaction: CHOLATEtpp
+[FVA] Starting optimization for reaction: 4ABZGLUH
+[FVA] Max optimization done for DURItex: 0.0
+[FVA] Min optimization done for 2AGPG160tipp: 0.0
+[FVA] Finished optimization for reaction: 2AGPG160tipp
+[FVA] Starting optimization for reaction: 2AGPG141tipp
+[FVA] Min optimization done for SERt2rpp: 0.0
+[FVA] Finished optimization for reaction: SERt2rpp
+[FVA] Starting optimization for reaction: ACOAD1f
+[FVA] Min optimization done for EX_galt_e: 0.0
+[FVA] Finished optimization for reaction: EX_galt_e
+[FVA] Starting optimization for reaction: DKGLCNR2x
+[FVA] Min optimization done for GLBRAN2: 0.0
+[FVA] Finished optimization for reaction: GLBRAN2
+[FVA] Starting optimization for reaction: ASR
+[FVA] Min optimization done for AHGDx: -0.00274083973590677
+[FVA] Finished optimization for reaction: AHGDx
+[FVA] Starting optimization for reaction: TAURabcpp
+[FVA] Max optimization done for ACOAD1f: 0.00224228612329786
+[FVA] Min optimization done for DURItex: 0.0
+[FVA] Finished optimization for reaction: DURItex
+[FVA] Starting optimization for reaction: EX_mal__D_e
+[FVA] Max optimization done for DKGLCNR2x: 0.0
+[FVA] Max optimization done for ASR: 0.0
+[FVA] Max optimization done for 2AGPG141tipp: 8.42218290093855e-05
+[FVA] Min optimization done for CLPNH160pp: 0.0
+[FVA] Finished optimization for reaction: CLPNH160pp
+[FVA] Starting optimization for reaction: CLPNH161pp
+[FVA] Max optimization done for 4ABZGLUH: 0.0
+[FVA] Max optimization done for TAURabcpp: 0.0
+[FVA] Max optimization done for CLPNH161pp: 8.86156003346891e-05
+[FVA] Max optimization done for EX_mal__D_e: 0.0
+[FVA] Min optimization done for 2AGPG141tipp: 0.0
+[FVA] Finished optimization for reaction: 2AGPG141tipp
+[FVA] Starting optimization for reaction: 2AGPG161tipp
+[FVA] Min optimization done for 4ABZGLUH: -4.82188080468404e-05
+[FVA] Finished optimization for reaction: 4ABZGLUH
+[FVA] Starting optimization for reaction: 4ABZGLUtr
+[FVA] Min optimization done for ACOAD1f: 0.0
+[FVA] Finished optimization for reaction: ACOAD1f
+[FVA] Starting optimization for reaction: AMPNTAT
+[FVA] Min optimization done for DKGLCNR2x: 0.0
+[FVA] Finished optimization for reaction: DKGLCNR2x
+[FVA] Starting optimization for reaction: ACGS
+[FVA] Min optimization done for ASR: 0.0
+[FVA] Finished optimization for reaction: ASR
+[FVA] Starting optimization for reaction: ASO3tex
+[FVA] Max optimization done for 2AGPG161tipp: 8.6422220016775e-05
+[FVA] Max optimization done for 4ABZGLUtr: 0.0
+[FVA] Min optimization done for EX_mal__D_e: 0.0
+[FVA] Finished optimization for reaction: EX_mal__D_e
+[FVA] Starting optimization for reaction: FRUtex
+[FVA] Min optimization done for CLPNH161pp: 0.0
+[FVA] Finished optimization for reaction: CLPNH161pp
+[FVA] Starting optimization for reaction: CLPNH181pp
+[FVA] Min optimization done for TAURabcpp: 0.0
+[FVA] Finished optimization for reaction: TAURabcpp
+[FVA] Starting optimization for reaction: THMDt2pp_copy1
+[FVA] Max optimization done for ACGS: 0.0580400813233086
+[FVA] Max optimization done for AMPNTAT: 0.0
+[FVA] Max optimization done for ASO3tex: 0.0
+[FVA] Max optimization done for FRUtex: 0.0
+[FVA] Max optimization done for CLPNH181pp: 8.70313871899422e-05
+[FVA] Max optimization done for THMDt2pp_copy1: 0.00107545333025009
+[FVA] Min optimization done for ACGS: 0.0579219885218554
+[FVA] Finished optimization for reaction: ACGS
+[FVA] Starting optimization for reaction: PDE1
+[FVA] Min optimization done for AMPNTAT: 0.0
+[FVA] Finished optimization for reaction: AMPNTAT
+[FVA] Starting optimization for reaction: SQGH
+[FVA] Min optimization done for 2AGPG161tipp: 0.0
+[FVA] Finished optimization for reaction: 2AGPG161tipp
+[FVA] Starting optimization for reaction: 2AGPG181tipp
+[FVA] Min optimization done for 4ABZGLUtr: -4.82187996135901e-05
+[FVA] Finished optimization for reaction: 4ABZGLUtr
+[FVA] Starting optimization for reaction: PHDA
+[FVA] Min optimization done for THMDt2pp_copy1: 0.0
+[FVA] Finished optimization for reaction: THMDt2pp_copy1
+[FVA] Starting optimization for reaction: EX_ca2_e
+[FVA] Max optimization done for 2AGPG181tipp: 8.47545188374485e-05
+[FVA] Min optimization done for ASO3tex: 0.0
+[FVA] Finished optimization for reaction: ASO3tex
+[FVA] Starting optimization for reaction: GLYCLTt4pp
+[FVA] Min optimization done for FRUtex: 0.0
+[FVA] Finished optimization for reaction: FRUtex
+[FVA] Starting optimization for reaction: FUCtex
+[FVA] Min optimization done for CLPNH181pp: 0.0
+[FVA] Finished optimization for reaction: CLPNH181pp
+[FVA] Starting optimization for reaction: PLIPA1E180pp
+[FVA] Max optimization done for PHDA: 0.0
+[FVA] Max optimization done for SQGH: 0.0
+[FVA] Max optimization done for PDE1: 0.000143345696778888
+[FVA] Max optimization done for FUCtex: 0.0
+[FVA] Max optimization done for PLIPA1E180pp: 8.55226132925833e-05
+[FVA] Max optimization done for EX_ca2_e: -0.00101924308398793
+[FVA] Max optimization done for GLYCLTt4pp: 0.00339202606737845
+[FVA] Min optimization done for SQGH: 0.0
+[FVA] Finished optimization for reaction: SQGH
+[FVA] Starting optimization for reaction: URAtpp
+[FVA] Min optimization done for PDE1: 0.0
+[FVA] Finished optimization for reaction: PDE1
+[FVA] Starting optimization for reaction: MCITD
+[FVA] Min optimization done for EX_ca2_e: -0.00101924308398793
+[FVA] Finished optimization for reaction: EX_ca2_e
+[FVA] Starting optimization for reaction: EX_so3_e
+[FVA] Min optimization done for 2AGPG181tipp: 0.0
+[FVA] Finished optimization for reaction: 2AGPG181tipp
+[FVA] Starting optimization for reaction: MEOHtex
+[FVA] Min optimization done for PHDA: 0.0
+[FVA] Finished optimization for reaction: PHDA
+[FVA] Starting optimization for reaction: DGMPtex
+[FVA] Min optimization done for GLYCLTt4pp: 0.0
+[FVA] Finished optimization for reaction: GLYCLTt4pp
+[FVA] Starting optimization for reaction: GLYCtpp
+[FVA] Max optimization done for MCITD: 0.000165109338263403
+[FVA] Max optimization done for URAtpp: 0.00185581452325047
+[FVA] Max optimization done for EX_so3_e: 0.0
+[FVA] Min optimization done for FUCtex: 0.0
+[FVA] Finished optimization for reaction: FUCtex
+[FVA] Starting optimization for reaction: URIt2pp_copy1
+[FVA] Min optimization done for PLIPA1E180pp: 0.0
+[FVA] Finished optimization for reaction: PLIPA1E180pp
+[FVA] Starting optimization for reaction: TDPADGAT
+[FVA] Max optimization done for DGMPtex: 0.0
+[FVA] Max optimization done for MEOHtex: -3.91639993789348e-07
+[FVA] Max optimization done for GLYCtpp: 0.000224896010763587
+[FVA] Max optimization done for URIt2pp_copy1: 0.00105628348424513
+[FVA] Max optimization done for TDPADGAT: 1.44795053252372e-05
+[FVA] Min optimization done for DGMPtex: 0.0
+[FVA] Finished optimization for reaction: DGMPtex
+[FVA] Starting optimization for reaction: DTMPtex
+[FVA] Min optimization done for MEOHtex: -3.91639993789348e-07
+[FVA] Finished optimization for reaction: MEOHtex
+[FVA] Starting optimization for reaction: EX_5mtr_e
+[FVA] Min optimization done for URAtpp: 0.0
+[FVA] Finished optimization for reaction: URAtpp
+[FVA] Starting optimization for reaction: ASPtpp
+[FVA] Min optimization done for MCITD: 0.0
+[FVA] Finished optimization for reaction: MCITD
+[FVA] Starting optimization for reaction: CU2tex
+[FVA] Max optimization done for DTMPtex: 0.0
+[FVA] Min optimization done for EX_so3_e: 0.0
+[FVA] Finished optimization for reaction: EX_so3_e
+[FVA] Starting optimization for reaction: Kt2pp
+[FVA] Min optimization done for GLYCtpp: -9.00117246374066e-05
+[FVA] Finished optimization for reaction: GLYCtpp
+[FVA] Starting optimization for reaction: H2Otpp
+[FVA] Min optimization done for URIt2pp_copy1: 0.0
+[FVA] Finished optimization for reaction: URIt2pp_copy1
+[FVA] Starting optimization for reaction: URIt2pp_copy2
+[FVA] Max optimization done for EX_5mtr_e: 1.99524757370192e-05
+[FVA] Min optimization done for TDPADGAT: 0.0
+[FVA] Finished optimization for reaction: TDPADGAT
+[FVA] Starting optimization for reaction: MALS
+[FVA] Max optimization done for ASPtpp: 0.00226018220087099
+[FVA] Max optimization done for CU2tex: 0.000138836377800544
+[FVA] Max optimization done for H2Otpp: -21.2485014103491
+[FVA] Max optimization done for URIt2pp_copy2: 0.0
+[FVA] Max optimization done for Kt2pp: 0.0385330417748728
+[FVA] Max optimization done for MALS: 0.000330506548799745
+[FVA] Min optimization done for DTMPtex: 0.0
+[FVA] Finished optimization for reaction: DTMPtex
+[FVA] Starting optimization for reaction: GMPtex
+[FVA] Min optimization done for EX_5mtr_e: 0.0
+[FVA] Finished optimization for reaction: EX_5mtr_e
+[FVA] Starting optimization for reaction: MECDPDH5
+[FVA] Min optimization done for ASPtpp: -0.0082482411271485
+[FVA] Finished optimization for reaction: ASPtpp
+[FVA] Starting optimization for reaction: EX_fe3hox_e
+[FVA] Min optimization done for CU2tex: 0.000138836377800544
+[FVA] Finished optimization for reaction: CU2tex
+[FVA] Starting optimization for reaction: ThDPAT
+[FVA] Min optimization done for H2Otpp: -23.0720884148989
+[FVA] Finished optimization for reaction: H2Otpp
+[FVA] Starting optimization for reaction: HCINNMt2rpp
+[FVA] Max optimization done for GMPtex: 0.0
+[FVA] Min optimization done for URIt2pp_copy2: -0.00105628305834671
+[FVA] Finished optimization for reaction: URIt2pp_copy2
+[FVA] Starting optimization for reaction: VALabcpp
+[FVA] Min optimization done for MALS: 0.0
+[FVA] Finished optimization for reaction: MALS
+[FVA] Starting optimization for reaction: TRE6PP
+[FVA] Min optimization done for Kt2pp: 0.0375173141849795
+[FVA] Finished optimization for reaction: Kt2pp
+[FVA] Starting optimization for reaction: NDPK3
+[FVA] Max optimization done for MECDPDH5: 0.000513456032052109
+[FVA] Max optimization done for EX_fe3hox_e: 0.0
+[FVA] Max optimization done for VALabcpp: 0.000224216259826969
+[FVA] Max optimization done for HCINNMt2rpp: 0.0
+[FVA] Max optimization done for ThDPAT: 0.0
+[FVA] Min optimization done for GMPtex: 0.0
+[FVA] Finished optimization for reaction: GMPtex
+[FVA] Starting optimization for reaction: IMPtex
+[FVA] Max optimization done for TRE6PP: 0.00015118781718823
+[FVA] Max optimization done for NDPK3: -8.22790693451623
+[FVA] Min optimization done for EX_fe3hox_e: 0.0
+[FVA] Finished optimization for reaction: EX_fe3hox_e
+[FVA] Starting optimization for reaction: EX_fecrm_e
+[FVA] Min optimization done for ThDPAT: 0.0
+[FVA] Finished optimization for reaction: ThDPAT
+[FVA] Starting optimization for reaction: GHBDHx
+[FVA] Min optimization done for MECDPDH5: 0.000467813972504924
+[FVA] Finished optimization for reaction: MECDPDH5
+[FVA] Starting optimization for reaction: RNTR1c2
+[FVA] Min optimization done for HCINNMt2rpp: 0.0
+[FVA] Finished optimization for reaction: HCINNMt2rpp
+[FVA] Starting optimization for reaction: HISabcpp
+[FVA] Min optimization done for NDPK3: -8.58578135046321
+[FVA] Finished optimization for reaction: NDPK3
+[FVA] Starting optimization for reaction: NDPK4
+[FVA] Max optimization done for IMPtex: 0.0
+[FVA] Min optimization done for VALabcpp: 0.0
+[FVA] Finished optimization for reaction: VALabcpp
+[FVA] Starting optimization for reaction: XTSNt2rpp
+[FVA] Max optimization done for EX_fecrm_e: 0.0
+[FVA] Max optimization done for HISabcpp: 0.000379649638201858
+[FVA] Min optimization done for TRE6PP: 0.0
+[FVA] Finished optimization for reaction: TRE6PP
+[FVA] Starting optimization for reaction: EX_met__D_e
+[FVA] Max optimization done for XTSNt2rpp: 0.0
+[FVA] Max optimization done for RNTR1c2: 0.00583338064524693
+[FVA] Max optimization done for GHBDHx: 0.0
+[FVA] Min optimization done for IMPtex: 0.0
+[FVA] Finished optimization for reaction: IMPtex
+[FVA] Starting optimization for reaction: UMPtex
+[FVA] Max optimization done for EX_met__D_e: 0.0
+[FVA] Min optimization done for EX_fecrm_e: 0.0
+[FVA] Finished optimization for reaction: EX_fecrm_e
+[FVA] Starting optimization for reaction: EX_feenter_e
+[FVA] Max optimization done for NDPK4: 0.00534079169631241
+[FVA] Max optimization done for UMPtex: 0.0
+[FVA] Min optimization done for XTSNt2rpp: -3.38580030074809e-05
+[FVA] Finished optimization for reaction: XTSNt2rpp
+[FVA] Starting optimization for reaction: XYLabcpp
+[FVA] Min optimization done for HISabcpp: 0.0
+[FVA] Finished optimization for reaction: HISabcpp
+[FVA] Starting optimization for reaction: HISt2rpp
+[FVA] Min optimization done for EX_met__D_e: 0.0
+[FVA] Finished optimization for reaction: EX_met__D_e
+[FVA] Starting optimization for reaction: EX_tartr__L_e
+[FVA] Min optimization done for RNTR1c2: 0.00496751572748784
+[FVA] Finished optimization for reaction: RNTR1c2
+[FVA] Starting optimization for reaction: RNTR2c2
+[FVA] Max optimization done for EX_feenter_e: 1.41105566492422e-05
+[FVA] Min optimization done for GHBDHx: 0.0
+[FVA] Finished optimization for reaction: GHBDHx
+[FVA] Starting optimization for reaction: APPLDHr
+[FVA] Max optimization done for XYLabcpp: 0.0
+[FVA] Min optimization done for NDPK4: -0.0833468080307966
+[FVA] Finished optimization for reaction: NDPK4
+[FVA] Starting optimization for reaction: FCLT
+[FVA] Max optimization done for HISt2rpp: 0.0
+[FVA] Max optimization done for RNTR2c2: 0.00597743037416985
+[FVA] Max optimization done for APPLDHr: 0.0
+[FVA] Max optimization done for EX_tartr__L_e: 0.0
+[FVA] Max optimization done for FCLT: 5.54017168624437e-05
+[FVA] Min optimization done for UMPtex: 0.0
+[FVA] Finished optimization for reaction: UMPtex
+[FVA] Starting optimization for reaction: G1Ptex
+[FVA] Min optimization done for EX_feenter_e: 0.0
+[FVA] Finished optimization for reaction: EX_feenter_e
+[FVA] Starting optimization for reaction: EX_feoxam_e
+[FVA] Max optimization done for G1Ptex: 0.0
+[FVA] Min optimization done for HISt2rpp: -0.000379649609840271
+[FVA] Finished optimization for reaction: HISt2rpp
+[FVA] Starting optimization for reaction: CBIAT
+[FVA] Min optimization done for XYLabcpp: 0.0
+[FVA] Finished optimization for reaction: XYLabcpp
+[FVA] Starting optimization for reaction: XYLUt2pp
+[FVA] Min optimization done for EX_tartr__L_e: 0.0
+[FVA] Finished optimization for reaction: EX_tartr__L_e
+[FVA] Starting optimization for reaction: EX_taur_e
+[FVA] Min optimization done for RNTR2c2: 0.00514529719767887
+[FVA] Finished optimization for reaction: RNTR2c2
+[FVA] Starting optimization for reaction: RNTR3c2
+[FVA] Max optimization done for EX_feoxam_e: 0.0
+[FVA] Min optimization done for APPLDHr: 0.0
+[FVA] Finished optimization for reaction: APPLDHr
+[FVA] Starting optimization for reaction: SPMDt3pp
+[FVA] Max optimization done for CBIAT: 0.0
+[FVA] Max optimization done for XYLUt2pp: 0.0
+[FVA] Min optimization done for FCLT: 4.36678593075123e-05
+[FVA] Finished optimization for reaction: FCLT
+[FVA] Starting optimization for reaction: HBZOPT
+[FVA] Max optimization done for EX_taur_e: 0.0
+[FVA] Min optimization done for G1Ptex: 0.0
+[FVA] Finished optimization for reaction: G1Ptex
+[FVA] Starting optimization for reaction: ADNK1
+[FVA] Max optimization done for RNTR3c2: 0.00556668927994312
+[FVA] Max optimization done for SPMDt3pp: 0.000299182159953694
+[FVA] Min optimization done for EX_feoxam_e: 0.0
+[FVA] Finished optimization for reaction: EX_feoxam_e
+[FVA] Starting optimization for reaction: EX_cbi_e
+[FVA] Max optimization done for HBZOPT: 4.87339412997345e-05
+[FVA] Min optimization done for CBIAT: 0.0
+[FVA] Finished optimization for reaction: CBIAT
+[FVA] Starting optimization for reaction: LYSabcpp
+[FVA] Min optimization done for XYLUt2pp: 0.0
+[FVA] Finished optimization for reaction: XYLUt2pp
+[FVA] Starting optimization for reaction: THRt4pp
+[FVA] Min optimization done for RNTR3c2: 0.00513122518926244
+[FVA] Finished optimization for reaction: RNTR3c2
+[FVA] Starting optimization for reaction: RNTR4c2
+[FVA] Max optimization done for EX_cbi_e: 0.0
+[FVA] Min optimization done for SPMDt3pp: 0.0
+[FVA] Finished optimization for reaction: SPMDt3pp
+[FVA] Starting optimization for reaction: PHEtipp
+[FVA] Max optimization done for ADNK1: 0.00084134144142572
+[FVA] Min optimization done for EX_taur_e: 0.0
+[FVA] Finished optimization for reaction: EX_taur_e
+[FVA] Starting optimization for reaction: EX_maltpt_e
+[FVA] Max optimization done for LYSabcpp: 0.000367416390284929
+[FVA] Min optimization done for HBZOPT: 4.36678593075123e-05
+[FVA] Finished optimization for reaction: HBZOPT
+[FVA] Starting optimization for reaction: PNTK
+[FVA] Max optimization done for PHEtipp: 0.00135168622818528
+[FVA] Max optimization done for THRt4pp: 0.0019375067358018
+[FVA] Max optimization done for EX_maltpt_e: 0.0
+[FVA] Min optimization done for ADNK1: 0.0
+[FVA] Finished optimization for reaction: ADNK1
+[FVA] Starting optimization for reaction: CUt3
+[FVA] Max optimization done for RNTR4c2: 0.00525077168619688
+[FVA] Min optimization done for EX_cbi_e: 0.0
+[FVA] Finished optimization for reaction: EX_cbi_e
+[FVA] Starting optimization for reaction: EX_arbtn_fe3_e
+[FVA] Max optimization done for PNTK: 0.000143029981543044
+[FVA] Min optimization done for EX_maltpt_e: 0.0
+[FVA] Finished optimization for reaction: EX_maltpt_e
+[FVA] Starting optimization for reaction: EX_glcur_e
+[FVA] Min optimization done for LYSabcpp: 0.0
+[FVA] Finished optimization for reaction: LYSabcpp
+[FVA] Starting optimization for reaction: COBALT2tex
+[FVA] Min optimization done for THRt4pp: 0.0
+[FVA] Finished optimization for reaction: THRt4pp
+[FVA] Starting optimization for reaction: EX_fruur_e
+[FVA] Max optimization done for CUt3: 0.0
+[FVA] Min optimization done for RNTR4c2: 0.00441427173821003
+[FVA] Finished optimization for reaction: RNTR4c2
+[FVA] Starting optimization for reaction: FLDR2
+[FVA] Max optimization done for EX_arbtn_fe3_e: 0.0
+[FVA] Min optimization done for PHEtipp: 0.0
+[FVA] Finished optimization for reaction: PHEtipp
+[FVA] Starting optimization for reaction: G2PP
+[FVA] Max optimization done for COBALT2tex: 4.89549995563721e-06
+[FVA] Max optimization done for EX_fruur_e: 0.0
+[FVA] Max optimization done for EX_glcur_e: 0.0
+[FVA] Max optimization done for FLDR2: 0.000584954708507316
+[FVA] Min optimization done for CUt3: 0.0
+[FVA] Finished optimization for reaction: CUt3
+[FVA] Starting optimization for reaction: ZN2t3pp
+[FVA] Max optimization done for G2PP: 0.0
+[FVA] Min optimization done for PNTK: 0.000131982678268214
+[FVA] Finished optimization for reaction: PNTK
+[FVA] Starting optimization for reaction: DPCOAK
+[FVA] Min optimization done for EX_arbtn_fe3_e: 0.0
+[FVA] Finished optimization for reaction: EX_arbtn_fe3_e
+[FVA] Starting optimization for reaction: EX_cpgn_e
+[FVA] Min optimization done for COBALT2tex: 4.89549995563721e-06
+[FVA] Finished optimization for reaction: COBALT2tex
+[FVA] Starting optimization for reaction: PPDOy
+[FVA] Max optimization done for DPCOAK: 0.000143029981543044
+[FVA] Min optimization done for EX_fruur_e: 0.0
+[FVA] Finished optimization for reaction: EX_fruur_e
+[FVA] Starting optimization for reaction: GALtex
+[FVA] Min optimization done for EX_glcur_e: 0.0
+[FVA] Finished optimization for reaction: EX_glcur_e
+[FVA] Starting optimization for reaction: ADPRDP
+[FVA] Max optimization done for ZN2t3pp: 0.00129570178120852
+[FVA] Min optimization done for FLDR2: 0.0
+[FVA] Finished optimization for reaction: FLDR2
+[FVA] Starting optimization for reaction: CDGS
+[FVA] Max optimization done for PPDOy: 0.000411841588250076
+[FVA] Min optimization done for G2PP: 0.0
+[FVA] Finished optimization for reaction: G2PP
+[FVA] Starting optimization for reaction: MALt3pp
+[FVA] Max optimization done for EX_cpgn_e: 0.0
+[FVA] Min optimization done for DPCOAK: 0.000131982678268214
+[FVA] Finished optimization for reaction: DPCOAK
+[FVA] Starting optimization for reaction: HETZK
+[FVA] Max optimization done for GALtex: 0.0
+[FVA] Max optimization done for ADPRDP: 6.20923664589746e-05
+[FVA] Max optimization done for CDGS: 0.0
+[FVA] Min optimization done for ZN2t3pp: 0.0
+[FVA] Finished optimization for reaction: ZN2t3pp
+[FVA] Starting optimization for reaction: SKMtex
+[FVA] Max optimization done for MALt3pp: 0.00452253556156171
+[FVA] Min optimization done for EX_cpgn_e: 0.0
+[FVA] Finished optimization for reaction: EX_cpgn_e
+[FVA] Starting optimization for reaction: EX_adocbl_e
+[FVA] Min optimization done for ADPRDP: 0.0
+[FVA] Finished optimization for reaction: ADPRDP
+[FVA] Starting optimization for reaction: ARAI
+[FVA] Min optimization done for GALtex: 0.0
+[FVA] Finished optimization for reaction: GALtex
+[FVA] Starting optimization for reaction: GALCTtex
+[FVA] Max optimization done for SKMtex: 0.0
+[FVA] Min optimization done for CDGS: 0.0
+[FVA] Finished optimization for reaction: CDGS
+[FVA] Starting optimization for reaction: 5MTRtpp
+[FVA] Min optimization done for PPDOy: 0.0
+[FVA] Finished optimization for reaction: PPDOy
+[FVA] Starting optimization for reaction: FALGTHLs
+[FVA] Max optimization done for EX_adocbl_e: 0.0
+[FVA] Max optimization done for HETZK: 0.0
+[FVA] Min optimization done for MALt3pp: 0.0
+[FVA] Finished optimization for reaction: MALt3pp
+[FVA] Starting optimization for reaction: CITt3pp
+[FVA] Max optimization done for GALCTtex: 0.0
+[FVA] Max optimization done for 5MTRtpp: 1.99419009416383e-05
+[FVA] Max optimization done for FALGTHLs: 0.0
+[FVA] Max optimization done for CITt3pp: 0.00201190105360362
+[FVA] Min optimization done for HETZK: 0.0
+[FVA] Finished optimization for reaction: HETZK
+[FVA] Starting optimization for reaction: KDOPS
+[FVA] Max optimization done for ARAI: 0.0
+[FVA] Min optimization done for SKMtex: 0.0
+[FVA] Finished optimization for reaction: SKMtex
+[FVA] Starting optimization for reaction: MNt2pp
+[FVA] Min optimization done for FALGTHLs: 0.0
+[FVA] Finished optimization for reaction: FALGTHLs
+[FVA] Starting optimization for reaction: NTD12pp
+[FVA] Max optimization done for KDOPS: 0.00762996446056599
+[FVA] Min optimization done for EX_adocbl_e: 0.0
+[FVA] Finished optimization for reaction: EX_adocbl_e
+[FVA] Starting optimization for reaction: ATPS4rpp
+[FVA] Min optimization done for ARAI: 0.0
+[FVA] Finished optimization for reaction: ARAI
+[FVA] Starting optimization for reaction: M1PD
+[FVA] Min optimization done for 5MTRtpp: 0.0
+[FVA] Finished optimization for reaction: 5MTRtpp
+[FVA] Starting optimization for reaction: TTRCYCtex
+[FVA] Min optimization done for GALCTtex: 0.0
+[FVA] Finished optimization for reaction: GALCTtex
+[FVA] Starting optimization for reaction: GALCTNtex
+[FVA] Max optimization done for MNt2pp: 0.00257195913987848
+[FVA] Max optimization done for ATPS4rpp: 6.58659869695941
+[FVA] Min optimization done for CITt3pp: 0.0
+[FVA] Finished optimization for reaction: CITt3pp
+[FVA] Starting optimization for reaction: DHNPA2r
+[FVA] Max optimization done for NTD12pp: 0.0
+[FVA] Max optimization done for TTRCYCtex: 0.00129513201795817
+[FVA] Max optimization done for GALCTNtex: 0.0
+[FVA] Max optimization done for M1PD: 0.0
+[FVA] Min optimization done for MNt2pp: 0.0
+[FVA] Finished optimization for reaction: MNt2pp
+[FVA] Starting optimization for reaction: MNtex
+[FVA] Min optimization done for KDOPS: 0.00761974771916555
+[FVA] Finished optimization for reaction: KDOPS
+[FVA] Starting optimization for reaction: KDOPP
+[FVA] Max optimization done for DHNPA2r: 0.000131003578076161
+[FVA] Min optimization done for ATPS4rpp: 6.55594970951347
+[FVA] Finished optimization for reaction: ATPS4rpp
+[FVA] Starting optimization for reaction: INDOLEtex
+[FVA] Min optimization done for GALCTNtex: 0.0
+[FVA] Finished optimization for reaction: GALCTNtex
+[FVA] Starting optimization for reaction: GALTtex
+[FVA] Min optimization done for TTRCYCtex: 0.0
+[FVA] Finished optimization for reaction: TTRCYCtex
+[FVA] Starting optimization for reaction: TTRCYCtpp
+[FVA] Min optimization done for M1PD: 0.0
+[FVA] Finished optimization for reaction: M1PD
+[FVA] Starting optimization for reaction: G3PD2
+[FVA] Min optimization done for NTD12pp: 0.0
+[FVA] Finished optimization for reaction: NTD12pp
+[FVA] Starting optimization for reaction: PPA2
+[FVA] Max optimization done for MNtex: 0.00013531161789615
+[FVA] Max optimization done for INDOLEtex: 0.0
+[FVA] Max optimization done for KDOPP: 0.00762996446154216
+[FVA] Min optimization done for DHNPA2r: 0.000131003578076161
+[FVA] Finished optimization for reaction: DHNPA2r
+[FVA] Starting optimization for reaction: QUIN2tpp
+[FVA] Max optimization done for TTRCYCtpp: 0.00129513195827703
+[FVA] Max optimization done for PPA2: 0.000403960781941234
+[FVA] Max optimization done for GALTtex: 0.0
+[FVA] Max optimization done for QUIN2tpp: 0.0
+[FVA] Min optimization done for KDOPP: 0.00761974771916555
+[FVA] Finished optimization for reaction: KDOPP
+[FVA] Starting optimization for reaction: AST
+[FVA] Max optimization done for G3PD2: -0.026806992337356
+[FVA] Min optimization done for MNtex: 0.00013531161789615
+[FVA] Finished optimization for reaction: MNtex
+[FVA] Starting optimization for reaction: GAL1Ptex
+[FVA] Min optimization done for INDOLEtex: -4.66086912982598e-05
+[FVA] Finished optimization for reaction: INDOLEtex
+[FVA] Starting optimization for reaction: L_LACtex
+[FVA] Max optimization done for AST: 6.71990045168134e-05
+[FVA] Min optimization done for PPA2: 0.0
+[FVA] Finished optimization for reaction: PPA2
+[FVA] Starting optimization for reaction: DIMPtex
+[FVA] Min optimization done for TTRCYCtpp: 0.0
+[FVA] Finished optimization for reaction: TTRCYCtpp
+[FVA] Starting optimization for reaction: FESR
+[FVA] Min optimization done for GALTtex: 0.0
+[FVA] Finished optimization for reaction: GALTtex
+[FVA] Starting optimization for reaction: GALURtex
+[FVA] Min optimization done for G3PD2: -0.0280131754306012
+[FVA] Finished optimization for reaction: G3PD2
+[FVA] Starting optimization for reaction: GALS3
+[FVA] Min optimization done for QUIN2tpp: 0.0
+[FVA] Finished optimization for reaction: QUIN2tpp
+[FVA] Starting optimization for reaction: GLYC2Pabcpp
+[FVA] Max optimization done for GAL1Ptex: 0.0
+[FVA] Max optimization done for L_LACtex: 0.0
+[FVA] Max optimization done for DIMPtex: 0.0
+[FVA] Max optimization done for FESR: 0.0195332209226642
+[FVA] Max optimization done for GALURtex: 0.0
+[FVA] Max optimization done for GALS3: 0.0
+[FVA] Max optimization done for GLYC2Pabcpp: 0.0
+[FVA] Min optimization done for GAL1Ptex: 0.0
+[FVA] Finished optimization for reaction: GAL1Ptex
+[FVA] Starting optimization for reaction: O2Stex
+[FVA] Min optimization done for L_LACtex: -0.000368516400804532
+[FVA] Finished optimization for reaction: L_LACtex
+[FVA] Starting optimization for reaction: ACt4pp
+[FVA] Min optimization done for AST: 0.0
+[FVA] Finished optimization for reaction: AST
+[FVA] Starting optimization for reaction: SGDS
+[FVA] Min optimization done for FESR: 0.000925984016271845
+[FVA] Finished optimization for reaction: FESR
+[FVA] Starting optimization for reaction: OXCOAHDH
+[FVA] Min optimization done for DIMPtex: 0.0
+[FVA] Finished optimization for reaction: DIMPtex
+[FVA] Starting optimization for reaction: 3NTD7pp
+[FVA] Min optimization done for GALURtex: 0.0
+[FVA] Finished optimization for reaction: GALURtex
+[FVA] Starting optimization for reaction: GTPCI
+[FVA] Max optimization done for O2Stex: 0.0
+[FVA] Min optimization done for GLYC2Pabcpp: 0.0
+[FVA] Finished optimization for reaction: GLYC2Pabcpp
+[FVA] Starting optimization for reaction: CRNDtex
+[FVA] Max optimization done for 3NTD7pp: 0.0
+[FVA] Min optimization done for GALS3: 0.0
+[FVA] Finished optimization for reaction: GALS3
+[FVA] Starting optimization for reaction: FCI
+[FVA] Max optimization done for SGDS: 6.71989782707929e-05
+[FVA] Max optimization done for ACt4pp: 0.00334205242976904
+[FVA] Max optimization done for GTPCI: 0.000131003578092265
+[FVA] Max optimization done for OXCOAHDH: 0.0
+[FVA] Max optimization done for FCI: 0.0
+[FVA] Max optimization done for CRNDtex: 0.0
+[FVA] Min optimization done for SGDS: 0.0
+[FVA] Finished optimization for reaction: SGDS
+[FVA] Starting optimization for reaction: CYNTAH
+[FVA] Min optimization done for ACt4pp: 0.0
+[FVA] Finished optimization for reaction: ACt4pp
+[FVA] Starting optimization for reaction: ADEt2rpp
+[FVA] Min optimization done for GTPCI: 0.000131003578092265
+[FVA] Finished optimization for reaction: GTPCI
+[FVA] Starting optimization for reaction: FDMO
+[FVA] Min optimization done for O2Stex: 0.0
+[FVA] Finished optimization for reaction: O2Stex
+[FVA] Starting optimization for reaction: HEPK1
+[FVA] Min optimization done for OXCOAHDH: 0.0
+[FVA] Finished optimization for reaction: OXCOAHDH
+[FVA] Starting optimization for reaction: DHACOAH
+[FVA] Min optimization done for 3NTD7pp: 0.0
+[FVA] Finished optimization for reaction: 3NTD7pp
+[FVA] Starting optimization for reaction: 3NTD4pp
+[FVA] Min optimization done for FCI: 0.0
+[FVA] Finished optimization for reaction: FCI
+[FVA] Starting optimization for reaction: FCLK
+[FVA] Min optimization done for CRNDtex: 0.0
+[FVA] Finished optimization for reaction: CRNDtex
+[FVA] Starting optimization for reaction: SHGO
+[FVA] Max optimization done for ADEt2rpp: 0.0
+[FVA] Max optimization done for DHACOAH: 0.0
+[FVA] Max optimization done for FDMO: 0.0
+[FVA] Max optimization done for HEPK1: 2.18275523347935e-06
+[FVA] Max optimization done for 3NTD4pp: 0.0
+[FVA] Max optimization done for CYNTAH: 0.0
+[FVA] Max optimization done for FCLK: 0.0
+[FVA] Max optimization done for SHGO: 0.00274083944931457
+[FVA] Min optimization done for ADEt2rpp: -3.98770200717991e-05
+[FVA] Finished optimization for reaction: ADEt2rpp
+[FVA] Starting optimization for reaction: ADNt2pp_copy1
+[FVA] Min optimization done for HEPK1: 0.0
+[FVA] Finished optimization for reaction: HEPK1
+[FVA] Starting optimization for reaction: HEPT3
+[FVA] Min optimization done for 3NTD4pp: 0.0
+[FVA] Finished optimization for reaction: 3NTD4pp
+[FVA] Starting optimization for reaction: 3NTD2pp
+[FVA] Min optimization done for CYNTAH: 0.0
+[FVA] Finished optimization for reaction: CYNTAH
+[FVA] Starting optimization for reaction: GSPMDA
+[FVA] Max optimization done for 3NTD2pp: 0.0
+[FVA] Min optimization done for DHACOAH: 0.0
+[FVA] Finished optimization for reaction: DHACOAH
+[FVA] Starting optimization for reaction: THFAT
+[FVA] Min optimization done for FDMO: 0.0
+[FVA] Finished optimization for reaction: FDMO
+[FVA] Starting optimization for reaction: FEOXAMabcpp
+[FVA] Max optimization done for GSPMDA: 0.000384425697518327
+[FVA] Min optimization done for FCLK: 0.0
+[FVA] Finished optimization for reaction: FCLK
+[FVA] Starting optimization for reaction: FCLPA
+[FVA] Min optimization done for SHGO: 0.0
+[FVA] Finished optimization for reaction: SHGO
+[FVA] Starting optimization for reaction: NADHXD
+[FVA] Max optimization done for ADNt2pp_copy1: 0.0010516080665397
+[FVA] Max optimization done for HEPT3: 2.18275516083745e-06
+[FVA] Max optimization done for FEOXAMabcpp: 0.000275386406620357
+[FVA] Max optimization done for THFAT: 0.0106004887668704
+[FVA] Max optimization done for FCLPA: 0.0
+[FVA] Max optimization done for NADHXD: 0.000435235731737335
+[FVA] Min optimization done for ADNt2pp_copy1: 0.0
+[FVA] Finished optimization for reaction: ADNt2pp_copy1
+[FVA] Starting optimization for reaction: ADNt2pp_copy2
+[FVA] Min optimization done for GSPMDA: 0.0
+[FVA] Finished optimization for reaction: GSPMDA
+[FVA] Starting optimization for reaction: GSPMDS
+[FVA] Min optimization done for FEOXAMabcpp: 0.0
+[FVA] Finished optimization for reaction: FEOXAMabcpp
+[FVA] Starting optimization for reaction: CBL1abcpp
+[FVA] Min optimization done for THFAT: 0.0
+[FVA] Finished optimization for reaction: THFAT
+[FVA] Starting optimization for reaction: FOMETRi
+[FVA] Min optimization done for 3NTD2pp: 0.0
+[FVA] Finished optimization for reaction: 3NTD2pp
+[FVA] Starting optimization for reaction: 3NTD9pp
+[FVA] Min optimization done for HEPT3: 0.0
+[FVA] Finished optimization for reaction: HEPT3
+[FVA] Starting optimization for reaction: HEPK2
+[FVA] Min optimization done for FCLPA: 0.0
+[FVA] Finished optimization for reaction: FCLPA
+[FVA] Starting optimization for reaction: ACCOAL
+[FVA] Min optimization done for NADHXD: 0.0
+[FVA] Finished optimization for reaction: NADHXD
+[FVA] Starting optimization for reaction: NADPHHR
+[FVA] Max optimization done for ADNt2pp_copy2: 0.0
+[FVA] Max optimization done for GSPMDS: 0.000384425745364456
+[FVA] Max optimization done for CBL1abcpp: 0.0
+[FVA] Max optimization done for 3NTD9pp: 0.0
+[FVA] Max optimization done for FOMETRi: 0.0106004887668704
+[FVA] Max optimization done for HEPK2: 2.18275516083745e-06
+[FVA] Max optimization done for ACCOAL: 0.0006111602956797
+[FVA] Max optimization done for NADPHHR: 0.000435294234259564
+[FVA] Min optimization done for GSPMDS: 0.0
+[FVA] Finished optimization for reaction: GSPMDS
+[FVA] Starting optimization for reaction: GUAD
+[FVA] Min optimization done for 3NTD9pp: 0.0
+[FVA] Finished optimization for reaction: 3NTD9pp
+[FVA] Starting optimization for reaction: 23PDE7pp
+[FVA] Max optimization done for GUAD: 0.000114972291839132
+[FVA] Min optimization done for ADNt2pp_copy2: -0.00105496156811569
+[FVA] Finished optimization for reaction: ADNt2pp_copy2
+[FVA] Starting optimization for reaction: ALAabcpp
+[FVA] Min optimization done for FOMETRi: 0.0
+[FVA] Finished optimization for reaction: FOMETRi
+[FVA] Starting optimization for reaction: SLNTtex
+[FVA] Min optimization done for HEPK2: 0.0
+[FVA] Finished optimization for reaction: HEPK2
+[FVA] Starting optimization for reaction: ALDD3y
+[FVA] Min optimization done for ACCOAL: 0.0
+[FVA] Finished optimization for reaction: ACCOAL
+[FVA] Starting optimization for reaction: GALUi
+[FVA] Max optimization done for 23PDE7pp: 0.0
+[FVA] Min optimization done for CBL1abcpp: 0.0
+[FVA] Finished optimization for reaction: CBL1abcpp
+[FVA] Starting optimization for reaction: ACACt2pp
+[FVA] Min optimization done for NADPHHR: 0.0
+[FVA] Finished optimization for reaction: NADPHHR
+[FVA] Starting optimization for reaction: NADPHHS
+[FVA] Max optimization done for ALAabcpp: 0.00022335991220739
+[FVA] Max optimization done for ALDD3y: 0.0
+[FVA] Max optimization done for GALUi: 0.000220515757429825
+[FVA] Max optimization done for SLNTtex: 0.0
+[FVA] Max optimization done for ACACt2pp: 0.0
+[FVA] Max optimization done for NADPHHS: 0.000435406609303535
+[FVA] Min optimization done for GUAD: 0.0
+[FVA] Finished optimization for reaction: GUAD
+[FVA] Starting optimization for reaction: TMAOR1
+[FVA] Min optimization done for GALUi: 0.0
+[FVA] Finished optimization for reaction: GALUi
+[FVA] Starting optimization for reaction: U23GAAT
+[FVA] Min optimization done for ALAabcpp: 0.0
+[FVA] Finished optimization for reaction: ALAabcpp
+[FVA] Starting optimization for reaction: ALLabcpp
+[FVA] Min optimization done for 23PDE7pp: 0.0
+[FVA] Finished optimization for reaction: 23PDE7pp
+[FVA] Starting optimization for reaction: GALTptspp
+[FVA] Min optimization done for SLNTtex: 0.0
+[FVA] Finished optimization for reaction: SLNTtex
+[FVA] Starting optimization for reaction: SELGTHR2
+[FVA] Min optimization done for ALDD3y: 0.0
+[FVA] Finished optimization for reaction: ALDD3y
+[FVA] Starting optimization for reaction: R5PP
+[FVA] Min optimization done for ACACt2pp: 0.0
+[FVA] Finished optimization for reaction: ACACt2pp
+[FVA] Starting optimization for reaction: ACGAptspp
+[FVA] Min optimization done for NADPHHS: 0.0
+[FVA] Finished optimization for reaction: NADPHHS
+[FVA] Starting optimization for reaction: NADHHS
+[FVA] Max optimization done for TMAOR1: 0.0
+[FVA] Max optimization done for ALLabcpp: 0.0
+[FVA] Max optimization done for SELGTHR2: 0.0
+[FVA] Max optimization done for GALTptspp: 0.0
+[FVA] Max optimization done for R5PP: 0.00036628105298369
+[FVA] Max optimization done for U23GAAT: 0.00762996446056599
+[FVA] Max optimization done for ACGAptspp: 0.0
+[FVA] Max optimization done for NADHHS: 0.000435235722520697
+[FVA] Min optimization done for TMAOR1: 0.0
+[FVA] Finished optimization for reaction: TMAOR1
+[FVA] Starting optimization for reaction: TMAOR2
+[FVA] Min optimization done for GALTptspp: 0.0
+[FVA] Finished optimization for reaction: GALTptspp
+[FVA] Starting optimization for reaction: GALURt2rpp
+[FVA] Max optimization done for TMAOR2: 0.0
+[FVA] Min optimization done for ALLabcpp: 0.0
+[FVA] Finished optimization for reaction: ALLabcpp
+[FVA] Starting optimization for reaction: ALLTNt2rpp
+[FVA] Min optimization done for U23GAAT: 0.00761974771916555
+[FVA] Finished optimization for reaction: U23GAAT
+[FVA] Starting optimization for reaction: UAAGDS
+[FVA] Min optimization done for ACGAptspp: 0.0
+[FVA] Finished optimization for reaction: ACGAptspp
+[FVA] Starting optimization for reaction: ACMANAptspp
+[FVA] Min optimization done for R5PP: 0.0
+[FVA] Finished optimization for reaction: R5PP
+[FVA] Starting optimization for reaction: EX_xmp_e
+[FVA] Min optimization done for SELGTHR2: 0.0
+[FVA] Finished optimization for reaction: SELGTHR2
+[FVA] Starting optimization for reaction: GDPTPDP
+[FVA] Min optimization done for NADHHS: 0.0
+[FVA] Finished optimization for reaction: NADHHS
+[FVA] Starting optimization for reaction: NADHXE
+[FVA] Max optimization done for ALLTNt2rpp: 0.0
+[FVA] Max optimization done for GALURt2rpp: 0.0
+[FVA] Max optimization done for ACMANAptspp: 0.0
+[FVA] Max optimization done for EX_xmp_e: 0.0
+[FVA] Max optimization done for GDPTPDP: 0.000192220888305526
+[FVA] Max optimization done for UAAGDS: 0.00547411758003855
+[FVA] Max optimization done for NADHXE: 0.0
+[FVA] Min optimization done for ALLTNt2rpp: -3.8880275496922e-05
+[FVA] Finished optimization for reaction: ALLTNt2rpp
+[FVA] Starting optimization for reaction: ARBabcpp
+[FVA] Min optimization done for TMAOR2: 0.0
+[FVA] Finished optimization for reaction: TMAOR2
+[FVA] Starting optimization for reaction: DGK1
+[FVA] Min optimization done for GALURt2rpp: 0.0
+[FVA] Finished optimization for reaction: GALURt2rpp
+[FVA] Starting optimization for reaction: GLCNt2rpp
+[FVA] Min optimization done for ACMANAptspp: 0.0
+[FVA] Finished optimization for reaction: ACMANAptspp
+[FVA] Starting optimization for reaction: ACNAMt2pp
+[FVA] Min optimization done for EX_xmp_e: 0.0
+[FVA] Finished optimization for reaction: EX_xmp_e
+[FVA] Starting optimization for reaction: EX_damp_e
+[FVA] Min optimization done for UAAGDS: 0.00544144607367986
+[FVA] Finished optimization for reaction: UAAGDS
+[FVA] Starting optimization for reaction: UAMAS
+[FVA] Min optimization done for GDPTPDP: 0.0
+[FVA] Finished optimization for reaction: GDPTPDP
+[FVA] Starting optimization for reaction: COLIPAKpp
+[FVA] Max optimization done for ARBabcpp: 0.000418303669962173
+[FVA] Min optimization done for NADHXE: -0.000435220215649679
+[FVA] Finished optimization for reaction: NADHXE
+[FVA] Starting optimization for reaction: SELabcpp
+[FVA] Max optimization done for ACNAMt2pp: 0.0
+[FVA] Max optimization done for DGK1: 0.00022506415132284
+[FVA] Max optimization done for EX_damp_e: 0.0
+[FVA] Max optimization done for UAMAS: 0.00547410557828903
+[FVA] Max optimization done for COLIPAKpp: 0.0
+[FVA] Max optimization done for GLCNt2rpp: 0.000431970682711835
+[FVA] Max optimization done for SELabcpp: 0.0
+[FVA] Min optimization done for DGK1: -0.000686961317342138
+[FVA] Finished optimization for reaction: DGK1
+[FVA] Starting optimization for reaction: DTMPK
+[FVA] Min optimization done for GLCNt2rpp: -0.000183824019131862
+[FVA] Finished optimization for reaction: GLCNt2rpp
+[FVA] Starting optimization for reaction: PLIPA1E160pp
+[FVA] Min optimization done for ARBabcpp: 0.0
+[FVA] Finished optimization for reaction: ARBabcpp
+[FVA] Starting optimization for reaction: ECOAH8
+[FVA] Max optimization done for DTMPK: 0.00534079169642609
+[FVA] Min optimization done for EX_damp_e: 0.0
+[FVA] Finished optimization for reaction: EX_damp_e
+[FVA] Starting optimization for reaction: CYSSADS
+[FVA] Min optimization done for UAMAS: 0.00544144607367986
+[FVA] Finished optimization for reaction: UAMAS
+[FVA] Starting optimization for reaction: UAMAGS
+[FVA] Min optimization done for COLIPAKpp: 0.0
+[FVA] Finished optimization for reaction: COLIPAKpp
+[FVA] Starting optimization for reaction: 3HPPtpp
+[FVA] Min optimization done for ACNAMt2pp: 0.0
+[FVA] Finished optimization for reaction: ACNAMt2pp
+[FVA] Starting optimization for reaction: CHOLD
+[FVA] Max optimization done for ECOAH8: 0.0
+[FVA] Min optimization done for SELabcpp: 0.0
+[FVA] Finished optimization for reaction: SELabcpp
+[FVA] Starting optimization for reaction: PYK2
+[FVA] Max optimization done for UAMAGS: 0.00547410557344285
+[FVA] Max optimization done for CHOLD: 0.0
+[FVA] Max optimization done for 3HPPtpp: 0.000103342263907253
+[FVA] Max optimization done for CYSSADS: 0.0
+[FVA] Max optimization done for PLIPA1E160pp: 8.47023116691471e-05
+[FVA] Min optimization done for ECOAH8: -5.55302258362644e-05
+[FVA] Finished optimization for reaction: ECOAH8
+[FVA] Starting optimization for reaction: GLCDpp
+[FVA] Max optimization done for PYK2: 0.120264656727248
+[FVA] Min optimization done for CHOLD: 0.0
+[FVA] Finished optimization for reaction: CHOLD
+[FVA] Starting optimization for reaction: KARA2
+[FVA] Min optimization done for 3HPPtpp: 0.0
+[FVA] Finished optimization for reaction: 3HPPtpp
+[FVA] Starting optimization for reaction: FUMtex
+[FVA] Min optimization done for PLIPA1E160pp: 0.0
+[FVA] Finished optimization for reaction: PLIPA1E160pp
+[FVA] Starting optimization for reaction: PLIPA1E161pp
+[FVA] Max optimization done for GLCDpp: 0.000431970682710105
+[FVA] Min optimization done for CYSSADS: 0.0
+[FVA] Finished optimization for reaction: CYSSADS
+[FVA] Starting optimization for reaction: APG3PAT160
+[FVA] Min optimization done for UAMAGS: 0.00544144607364111
+[FVA] Finished optimization for reaction: UAMAGS
+[FVA] Starting optimization for reaction: 12PPDRtex
+[FVA] Min optimization done for DTMPK: 0.00512382603881179
+[FVA] Finished optimization for reaction: DTMPK
+[FVA] Starting optimization for reaction: NDPK1
+[FVA] Max optimization done for FUMtex: 0.0
+[FVA] Min optimization done for PYK2: 0.0
+[FVA] Finished optimization for reaction: PYK2
+[FVA] Starting optimization for reaction: PYK3
+[FVA] Max optimization done for KARA2: 0.0570070237400842
+[FVA] Max optimization done for PLIPA1E161pp: 8.68020008443672e-05
+[FVA] Max optimization done for APG3PAT160: 0.00404041280342885
+[FVA] Max optimization done for NDPK1: 0.186641299509461
+[FVA] Max optimization done for 12PPDRtex: 0.0
+[FVA] Min optimization done for PLIPA1E161pp: 0.0
+[FVA] Finished optimization for reaction: PLIPA1E161pp
+[FVA] Starting optimization for reaction: AACPS8
+[FVA] Min optimization done for GLCDpp: 0.0
+[FVA] Finished optimization for reaction: GLCDpp
+[FVA] Starting optimization for reaction: GUAtpp
+[FVA] Min optimization done for NDPK1: -0.157699008858344
+[FVA] Finished optimization for reaction: NDPK1
+[FVA] Starting optimization for reaction: TRDR
+[FVA] Max optimization done for PYK3: 0.312539034631527
+[FVA] Min optimization done for FUMtex: -0.000529299313090781
+[FVA] Finished optimization for reaction: FUMtex
+[FVA] Starting optimization for reaction: ACACT5r
+[FVA] Min optimization done for KARA2: 0.0568913878777266
+[FVA] Finished optimization for reaction: KARA2
+[FVA] Starting optimization for reaction: ACCOAC
+[FVA] Min optimization done for APG3PAT160: 0.0
+[FVA] Finished optimization for reaction: APG3PAT160
+[FVA] Starting optimization for reaction: APG3PAT161
+[FVA] Min optimization done for 12PPDRtex: -0.000415242099457533
+[FVA] Finished optimization for reaction: 12PPDRtex
+[FVA] Starting optimization for reaction: LPLIPAL1E160pp
+[FVA] Max optimization done for GUAtpp: 0.0
+[FVA] Max optimization done for TRDR: 0.0496042298066016
+[FVA] Max optimization done for ACACT5r: 0.0697193637731743
+[FVA] Max optimization done for ACCOAC: 0.0154444517391453
+[FVA] Max optimization done for LPLIPAL1E160pp: 3.32025499089988e-05
+[FVA] Max optimization done for AACPS8: 0.000223243325794201
+[FVA] Max optimization done for APG3PAT161: 0.00395560964530722
+[FVA] Min optimization done for PYK3: 0.0
+[FVA] Finished optimization for reaction: PYK3
+[FVA] Starting optimization for reaction: PYK4
+[FVA] Min optimization done for GUAtpp: -0.00151288137260508
+[FVA] Finished optimization for reaction: GUAtpp
+[FVA] Starting optimization for reaction: ALDD2y
+[FVA] Max optimization done for PYK4: 8.62122535742708
+[FVA] Min optimization done for ACCOAC: 0.0152406703591173
+[FVA] Finished optimization for reaction: ACCOAC
+[FVA] Starting optimization for reaction: NADK
+[FVA] Min optimization done for ACACT5r: 0.0695280917318541
+[FVA] Finished optimization for reaction: ACACT5r
+[FVA] Starting optimization for reaction: MALDDH
+[FVA] Min optimization done for LPLIPAL1E160pp: 0.0
+[FVA] Finished optimization for reaction: LPLIPAL1E160pp
+[FVA] Starting optimization for reaction: LPLIPAL1E180pp
+[FVA] Min optimization done for AACPS8: 0.0
+[FVA] Finished optimization for reaction: AACPS8
+[FVA] Starting optimization for reaction: AACPS9
+[FVA] Min optimization done for APG3PAT161: 0.0
+[FVA] Finished optimization for reaction: APG3PAT161
+[FVA] Starting optimization for reaction: APG3PAT180
+[FVA] Min optimization done for TRDR: 0.0447068921708845
+[FVA] Finished optimization for reaction: TRDR
+[FVA] Starting optimization for reaction: PGMT
+[FVA] Max optimization done for ALDD2y: 0.000602830294728743
+[FVA] Max optimization done for MALDDH: 0.0
+[FVA] Max optimization done for NADK: 0.000555660955535073
+[FVA] Max optimization done for AACPS9: 0.00022046639605378
+[FVA] Max optimization done for APG3PAT180: 5.20856534183432e-05
+[FVA] Max optimization done for PGMT: 0.0
+[FVA] Max optimization done for LPLIPAL1E180pp: 3.13850856903134e-05
+[FVA] Min optimization done for AACPS9: 0.0
+[FVA] Finished optimization for reaction: AACPS9
+[FVA] Starting optimization for reaction: HXCT
+[FVA] Min optimization done for PYK4: 8.26335094804088
+[FVA] Finished optimization for reaction: PYK4
+[FVA] Starting optimization for reaction: EX_LalaDgluMdapDala_e
+[FVA] Min optimization done for ALDD2y: 0.0
+[FVA] Finished optimization for reaction: ALDD2y
+[FVA] Starting optimization for reaction: RMI
+[FVA] Min optimization done for PGMT: -0.000456146782653377
+[FVA] Finished optimization for reaction: PGMT
+[FVA] Starting optimization for reaction: IMPC
+[FVA] Min optimization done for NADK: 8.7531539140911e-05
+[FVA] Finished optimization for reaction: NADK
+[FVA] Starting optimization for reaction: ICHORS_copy2
+[FVA] Min optimization done for MALDDH: 0.0
+[FVA] Finished optimization for reaction: MALDDH
+[FVA] Starting optimization for reaction: FE2tex
+[FVA] Min optimization done for LPLIPAL1E180pp: 0.0
+[FVA] Finished optimization for reaction: LPLIPAL1E180pp
+[FVA] Starting optimization for reaction: LPLIPAL1E181pp
+[FVA] Min optimization done for APG3PAT180: 0.0
+[FVA] Finished optimization for reaction: APG3PAT180
+[FVA] Starting optimization for reaction: ICYSDS
+[FVA] Max optimization done for RMI: 0.0
+[FVA] Max optimization done for EX_LalaDgluMdapDala_e: 2.3554186491636e-05
+[FVA] Max optimization done for HXCT: 0.000510102051123716
+[FVA] Max optimization done for FE2tex: 0.0143488166280576
+[FVA] Max optimization done for LPLIPAL1E181pp: 3.32461177027517e-05
+[FVA] Max optimization done for ICHORS_copy2: 4.23243133127471e-05
+[FVA] Max optimization done for ICYSDS: 0.000257894935910286
+[FVA] Max optimization done for IMPC: -0.10623861456213
+[FVA] Min optimization done for RMI: 0.0
+[FVA] Finished optimization for reaction: RMI
+[FVA] Starting optimization for reaction: EX_ura_e
+[FVA] Min optimization done for EX_LalaDgluMdapDala_e: 0.0
+[FVA] Finished optimization for reaction: EX_LalaDgluMdapDala_e
+[FVA] Starting optimization for reaction: EX_LalaDgluMdap_e
+[FVA] Min optimization done for FE2tex: 0.00254208600074435
+[FVA] Finished optimization for reaction: FE2tex
+[FVA] Starting optimization for reaction: NMNtex
+[FVA] Min optimization done for LPLIPAL1E181pp: 0.0
+[FVA] Finished optimization for reaction: LPLIPAL1E181pp
+[FVA] Starting optimization for reaction: LPLIPAL1G160pp
+[FVA] Min optimization done for ICHORS_copy2: -0.00680753581048066
+[FVA] Finished optimization for reaction: ICHORS_copy2
+[FVA] Starting optimization for reaction: SUCBZS
+[FVA] Min optimization done for HXCT: 0.0
+[FVA] Finished optimization for reaction: HXCT
+[FVA] Starting optimization for reaction: 2AGPEAT160
+[FVA] Max optimization done for EX_ura_e: 0.000113698421632443
+[FVA] Min optimization done for IMPC: -0.106283313604649
+[FVA] Finished optimization for reaction: IMPC
+[FVA] Starting optimization for reaction: IMPD
+[FVA] Max optimization done for EX_LalaDgluMdap_e: 2.37243585093901e-05
+[FVA] Max optimization done for NMNtex: 0.0
+[FVA] Max optimization done for SUCBZS: 5.70712396404205e-06
+[FVA] Max optimization done for 2AGPEAT160: 8.47023130509168e-05
+[FVA] Max optimization done for IMPD: 0.0478168144895167
+[FVA] Max optimization done for LPLIPAL1G160pp: 3.40594679538417e-05
+[FVA] Min optimization done for EX_LalaDgluMdap_e: 0.0
+[FVA] Finished optimization for reaction: EX_LalaDgluMdap_e
+[FVA] Starting optimization for reaction: EX_anhgm_e
+[FVA] Min optimization done for 2AGPEAT160: 0.0
+[FVA] Finished optimization for reaction: 2AGPEAT160
+[FVA] Starting optimization for reaction: DURADx
+[FVA] Min optimization done for IMPD: 0.0474246770122462
+[FVA] Finished optimization for reaction: IMPD
+[FVA] Starting optimization for reaction: ECOAH4
+[FVA] Min optimization done for EX_ura_e: 0.0
+[FVA] Finished optimization for reaction: EX_ura_e
+[FVA] Starting optimization for reaction: EX_val__L_e
+[FVA] Min optimization done for LPLIPAL1G160pp: 0.0
+[FVA] Finished optimization for reaction: LPLIPAL1G160pp
+[FVA] Starting optimization for reaction: LPLIPAL1G161pp
+[FVA] Min optimization done for SUCBZS: 0.0
+[FVA] Finished optimization for reaction: SUCBZS
+[FVA] Starting optimization for reaction: DHBD
+[FVA] Min optimization done for NMNtex: 0.0
+[FVA] Finished optimization for reaction: NMNtex
+[FVA] Starting optimization for reaction: NO2tex
+[FVA] Max optimization done for DURADx: 0.0
+[FVA] Max optimization done for ECOAH4: 0.0697190707123809
+[FVA] Max optimization done for EX_anhgm_e: 2.35407611631091e-05
+[FVA] Max optimization done for LPLIPAL1G161pp: 3.4088998308635e-05
+[FVA] Max optimization done for EX_val__L_e: 0.000815898642049837
+[FVA] Max optimization done for DHBD: 4.23316698743292e-05
+[FVA] Max optimization done for NO2tex: 0.0
+[FVA] Min optimization done for LPLIPAL1G161pp: 0.0
+[FVA] Finished optimization for reaction: LPLIPAL1G161pp
+[FVA] Starting optimization for reaction: LPLIPAL1G120pp
+[FVA] Min optimization done for DHBD: 0.0
+[FVA] Finished optimization for reaction: DHBD
+[FVA] Starting optimization for reaction: ICHORT
+[FVA] Min optimization done for NO2tex: 0.0
+[FVA] Finished optimization for reaction: NO2tex
+[FVA] Starting optimization for reaction: DHPS2
+[FVA] Min optimization done for EX_val__L_e: 0.0
+[FVA] Finished optimization for reaction: EX_val__L_e
+[FVA] Starting optimization for reaction: EX_xan_e
+[FVA] Min optimization done for DURADx: 0.0
+[FVA] Finished optimization for reaction: DURADx
+[FVA] Starting optimization for reaction: ECOAH7
+[FVA] Min optimization done for ECOAH4: 0.0696091098831175
+[FVA] Finished optimization for reaction: ECOAH4
+[FVA] Starting optimization for reaction: GLUTRS
+[FVA] Min optimization done for EX_anhgm_e: 0.0
+[FVA] Finished optimization for reaction: EX_anhgm_e
+[FVA] Starting optimization for reaction: EX_fald_e
+[FVA] Max optimization done for DHPS2: 0.000131003577747735
+[FVA] Max optimization done for LPLIPAL1G120pp: 3.26798489240779e-05
+[FVA] Max optimization done for ICHORT: 4.23316613915099e-05
+[FVA] Max optimization done for EX_xan_e: 4.04613786400234e-05
+[FVA] Max optimization done for ECOAH7: 0.0544489250568176
+[FVA] Max optimization done for EX_fald_e: 0.0
+[FVA] Max optimization done for GLUTRS: 0.000792556606913229
+[FVA] Min optimization done for EX_fald_e: 0.0
+[FVA] Finished optimization for reaction: EX_fald_e
+[FVA] Starting optimization for reaction: G6PP
+[FVA] Min optimization done for ECOAH7: 0.0542900447032935
+[FVA] Finished optimization for reaction: ECOAH7
+[FVA] Starting optimization for reaction: G1PPpp
+[FVA] Min optimization done for GLUTRS: 0.000698685749034269
+[FVA] Finished optimization for reaction: GLUTRS
+[FVA] Starting optimization for reaction: TMPPP
+[FVA] Min optimization done for ICHORT: 0.0
+[FVA] Finished optimization for reaction: ICHORT
+[FVA] Starting optimization for reaction: RBK_L1
+[FVA] Min optimization done for DHPS2: 0.000131003577747735
+[FVA] Finished optimization for reaction: DHPS2
+[FVA] Starting optimization for reaction: MTHFC
+[FVA] Min optimization done for LPLIPAL1G120pp: 0.0
+[FVA] Finished optimization for reaction: LPLIPAL1G120pp
+[FVA] Starting optimization for reaction: PLIPA2E140pp
+[FVA] Min optimization done for EX_xan_e: 0.0
+[FVA] Finished optimization for reaction: EX_xan_e
+[FVA] Starting optimization for reaction: FMNAT
+[FVA] Max optimization done for G1PPpp: 0.0
+[FVA] Max optimization done for MTHFC: 0.194265822831881
+[FVA] Max optimization done for PLIPA2E140pp: 3.18584275903065e-05
+[FVA] Max optimization done for TMPPP: 4.36678593075123e-05
+[FVA] Max optimization done for RBK_L1: 0.0
+[FVA] Max optimization done for FMNAT: 5.41672209358237e-05
+[FVA] Max optimization done for G6PP: 0.00040478946777834
+[FVA] Min optimization done for PLIPA2E140pp: 0.0
+[FVA] Finished optimization for reaction: PLIPA2E140pp
+[FVA] Starting optimization for reaction: PLIPA2E160pp
+[FVA] Min optimization done for MTHFC: 0.192957136773771
+[FVA] Finished optimization for reaction: MTHFC
+[FVA] Starting optimization for reaction: MTHFD
+[FVA] Min optimization done for RBK_L1: 0.0
+[FVA] Finished optimization for reaction: RBK_L1
+[FVA] Starting optimization for reaction: RBP4E
+[FVA] Min optimization done for FMNAT: 4.36678591191849e-05
+[FVA] Finished optimization for reaction: FMNAT
+[FVA] Starting optimization for reaction: NADDP
+[FVA] Min optimization done for G6PP: 0.0
+[FVA] Finished optimization for reaction: G6PP
+[FVA] Starting optimization for reaction: MMCD
+[FVA] Min optimization done for G1PPpp: 0.0
+[FVA] Finished optimization for reaction: G1PPpp
+[FVA] Starting optimization for reaction: GALCTND
+[FVA] Max optimization done for MTHFD: 0.194265822707621
+[FVA] Max optimization done for RBP4E: 0.0
+[FVA] Max optimization done for PLIPA2E160pp: 3.32025404903039e-05
+[FVA] Max optimization done for NADDP: 0.000157544287064005
+[FVA] Min optimization done for TMPPP: 4.36678593075123e-05
+[FVA] Finished optimization for reaction: TMPPP
+[FVA] Starting optimization for reaction: URIK1
+[FVA] Max optimization done for MMCD: 0.000165109329276982
+[FVA] Max optimization done for GALCTND: 0.0
+[FVA] Min optimization done for RBP4E: 0.0
+[FVA] Finished optimization for reaction: RBP4E
+[FVA] Starting optimization for reaction: NTD2
+[FVA] Max optimization done for URIK1: 0.000405150666096159
+[FVA] Min optimization done for MTHFD: 0.192957137008307
+[FVA] Finished optimization for reaction: MTHFD
+[FVA] Starting optimization for reaction: BUTt2rpp
+[FVA] Min optimization done for GALCTND: 0.0
+[FVA] Finished optimization for reaction: GALCTND
+[FVA] Starting optimization for reaction: GCALDD
+[FVA] Min optimization done for MMCD: 0.0
+[FVA] Finished optimization for reaction: MMCD
+[FVA] Starting optimization for reaction: GLNS
+[FVA] Min optimization done for PLIPA2E160pp: 0.0
+[FVA] Finished optimization for reaction: PLIPA2E160pp
+[FVA] Starting optimization for reaction: PLIPA2A161pp
+[FVA] Min optimization done for NADDP: 0.0
+[FVA] Finished optimization for reaction: NADDP
+[FVA] Starting optimization for reaction: NMNAT
+[FVA] Max optimization done for BUTt2rpp: 0.0
+[FVA] Max optimization done for GCALDD: 0.000131003577853262
+[FVA] Max optimization done for NTD2: 0.000709554438913562
+[FVA] Max optimization done for PLIPA2A161pp: 4.43803804473305e-05
+[FVA] Max optimization done for GLNS: 0.307350129309082
+[FVA] Min optimization done for URIK1: 0.0
+[FVA] Finished optimization for reaction: URIK1
+[FVA] Starting optimization for reaction: URIK2
+[FVA] Max optimization done for NMNAT: 0.000157544285846367
+[FVA] Min optimization done for BUTt2rpp: 0.0
+[FVA] Finished optimization for reaction: BUTt2rpp
+[FVA] Starting optimization for reaction: CADVtpp
+[FVA] Min optimization done for NTD2: 0.0
+[FVA] Finished optimization for reaction: NTD2
+[FVA] Starting optimization for reaction: NTD4
+[FVA] Min optimization done for PLIPA2A161pp: 0.0
+[FVA] Finished optimization for reaction: PLIPA2A161pp
+[FVA] Starting optimization for reaction: PLIPA2A181pp
+[FVA] Max optimization done for URIK2: 0.000392669193542463
+[FVA] Max optimization done for CADVtpp: 0.000107728193360769
+[FVA] Max optimization done for NTD4: 0.00045472532613758
+[FVA] Min optimization done for NMNAT: 0.0
+[FVA] Finished optimization for reaction: NMNAT
+[FVA] Starting optimization for reaction: HMPK1
+[FVA] Min optimization done for GCALDD: 0.0
+[FVA] Finished optimization for reaction: GCALDD
+[FVA] Starting optimization for reaction: HISTP
+[FVA] Max optimization done for PLIPA2A181pp: 4.43090868280183e-05
+[FVA] Max optimization done for HISTP: 0.0185962939300571
+[FVA] Min optimization done for NTD4: 0.0
+[FVA] Finished optimization for reaction: NTD4
+[FVA] Starting optimization for reaction: NTD5
+[FVA] Max optimization done for HMPK1: 0.0
+[FVA] Min optimization done for GLNS: 0.306743604870922
+[FVA] Finished optimization for reaction: GLNS
+[FVA] Starting optimization for reaction: TYMtex
+[FVA] Max optimization done for NTD5: 0.00031393705859116
+[FVA] Min optimization done for CADVtpp: 0.0
+[FVA] Finished optimization for reaction: CADVtpp
+[FVA] Starting optimization for reaction: QULNS
+[FVA] Min optimization done for HISTP: 0.0185515948656957
+[FVA] Finished optimization for reaction: HISTP
+[FVA] Starting optimization for reaction: LDH_D
+[FVA] Min optimization done for URIK2: 0.0
+[FVA] Finished optimization for reaction: URIK2
+[FVA] Starting optimization for reaction: CYTDK1
+[FVA] Min optimization done for PLIPA2A181pp: 0.0
+[FVA] Finished optimization for reaction: PLIPA2A181pp
+[FVA] Starting optimization for reaction: F6Ptex
+[FVA] Max optimization done for TYMtex: 0.0
+[FVA] Max optimization done for QULNS: 0.000446077953682864
+[FVA] Max optimization done for LDH_D: 0.000469754466280392
+[FVA] Max optimization done for F6Ptex: 0.0
+[FVA] Max optimization done for CYTDK1: 0.000454725411630196
+[FVA] Min optimization done for QULNS: 0.000446077953682864
+[FVA] Finished optimization for reaction: QULNS
+[FVA] Starting optimization for reaction: ALKP
+[FVA] Min optimization done for LDH_D: -1.79977923830086
+[FVA] Finished optimization for reaction: LDH_D
+[FVA] Starting optimization for reaction: AMALT4
+[FVA] Min optimization done for NTD5: 0.0
+[FVA] Finished optimization for reaction: NTD5
+[FVA] Starting optimization for reaction: NTD6
+[FVA] Min optimization done for HMPK1: 0.0
+[FVA] Finished optimization for reaction: HMPK1
+[FVA] Starting optimization for reaction: NDPK6
+[FVA] Min optimization done for F6Ptex: 0.0
+[FVA] Finished optimization for reaction: F6Ptex
+[FVA] Starting optimization for reaction: GAMAN6Ptex
+[FVA] Min optimization done for TYMtex: 0.0
+[FVA] Finished optimization for reaction: TYMtex
+[FVA] Starting optimization for reaction: GTHS
+[FVA] Max optimization done for ALKP: 0.000449714842720412
+[FVA] Max optimization done for NTD6: 0.000709554357390768
+[FVA] Max optimization done for NDPK6: 0.000144186974580407
+[FVA] Max optimization done for GAMAN6Ptex: 0.0
+[FVA] Max optimization done for GTHS: 7.81381763892886e-05
+[FVA] Min optimization done for CYTDK1: 0.0
+[FVA] Finished optimization for reaction: CYTDK1
+[FVA] Starting optimization for reaction: CYTDK2
+[FVA] Max optimization done for AMALT4: 0.0
+[FVA] Min optimization done for ALKP: 0.0
+[FVA] Finished optimization for reaction: ALKP
+[FVA] Starting optimization for reaction: GDPtex
+[FVA] Min optimization done for NTD6: 0.0
+[FVA] Finished optimization for reaction: NTD6
+[FVA] Starting optimization for reaction: LGTHL
+[FVA] Min optimization done for NDPK6: 0.0
+[FVA] Finished optimization for reaction: NDPK6
+[FVA] Starting optimization for reaction: NDPK8
+[FVA] Max optimization done for CYTDK2: 0.000447876491551019
+[FVA] Max optimization done for LGTHL: 0.00047343876625131
+[FVA] Min optimization done for AMALT4: 0.0
+[FVA] Finished optimization for reaction: AMALT4
+[FVA] Starting optimization for reaction: NTD11
+[FVA] Min optimization done for GAMAN6Ptex: 0.0
+[FVA] Finished optimization for reaction: GAMAN6Ptex
+[FVA] Starting optimization for reaction: ALR4x
+[FVA] Max optimization done for NDPK8: 0.000224783847443177
+[FVA] Max optimization done for GDPtex: 0.0
+[FVA] Min optimization done for GTHS: 0.0
+[FVA] Finished optimization for reaction: GTHS
+[FVA] Starting optimization for reaction: EX_g3pe_e
+[FVA] Max optimization done for NTD11: 0.000433144057918882
+[FVA] Max optimization done for ALR4x: 0.000415242099476368
+[FVA] Max optimization done for EX_g3pe_e: 3.02641746725125e-05
+[FVA] Min optimization done for LGTHL: 0.0
+[FVA] Finished optimization for reaction: LGTHL
+[FVA] Starting optimization for reaction: PYDXPP
+[FVA] Min optimization done for GDPtex: 0.0
+[FVA] Finished optimization for reaction: GDPtex
+[FVA] Starting optimization for reaction: EX_cobalt2_e
+[FVA] Min optimization done for NTD11: 0.0
+[FVA] Finished optimization for reaction: NTD11
+[FVA] Starting optimization for reaction: ORNDC
+[FVA] Min optimization done for ALR4x: 0.0
+[FVA] Finished optimization for reaction: ALR4x
+[FVA] Starting optimization for reaction: LPLIPAL1G141pp
+[FVA] Min optimization done for NDPK8: -0.000709554247237065
+[FVA] Finished optimization for reaction: NDPK8
+[FVA] Starting optimization for reaction: PYNP2r
+[FVA] Min optimization done for CYTDK2: 0.0
+[FVA] Finished optimization for reaction: CYTDK2
+[FVA] Starting optimization for reaction: XPPT
+[FVA] Max optimization done for PYDXPP: 0.000283668617226838
+[FVA] Max optimization done for EX_cobalt2_e: -4.89549995563721e-06
+[FVA] Max optimization done for ORNDC: 0.000107627119814923
+[FVA] Max optimization done for LPLIPAL1G141pp: 3.22475848502758e-05
+[FVA] Max optimization done for XPPT: 0.000240974913203529
+[FVA] Min optimization done for EX_g3pe_e: 0.0
+[FVA] Finished optimization for reaction: EX_g3pe_e
+[FVA] Starting optimization for reaction: EX_pacald_e
+[FVA] Min optimization done for EX_cobalt2_e: -4.89549995563721e-06
+[FVA] Finished optimization for reaction: EX_cobalt2_e
+[FVA] Starting optimization for reaction: TMAtex
+[FVA] Min optimization done for PYDXPP: 0.0
+[FVA] Finished optimization for reaction: PYDXPP
+[FVA] Starting optimization for reaction: PDXPP
+[FVA] Min optimization done for LPLIPAL1G141pp: 0.0
+[FVA] Finished optimization for reaction: LPLIPAL1G141pp
+[FVA] Starting optimization for reaction: LPLIPAL1G180pp
+[FVA] Max optimization done for EX_pacald_e: 0.0
+[FVA] Max optimization done for TMAtex: 0.0
+[FVA] Max optimization done for PYNP2r: 0.00070955439014142
+[FVA] Max optimization done for PDXPP: 0.000359263191559533
+[FVA] Max optimization done for LPLIPAL1G180pp: 3.21369729374362e-05
+[FVA] Min optimization done for ORNDC: 0.0
+[FVA] Finished optimization for reaction: ORNDC
+[FVA] Starting optimization for reaction: UPP3MT
+[FVA] Min optimization done for XPPT: 0.0
+[FVA] Finished optimization for reaction: XPPT
+[FVA] Starting optimization for reaction: HXPRT
+[FVA] Min optimization done for PYNP2r: -0.000353936239207542
+[FVA] Finished optimization for reaction: PYNP2r
+[FVA] Starting optimization for reaction: DURIPP
+[FVA] Max optimization done for UPP3MT: 4.36678593075123e-05
+[FVA] Min optimization done for PDXPP: 0.0
+[FVA] Finished optimization for reaction: PDXPP
+[FVA] Starting optimization for reaction: HACD6
+[FVA] Max optimization done for HXPRT: 0.000200051254536685
+[FVA] Min optimization done for TMAtex: 0.0
+[FVA] Finished optimization for reaction: TMAtex
+[FVA] Starting optimization for reaction: TMAOtex
+[FVA] Min optimization done for UPP3MT: 4.36678593075123e-05
+[FVA] Finished optimization for reaction: UPP3MT
+[FVA] Starting optimization for reaction: KAS15
+[FVA] Min optimization done for LPLIPAL1G180pp: 0.0
+[FVA] Finished optimization for reaction: LPLIPAL1G180pp
+[FVA] Starting optimization for reaction: LPLIPAL1G181pp
+[FVA] Max optimization done for DURIPP: 0.000126945618944774
+[FVA] Min optimization done for EX_pacald_e: 0.0
+[FVA] Finished optimization for reaction: EX_pacald_e
+[FVA] Starting optimization for reaction: CMPtex
+[FVA] Max optimization done for TMAOtex: 0.0
+[FVA] Max optimization done for HACD6: 0.0544540334268504
+[FVA] Max optimization done for LPLIPAL1G181pp: 3.41132793754139e-05
+[FVA] Max optimization done for KAS15: 3.4269309337047e-05
+[FVA] Max optimization done for CMPtex: 0.0
+[FVA] Min optimization done for TMAOtex: 0.0
+[FVA] Finished optimization for reaction: TMAOtex
+[FVA] Starting optimization for reaction: TREtex
+[FVA] Min optimization done for HACD6: 0.0543839697829753
+[FVA] Finished optimization for reaction: HACD6
+[FVA] Starting optimization for reaction: ECOAH1
+[FVA] Min optimization done for LPLIPAL1G181pp: 0.0
+[FVA] Finished optimization for reaction: LPLIPAL1G181pp
+[FVA] Starting optimization for reaction: ACONIs
+[FVA] Min optimization done for KAS15: 0.0
+[FVA] Finished optimization for reaction: KAS15
+[FVA] Starting optimization for reaction: ALAALAtex
+[FVA] Min optimization done for DURIPP: -0.000709554357513298
+[FVA] Finished optimization for reaction: DURIPP
+[FVA] Starting optimization for reaction: PTRCTA
+[FVA] Min optimization done for HXPRT: 0.0
+[FVA] Finished optimization for reaction: HXPRT
+[FVA] Starting optimization for reaction: NDPK5
+[FVA] Max optimization done for TREtex: 0.0
+[FVA] Min optimization done for CMPtex: 0.0
+[FVA] Finished optimization for reaction: CMPtex
+[FVA] Starting optimization for reaction: DUMPtex
+[FVA] Max optimization done for ACONIs: 0.0
+[FVA] Max optimization done for ECOAH1: 0.0698849991249517
+[FVA] Max optimization done for PTRCTA: 0.000107627088149943
+[FVA] Max optimization done for DUMPtex: 0.0
+[FVA] Min optimization done for TREtex: 0.0
+[FVA] Finished optimization for reaction: TREtex
+[FVA] Starting optimization for reaction: L_LACD3
+[FVA] Max optimization done for NDPK5: 0.000225064088454019
+[FVA] Max optimization done for ALAALAtex: 0.0
+[FVA] Min optimization done for ECOAH1: 0.0696541511896385
+[FVA] Finished optimization for reaction: ECOAH1
+[FVA] Starting optimization for reaction: ECOAH2
+[FVA] Max optimization done for ECOAH2: 0.0698849991186989
+[FVA] Min optimization done for NDPK5: -0.000686961126461938
+[FVA] Finished optimization for reaction: NDPK5
+[FVA] Starting optimization for reaction: DHORTS
+[FVA] Min optimization done for ACONIs: 0.0
+[FVA] Finished optimization for reaction: ACONIs
+[FVA] Starting optimization for reaction: ACONTb
+[FVA] Min optimization done for ALAALAtex: -3.57977258311953e-05
+[FVA] Finished optimization for reaction: ALAALAtex
+[FVA] Starting optimization for reaction: FACOAL181t2pp
+[FVA] Max optimization done for L_LACD3: 0.000280552767667
+[FVA] Max optimization done for ACONTb: 0.210874600642114
+[FVA] Min optimization done for DUMPtex: 0.0
+[FVA] Finished optimization for reaction: DUMPtex
+[FVA] Starting optimization for reaction: XMPtex
+[FVA] Max optimization done for FACOAL181t2pp: 8.86181703711379e-05
+[FVA] Max optimization done for DHORTS: -0.0647762758743511
+[FVA] Min optimization done for PTRCTA: 0.0
+[FVA] Finished optimization for reaction: PTRCTA
+[FVA] Starting optimization for reaction: CYSDS
+[FVA] Min optimization done for L_LACD3: 0.0
+[FVA] Finished optimization for reaction: L_LACD3
+[FVA] Starting optimization for reaction: L_LACD2
+[FVA] Min optimization done for ECOAH2: 0.0696541511919122
+[FVA] Finished optimization for reaction: ECOAH2
+[FVA] Starting optimization for reaction: ECOAH3
+[FVA] Min optimization done for ACONTb: 0.210544094104421
+[FVA] Finished optimization for reaction: ACONTb
+[FVA] Starting optimization for reaction: GLCP2
+[FVA] Min optimization done for FACOAL181t2pp: 0.0
+[FVA] Finished optimization for reaction: FACOAL181t2pp
+[FVA] Starting optimization for reaction: T2DECAI
+[FVA] Min optimization done for DHORTS: -0.0648899742774347
+[FVA] Finished optimization for reaction: DHORTS
+[FVA] Starting optimization for reaction: OMPDC
+[FVA] Max optimization done for XMPtex: 0.0
+[FVA] Max optimization done for L_LACD2: 0.000305015207219648
+[FVA] Max optimization done for ECOAH3: 0.0697190707223854
+[FVA] Max optimization done for GLCP2: 0.000221420949798209
+[FVA] Max optimization done for T2DECAI: 3.84715962127302e-05
+[FVA] Max optimization done for CYSDS: 0.000185855411642455
+[FVA] Min optimization done for L_LACD2: 0.0
+[FVA] Finished optimization for reaction: L_LACD2
+[FVA] Starting optimization for reaction: ACACT6r
+[FVA] Min optimization done for ECOAH3: 0.0696541511889563
+[FVA] Finished optimization for reaction: ECOAH3
+[FVA] Starting optimization for reaction: UGLT
+[FVA] Min optimization done for GLCP2: 0.0
+[FVA] Finished optimization for reaction: GLCP2
+[FVA] Starting optimization for reaction: F6Pt6_2pp
+[FVA] Max optimization done for OMPDC: 0.0648899742861853
+[FVA] Max optimization done for ACACT6r: 0.0544540822695581
+[FVA] Min optimization done for XMPtex: 0.0
+[FVA] Finished optimization for reaction: XMPtex
+[FVA] Starting optimization for reaction: 3PEPTtex
+[FVA] Min optimization done for CYSDS: 0.0
+[FVA] Finished optimization for reaction: CYSDS
+[FVA] Starting optimization for reaction: TRPAS2
+[FVA] Max optimization done for UGLT: 0.0
+[FVA] Min optimization done for T2DECAI: 0.0
+[FVA] Finished optimization for reaction: T2DECAI
+[FVA] Starting optimization for reaction: 3OAS161
+[FVA] Max optimization done for 3PEPTtex: 0.0
+[FVA] Max optimization done for TRPAS2: -0.0110611687441633
+[FVA] Max optimization done for F6Pt6_2pp: 0.0
+[FVA] Max optimization done for 3OAS161: 0.000158880444822503
+[FVA] Min optimization done for OMPDC: 0.0647762758738098
+[FVA] Finished optimization for reaction: OMPDC
+[FVA] Starting optimization for reaction: CS
+[FVA] Min optimization done for ACACT6r: 0.0543839697563726
+[FVA] Finished optimization for reaction: ACACT6r
+[FVA] Starting optimization for reaction: TRPtex
+[FVA] Min optimization done for UGLT: 0.0
+[FVA] Finished optimization for reaction: UGLT
+[FVA] Starting optimization for reaction: DXPS
+[FVA] Min optimization done for F6Pt6_2pp: 0.0
+[FVA] Finished optimization for reaction: F6Pt6_2pp
+[FVA] Starting optimization for reaction: PPALtpp
+[FVA] Max optimization done for CS: 0.210983214447714
+[FVA] Min optimization done for 3PEPTtex: -2.37243559720489e-05
+[FVA] Finished optimization for reaction: 3PEPTtex
+[FVA] Starting optimization for reaction: ANHGMtex
+[FVA] Min optimization done for 3OAS161: 0.0
+[FVA] Finished optimization for reaction: 3OAS161
+[FVA] Starting optimization for reaction: EX_5dglcn_e
+[FVA] Max optimization done for TRPtex: 0.0
+[FVA] Max optimization done for DXPS: 0.000600806675052865
+[FVA] Max optimization done for PPALtpp: 0.0
+[FVA] Max optimization done for EX_5dglcn_e: 0.000190340577479647
+[FVA] Min optimization done for TRPAS2: -0.0111793743091084
+[FVA] Finished optimization for reaction: TRPAS2
+[FVA] Starting optimization for reaction: NDP3
+[FVA] Min optimization done for CS: 0.210544094104064
+[FVA] Finished optimization for reaction: CS
+[FVA] Starting optimization for reaction: ICDHyr
+[FVA] Max optimization done for ANHGMtex: 0.0
+[FVA] Min optimization done for TRPtex: -4.8378225834906e-05
+[FVA] Finished optimization for reaction: TRPtex
+[FVA] Starting optimization for reaction: FUMt1pp
+[FVA] Min optimization done for DXPS: 0.000555149691121251
+[FVA] Finished optimization for reaction: DXPS
+[FVA] Starting optimization for reaction: SSALy
+[FVA] Min optimization done for PPALtpp: 0.0
+[FVA] Finished optimization for reaction: PPALtpp
+[FVA] Starting optimization for reaction: EX_gsn_e
+[FVA] Max optimization done for NDP3: 0.00047211176238816
+[FVA] Max optimization done for FUMt1pp: 0.0033607778826763
+[FVA] Max optimization done for ICDHyr: 0.210848598797725
+[FVA] Max optimization done for SSALy: 0.000304504837072628
+[FVA] Min optimization done for EX_5dglcn_e: 0.0
+[FVA] Finished optimization for reaction: EX_5dglcn_e
+[FVA] Starting optimization for reaction: DTARTD
+[FVA] Max optimization done for EX_gsn_e: 2.95166603702897e-05
+[FVA] Max optimization done for DTARTD: 0.0
+[FVA] Min optimization done for ANHGMtex: -2.35407545828685e-05
+[FVA] Finished optimization for reaction: ANHGMtex
+[FVA] Starting optimization for reaction: UDPKAAT
+[FVA] Min optimization done for NDP3: 0.0
+[FVA] Finished optimization for reaction: NDP3
+[FVA] Starting optimization for reaction: CDPPH
+[FVA] Min optimization done for SSALy: 0.0
+[FVA] Finished optimization for reaction: SSALy
+[FVA] Starting optimization for reaction: EX_dad_2_e
+[FVA] Min optimization done for FUMt1pp: -0.0052287455696387
+[FVA] Finished optimization for reaction: FUMt1pp
+[FVA] Starting optimization for reaction: SUCCt1pp
+[FVA] Min optimization done for EX_gsn_e: 0.0
+[FVA] Finished optimization for reaction: EX_gsn_e
+[FVA] Starting optimization for reaction: EX_orot_e
+[FVA] Min optimization done for DTARTD: 0.0
+[FVA] Finished optimization for reaction: DTARTD
+[FVA] Starting optimization for reaction: PLIPA2E161pp
+[FVA] Max optimization done for CDPPH: 0.000464025134190458
+[FVA] Max optimization done for UDPKAAT: 0.0
+[FVA] Max optimization done for EX_dad_2_e: 0.0
+[FVA] Max optimization done for EX_orot_e: 0.0
+[FVA] Max optimization done for SUCCt1pp: 0.00140638789082459
+[FVA] Max optimization done for PLIPA2E161pp: 3.33056768377646e-05
+[FVA] Min optimization done for ICDHyr: 0.210544094104307
+[FVA] Finished optimization for reaction: ICDHyr
+[FVA] Starting optimization for reaction: ACALD
+[FVA] Min optimization done for UDPKAAT: 0.0
+[FVA] Finished optimization for reaction: UDPKAAT
+[FVA] Starting optimization for reaction: ULA4NFT
+[FVA] Min optimization done for EX_dad_2_e: 0.0
+[FVA] Finished optimization for reaction: EX_dad_2_e
+[FVA] Starting optimization for reaction: EX_ser__D_e
+[FVA] Min optimization done for EX_orot_e: 0.0
+[FVA] Finished optimization for reaction: EX_orot_e
+[FVA] Starting optimization for reaction: ADSL1r
+[FVA] Min optimization done for SUCCt1pp: -0.00824824552694281
+[FVA] Finished optimization for reaction: SUCCt1pp
+[FVA] Starting optimization for reaction: QUINDH
+[FVA] Max optimization done for ACALD: 0.000542674824600908
+[FVA] Max optimization done for EX_ser__D_e: 0.0
+[FVA] Max optimization done for ADSL1r: 0.0588469487335033
+[FVA] Min optimization done for CDPPH: 0.0
+[FVA] Finished optimization for reaction: CDPPH
+[FVA] Starting optimization for reaction: NDP7
+[FVA] Max optimization done for ULA4NFT: 0.0
+[FVA] Max optimization done for QUINDH: 0.0
+[FVA] Min optimization done for PLIPA2E161pp: 0.0
+[FVA] Finished optimization for reaction: PLIPA2E161pp
+[FVA] Starting optimization for reaction: PLIPA2E180pp
+[FVA] Max optimization done for NDP7: 0.000458609945699266
+[FVA] Min optimization done for ACALD: -0.000666627780560702
+[FVA] Finished optimization for reaction: ACALD
+[FVA] Starting optimization for reaction: ACS
+[FVA] Min optimization done for EX_ser__D_e: 0.0
+[FVA] Finished optimization for reaction: EX_ser__D_e
+[FVA] Starting optimization for reaction: EX_gam6p_e
+[FVA] Max optimization done for PLIPA2E180pp: 3.13850886084248e-05
+[FVA] Max optimization done for ACS: 0.00033546085902725
+[FVA] Max optimization done for EX_gam6p_e: 0.0
+[FVA] Min optimization done for ADSL1r: 0.0586097083581762
+[FVA] Finished optimization for reaction: ADSL1r
+[FVA] Starting optimization for reaction: SERD_D
+[FVA] Min optimization done for NDP7: 0.0
+[FVA] Finished optimization for reaction: NDP7
+[FVA] Starting optimization for reaction: EX_co2_e
+[FVA] Min optimization done for QUINDH: 0.0
+[FVA] Finished optimization for reaction: QUINDH
+[FVA] Starting optimization for reaction: LCARSyi
+[FVA] Min optimization done for PLIPA2E180pp: 0.0
+[FVA] Finished optimization for reaction: PLIPA2E180pp
+[FVA] Starting optimization for reaction: PLIPA2G120pp
+[FVA] Min optimization done for ULA4NFT: 0.0
+[FVA] Finished optimization for reaction: ULA4NFT
+[FVA] Starting optimization for reaction: UPLA4FNT
+[FVA] Max optimization done for SERD_D: 0.000255125905480325
+[FVA] Max optimization done for EX_co2_e: 6.35249915783925
+[FVA] Max optimization done for LCARSyi: 0.00313329127111459
+[FVA] Max optimization done for PLIPA2G120pp: 3.26748508121303e-05
+[FVA] Min optimization done for EX_gam6p_e: 0.0
+[FVA] Finished optimization for reaction: EX_gam6p_e
+[FVA] Starting optimization for reaction: EX_15dap_e
+[FVA] Min optimization done for SERD_D: 0.0
+[FVA] Finished optimization for reaction: SERD_D
+[FVA] Starting optimization for reaction: AICART
+[FVA] Min optimization done for LCARSyi: 0.0
+[FVA] Finished optimization for reaction: LCARSyi
+[FVA] Starting optimization for reaction: BIOMASS_Ec_iML1515_core_75p37M
+[FVA] Max optimization done for UPLA4FNT: 0.0
+[FVA] Min optimization done for PLIPA2G120pp: 0.0
+[FVA] Finished optimization for reaction: PLIPA2G120pp
+[FVA] Starting optimization for reaction: PLIPA2G180pp
+[FVA] Max optimization done for EX_15dap_e: 0.0001077281571082
+[FVA] Min optimization done for EX_co2_e: 4.45547674130535
+[FVA] Finished optimization for reaction: EX_co2_e
+[FVA] Starting optimization for reaction: PMDPHT
+[FVA] Max optimization done for AICART: 0.106283313626705
+[FVA] Min optimization done for ACS: 0.0
+[FVA] Finished optimization for reaction: ACS
+[FVA] Starting optimization for reaction: PPA
+[FVA] Max optimization done for BIOMASS_Ec_iML1515_core_75p37M: 0.195819996894674
+[FVA] Max optimization done for PLIPA2G180pp: 3.21468785474022e-05
+[FVA] Max optimization done for PMDPHT: 0.000104362684912426
+[FVA] Min optimization done for EX_15dap_e: 0.0
+[FVA] Finished optimization for reaction: EX_15dap_e
+[FVA] Starting optimization for reaction: EX_ocdcea_e
+[FVA] Min optimization done for UPLA4FNT: 0.0
+[FVA] Finished optimization for reaction: UPLA4FNT
+[FVA] Starting optimization for reaction: UPLA4FNF
+[FVA] Max optimization done for PPA: 0.686076920963831
+[FVA] Min optimization done for BIOMASS_Ec_iML1515_core_75p37M: 0.195819996894674
+[FVA] Finished optimization for reaction: BIOMASS_Ec_iML1515_core_75p37M
+[FVA] Starting optimization for reaction: BIOMASS_Ec_iML1515_WT_75p37M
+[FVA] Min optimization done for AICART: 0.106238614557356
+[FVA] Finished optimization for reaction: AICART
+[FVA] Starting optimization for reaction: FRUpts2pp
+[FVA] Max optimization done for EX_ocdcea_e: 0.0
+[FVA] Max optimization done for BIOMASS_Ec_iML1515_WT_75p37M: 0.0
+[FVA] Max optimization done for UPLA4FNF: 0.0
+[FVA] Min optimization done for PLIPA2G180pp: 0.0
+[FVA] Finished optimization for reaction: PLIPA2G180pp
+[FVA] Starting optimization for reaction: LPLIPAL1A161pp
+[FVA] Min optimization done for PPA: 0.684966501499071
+[FVA] Finished optimization for reaction: PPA
+[FVA] Starting optimization for reaction: PPCK
+[FVA] Max optimization done for FRUpts2pp: 0.0
+[FVA] Max optimization done for LPLIPAL1A161pp: 4.43803699693236e-05
+[FVA] Min optimization done for PMDPHT: 8.73357184266972e-05
+[FVA] Finished optimization for reaction: PMDPHT
+[FVA] Starting optimization for reaction: ILETA
+[FVA] Min optimization done for EX_ocdcea_e: 0.0
+[FVA] Finished optimization for reaction: EX_ocdcea_e
+[FVA] Starting optimization for reaction: EX_cynt_e
+[FVA] Max optimization done for PPCK: 0.000439468826649032
+[FVA] Min optimization done for UPLA4FNF: 0.0
+[FVA] Finished optimization for reaction: UPLA4FNF
+[FVA] Starting optimization for reaction: ULA4Ntppi
+[FVA] Min optimization done for FRUpts2pp: 0.0
+[FVA] Finished optimization for reaction: FRUpts2pp
+[FVA] Starting optimization for reaction: G6Pt6_2pp
+[FVA] Min optimization done for BIOMASS_Ec_iML1515_WT_75p37M: 0.0
+[FVA] Finished optimization for reaction: BIOMASS_Ec_iML1515_WT_75p37M
+[FVA] Starting optimization for reaction: CDPMEK
+[FVA] Min optimization done for LPLIPAL1A161pp: 0.0
+[FVA] Finished optimization for reaction: LPLIPAL1A161pp
+[FVA] Starting optimization for reaction: LPLIPAL1A160pp
+[FVA] Max optimization done for EX_cynt_e: 0.0
+[FVA] Max optimization done for ILETA: -0.056891387877954
+[FVA] Max optimization done for G6Pt6_2pp: 0.0
+[FVA] Max optimization done for CDPMEK: 0.000513470968336833
+[FVA] Max optimization done for LPLIPAL1A160pp: 4.42658263008488e-05
+[FVA] Min optimization done for PPCK: 0.0
+[FVA] Finished optimization for reaction: PPCK
+[FVA] Starting optimization for reaction: ME1
+[FVA] Min optimization done for EX_cynt_e: 0.0
+[FVA] Finished optimization for reaction: EX_cynt_e
+[FVA] Starting optimization for reaction: EX_galctn__D_e
+[FVA] Min optimization done for G6Pt6_2pp: 0.0
+[FVA] Finished optimization for reaction: G6Pt6_2pp
+[FVA] Starting optimization for reaction: PROtex
+[FVA] Min optimization done for CDPMEK: 0.000467813972506266
+[FVA] Finished optimization for reaction: CDPMEK
+[FVA] Starting optimization for reaction: MECDPS
+[FVA] Max optimization done for ULA4Ntppi: 0.0
+[FVA] Max optimization done for ME1: 0.000510083537061477
+[FVA] Max optimization done for EX_galctn__D_e: 0.0
+[FVA] Min optimization done for ILETA: -0.0570070237746449
+[FVA] Finished optimization for reaction: ILETA
+[FVA] Starting optimization for reaction: PHEtex
+[FVA] Max optimization done for PROtex: 0.0
+[FVA] Max optimization done for MECDPS: 0.000513460024793832
+[FVA] Min optimization done for LPLIPAL1A160pp: 0.0
+[FVA] Finished optimization for reaction: LPLIPAL1A160pp
+[FVA] Starting optimization for reaction: PSCLYSt2pp
+[FVA] Min optimization done for EX_galctn__D_e: 0.0
+[FVA] Finished optimization for reaction: EX_galctn__D_e
+[FVA] Starting optimization for reaction: EX_glyb_e
+[FVA] Max optimization done for PHEtex: 0.0
+[FVA] Min optimization done for ULA4Ntppi: 0.0
+[FVA] Finished optimization for reaction: ULA4Ntppi
+[FVA] Starting optimization for reaction: HEPT1
+[FVA] Max optimization done for PSCLYSt2pp: 0.0
+[FVA] Min optimization done for PROtex: -0.00015495889386128
+[FVA] Finished optimization for reaction: PROtex
+[FVA] Starting optimization for reaction: SBTtex
+[FVA] Min optimization done for ME1: 0.0
+[FVA] Finished optimization for reaction: ME1
+[FVA] Starting optimization for reaction: ALAR
+[FVA] Min optimization done for PSCLYSt2pp: 0.0
+[FVA] Finished optimization for reaction: PSCLYSt2pp
+[FVA] Starting optimization for reaction: LYSt2pp
+[FVA] Max optimization done for EX_glyb_e: 0.0
+[FVA] Max optimization done for HEPT1: 3.61987634214279e-06
+[FVA] Min optimization done for MECDPS: 0.000467813972506271
+[FVA] Finished optimization for reaction: MECDPS
+[FVA] Starting optimization for reaction: DDGLK
+[FVA] Max optimization done for SBTtex: 0.0
+[FVA] Max optimization done for LYSt2pp: 0.00297108587510746
+[FVA] Max optimization done for DDGLK: 0.0
+[FVA] Max optimization done for ALAR: 0.00986576608158884
+[FVA] Min optimization done for EX_glyb_e: 0.0
+[FVA] Finished optimization for reaction: EX_glyb_e
+[FVA] Starting optimization for reaction: 3HCINNMH
+[FVA] Min optimization done for HEPT1: 0.0
+[FVA] Finished optimization for reaction: HEPT1
+[FVA] Starting optimization for reaction: TSULtex
+[FVA] Min optimization done for SBTtex: 0.0
+[FVA] Finished optimization for reaction: SBTtex
+[FVA] Starting optimization for reaction: PFK
+[FVA] Min optimization done for PHEtex: -8.3904496194245e-05
+[FVA] Finished optimization for reaction: PHEtex
+[FVA] Starting optimization for reaction: PItex
+[FVA] Min optimization done for LYSt2pp: 0.0
+[FVA] Finished optimization for reaction: LYSt2pp
+[FVA] Starting optimization for reaction: GLYt2pp
+[FVA] Max optimization done for 3HCINNMH: 0.0
+[FVA] Min optimization done for DDGLK: 0.0
+[FVA] Finished optimization for reaction: DDGLK
+[FVA] Starting optimization for reaction: XYLI2
+[FVA] Max optimization done for TSULtex: 0.0
+[FVA] Max optimization done for PFK: 0.000247301176457667
+[FVA] Max optimization done for XYLI2: 0.00623719648160659
+[FVA] Min optimization done for 3HCINNMH: 0.0
+[FVA] Finished optimization for reaction: 3HCINNMH
+[FVA] Starting optimization for reaction: BSORx
+[FVA] Min optimization done for ALAR: 0.0081621691105056
+[FVA] Finished optimization for reaction: ALAR
+[FVA] Starting optimization for reaction: AACPS4
+[FVA] Max optimization done for PItex: 0.188927338350936
+[FVA] Min optimization done for PFK: 0.0
+[FVA] Finished optimization for reaction: PFK
+[FVA] Starting optimization for reaction: PGM
+[FVA] Max optimization done for BSORx: 0.0
+[FVA] Max optimization done for GLYt2pp: 0.00201588102762025
+[FVA] Max optimization done for AACPS4: 0.0296856854178232
+[FVA] Min optimization done for XYLI2: -0.000344696822480728
+[FVA] Finished optimization for reaction: XYLI2
+[FVA] Starting optimization for reaction: PMANM
+[FVA] Min optimization done for GLYt2pp: 0.0
+[FVA] Finished optimization for reaction: GLYt2pp
+[FVA] Starting optimization for reaction: ALAt2pp
+[FVA] Max optimization done for PGM: -19.1700881835341
+[FVA] Min optimization done for PItex: 0.188889143895381
+[FVA] Finished optimization for reaction: PItex
+[FVA] Starting optimization for reaction: ACGAMK
+[FVA] Max optimization done for ALAt2pp: 0.00097885546407737
+[FVA] Max optimization done for PMANM: 0.0
+[FVA] Min optimization done for BSORx: 0.0
+[FVA] Finished optimization for reaction: BSORx
+[FVA] Starting optimization for reaction: NMNt7pp
+[FVA] Max optimization done for ACGAMK: 3.85594868196161e-05
+[FVA] Min optimization done for TSULtex: 0.0
+[FVA] Finished optimization for reaction: TSULtex
+[FVA] Starting optimization for reaction: TYRtex
+[FVA] Min optimization done for PGM: -19.1928292011927
+[FVA] Finished optimization for reaction: PGM
+[FVA] Starting optimization for reaction: TPI
+[FVA] Min optimization done for AACPS4: 0.0292979300474079
+[FVA] Finished optimization for reaction: AACPS4
+[FVA] Starting optimization for reaction: EX_rmn_e
+[FVA] Max optimization done for NMNt7pp: 0.0
+[FVA] Min optimization done for ALAt2pp: 0.0
+[FVA] Finished optimization for reaction: ALAt2pp
+[FVA] Starting optimization for reaction: BALAt2pp
+[FVA] Max optimization done for TYRtex: 0.0
+[FVA] Min optimization done for PMANM: -0.0004435856596956
+[FVA] Finished optimization for reaction: PMANM
+[FVA] Starting optimization for reaction: ICL
+[FVA] Max optimization done for TPI: 9.80244299640094
+[FVA] Max optimization done for EX_rmn_e: 0.0
+[FVA] Max optimization done for BALAt2pp: 0.0
+[FVA] Max optimization done for ICL: 0.00033050655957079
+[FVA] Min optimization done for NMNt7pp: 0.0
+[FVA] Finished optimization for reaction: NMNt7pp
+[FVA] Starting optimization for reaction: GLUtex
+[FVA] Min optimization done for TYRtex: -8.38002823065132e-05
+[FVA] Finished optimization for reaction: TYRtex
+[FVA] Starting optimization for reaction: URAtex
+[FVA] Min optimization done for TPI: 9.79012165769711
+[FVA] Finished optimization for reaction: TPI
+[FVA] Starting optimization for reaction: RPI
+[FVA] Max optimization done for GLUtex: 0.0
+[FVA] Min optimization done for ICL: 0.0
+[FVA] Finished optimization for reaction: ICL
+[FVA] Starting optimization for reaction: GLYCL
+[FVA] Max optimization done for RPI: -0.144091163487474
+[FVA] Min optimization done for ACGAMK: 0.0
+[FVA] Finished optimization for reaction: ACGAMK
+[FVA] Starting optimization for reaction: METS
+[FVA] Max optimization done for URAtex: 0.0
+[FVA] Min optimization done for EX_rmn_e: 0.0
+[FVA] Finished optimization for reaction: EX_rmn_e
+[FVA] Starting optimization for reaction: EX_ttdca_e
+[FVA] Max optimization done for GLYCL: 0.0109411002025893
+[FVA] Min optimization done for GLUtex: -0.000272536927593272
+[FVA] Finished optimization for reaction: GLUtex
+[FVA] Starting optimization for reaction: GLYtex
+[FVA] Min optimization done for BALAt2pp: 0.0
+[FVA] Finished optimization for reaction: BALAt2pp
+[FVA] Starting optimization for reaction: DALAt2pp
+[FVA] Max optimization done for METS: 0.0302644496477675
+[FVA] Max optimization done for EX_ttdca_e: 0.0
+[FVA] Max optimization done for DALAt2pp: 0.00279673115019103
+[FVA] Min optimization done for RPI: -0.155998471097178
+[FVA] Finished optimization for reaction: RPI
+[FVA] Starting optimization for reaction: PERD
+[FVA] Min optimization done for METS: 0.030226578900665
+[FVA] Finished optimization for reaction: METS
+[FVA] Starting optimization for reaction: EX_cu2_e
+[FVA] Max optimization done for GLYtex: 0.0
+[FVA] Min optimization done for DALAt2pp: 0.001017126057014
+[FVA] Finished optimization for reaction: DALAt2pp
+[FVA] Starting optimization for reaction: FE2tpp
+[FVA] Min optimization done for GLYCL: 0.0
+[FVA] Finished optimization for reaction: GLYCL
+[FVA] Starting optimization for reaction: CMPN
+[FVA] Max optimization done for PERD: 4.36678592450335e-05
+[FVA] Max optimization done for EX_cu2_e: -0.000138836377800544
+[FVA] Max optimization done for FE2tpp: 0.00490954491092076
+[FVA] Max optimization done for CMPN: 0.000180764385814674
+[FVA] Min optimization done for GLYtex: -0.0219729529919563
+[FVA] Finished optimization for reaction: GLYtex
+[FVA] Starting optimization for reaction: GLYALDtex
+[FVA] Min optimization done for PERD: -8.73357189448143e-05
+[FVA] Finished optimization for reaction: PERD
+[FVA] Starting optimization for reaction: PYDAMK
+[FVA] Min optimization done for URAtex: -0.000113698412139458
+[FVA] Finished optimization for reaction: URAtex
+[FVA] Starting optimization for reaction: UREAtex
+[FVA] Min optimization done for EX_cu2_e: -0.000138836377800544
+[FVA] Finished optimization for reaction: EX_cu2_e
+[FVA] Starting optimization for reaction: CYSabc2pp
+[FVA] Max optimization done for GLYALDtex: 0.0
+[FVA] Min optimization done for FE2tpp: 0.0
+[FVA] Finished optimization for reaction: FE2tpp
+[FVA] Starting optimization for reaction: MN2tpp
+[FVA] Max optimization done for PYDAMK: 0.000396484599989401
+[FVA] Min optimization done for CMPN: 0.0
+[FVA] Finished optimization for reaction: CMPN
+[FVA] Starting optimization for reaction: HCYSMT
+[FVA] Min optimization done for EX_ttdca_e: 0.0
+[FVA] Finished optimization for reaction: EX_ttdca_e
+[FVA] Starting optimization for reaction: AMANK
+[FVA] Max optimization done for CYSabc2pp: 0.000177400715994899
+[FVA] Max optimization done for UREAtex: 0.0
+[FVA] Min optimization done for GLYALDtex: -0.000252465875790458
+[FVA] Finished optimization for reaction: GLYALDtex
+[FVA] Starting optimization for reaction: GLYBtex
+[FVA] Max optimization done for HCYSMT: 7.70760796158317e-05
+[FVA] Min optimization done for PYDAMK: 0.0
+[FVA] Finished optimization for reaction: PYDAMK
+[FVA] Starting optimization for reaction: AKGtex
+[FVA] Max optimization done for AMANK: 0.0
+[FVA] Max optimization done for GLYBtex: 0.0
+[FVA] Max optimization done for MN2tpp: 0.00242143505178896
+[FVA] Min optimization done for HCYSMT: 0.0
+[FVA] Finished optimization for reaction: HCYSMT
+[FVA] Starting optimization for reaction: UDPG4E
+[FVA] Min optimization done for UREAtex: -6.47337624302116e-05
+[FVA] Finished optimization for reaction: UREAtex
+[FVA] Starting optimization for reaction: URItex
+[FVA] Max optimization done for AKGtex: 0.0
+[FVA] Min optimization done for AMANK: 0.0
+[FVA] Finished optimization for reaction: AMANK
+[FVA] Starting optimization for reaction: EX_glyclt_e
+[FVA] Min optimization done for MN2tpp: 0.0
+[FVA] Finished optimization for reaction: MN2tpp
+[FVA] Starting optimization for reaction: MG2tpp
