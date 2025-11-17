@@ -1,148 +1,0 @@
-=========================================
-Job: kinGEMs General Pipeline (Direct)
-Job ID: 11586245
-Node: fc30651
-Current working directory: /project/def-mahadeva/ranaab/kinGEMs_v2
-Starting run at: Mon Nov 17 14:31:02 PST 2025
-=========================================
-
-Configuration: configs/iML1515_GEM_parallel_fva.json
-CPUs allocated: 8
-
-Updated FVA workers to match SLURM CPUs: 8
-Using temporary config: /tmp/tmp.eqMrHZtzmA.json
-
-Running kinGEMs pipeline...
-Loading configuration from: /tmp/tmp.eqMrHZtzmA.json
-
-======================================================================
-=== kinGEMs Pipeline for iML1515_GEM ===
-======================================================================
-Run ID: iML1515_GEM_20251117_9242
-Model type: Standard
-Organism: E coli
-Results directory: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/iML1515_GEM_20251117_9242
-Solver: glpk
-======================================================================
-
-=== Configuration Summary ===
-Config file: /tmp/tmp.eqMrHZtzmA.json
-Model name: iML1515_GEM
-Enzyme upper bound: 0.25
-Enable FVA: True
-Enable Biolog validation: False
-
-FVA Settings:
-  Parallel execution: True
-  Biomass constraint ratio: 0.9
-  Workers: 8
-  Method: dask
-
-Simulated Annealing Settings:
-  Temperature: 1.0
-  Cooling rate: 0.975
-  Min temperature: 0.001
-  Max iterations: 100
-  Max unchanged iterations: 5
-  Change threshold: 0.009
-  Biomass goal: 0.5
-======================================================================
-
-Biomass reaction: BIOMASS_Ec_iML1515_core_75p37M
-
-=== Step 1: Preparing model data ===
-  ✓ Found existing files, loading cached data:
-    - /project/6000502/ranaab/kinGEMs_v2/data/interim/iML1515_GEM/iML1515_GEM_substrates.csv
-    - /project/6000502/ranaab/kinGEMs_v2/data/interim/iML1515_GEM/iML1515_GEM_sequences.csv
-Warning: Model has 8 validation errors
-  Model: 1516 genes, 2712 reactions
-
-=== Step 2: Merging substrate and sequence data ===
-  ✓ Found existing file, loading cached data:
-    - /project/6000502/ranaab/kinGEMs_v2/data/interim/iML1515_GEM/iML1515_GEM_merged_data.csv
-  Merged data: 12229 rows
-  Found predictions file: X06A_kinGEMs_ecoli_iML1515_predictions.csv
-
-=== Step 3: Processing CPI-Pred kcat values & annotating model ===
-  ✓ Found existing file, loading cached data:
-    - /project/6000502/ranaab/kinGEMs_v2/data/processed/iML1515_GEM/iML1515_GEM_processed_data.csv
-  Processed data: 33657 rows
-  Reactions with kcat: 2136/2712
-
-=== Step 4: Running optimization ===
-  Running standard COBRApy FBA (no enzyme constraints)...
-    COBRApy biomass: 0.8770
-  Running kinGEMs enzyme-constrained optimization...
-    kinGEMs biomass: 0.1016
-
-  Comparison:
-    Standard FBA:           0.8770
-    Enzyme-constrained FBA: 0.1016
-    Reduction due to enzyme budget: 88.4%
-  Using standard model - may need additional constraint processing
-
-=== Step 5: Running simulated annealing ===
-  Configuration:
-    - Temperature: 1.0
-    - Cooling rate: 0.975
-    - Max iterations: 100
-    - Max unchanged iterations: 5
-    - Change threshold: 0.009
-    - Biomass goal: 0.5
-  Starting optimization...
-
-  Iter 1/100: biomass=0.104127, temp=1.0000  Iter 2/100: biomass=0.127181, temp=0.9750  Iter 3/100: biomass=0.149750, temp=0.9506  Iter 4/100: biomass=0.162178, temp=0.9269  Iter 5/100: biomass=0.172491, temp=0.9037  Iter 6/100: biomass=0.181702, temp=0.8811  Iter 7/100: biomass=0.188027, temp=0.8591  Iter 8/100: biomass=0.193430, temp=0.8376  Iter 9/100: biomass=0.196457, temp=0.8167  Iter 10/100: biomass=0.200411, temp=0.7962  Iter 11/100: biomass=0.203189, temp=0.7763  Iter 12/100: biomass=0.206264, temp=0.7569  Iter 13/100: biomass=0.209031, temp=0.7380  Iter 14/100: biomass=0.210557, temp=0.7195  Iter 15/100: biomass=0.211782, temp=0.7016  Iter 16/100: biomass=0.213711, temp=0.6840  Iter 17/100: biomass=0.214973, temp=0.6669  Iter 18/100: biomass=0.216135, temp=0.6502  Iter 19/100: biomass=0.217446, temp=0.6340  Iter 20/100: biomass=0.218682, temp=0.6181  Iter 21/100: biomass=0.219015, temp=0.6027
-  Early stop: No change for 5 iterations
-
-
-  Annealing complete!
-  Initial biomass: 0.1016
-  Final biomass: 0.2190
-  Improvement: 115.6%
-  Total iterations: 22
-
-  Biomass progression:
-    Iter   0: 0.101603
-    Iter   2: 0.127181 (+25.18%)
-    Iter   4: 0.162178 (+27.52%)
-    Iter   6: 0.181702 (+12.04%)
-    Iter   8: 0.193430 (+6.45%)
-    Iter  10: 0.200411 (+3.61%)
-    Iter  12: 0.206264 (+2.92%)
-    Iter  14: 0.210557 (+2.08%)
-    Iter  16: 0.213711 (+1.50%)
-    Iter  18: 0.216135 (+1.13%)
-    Iter  20: 0.218682 (+1.18%)
-    Iter  21: 0.219015 (+0.15%)
-
-  Top 10 enzymes by mass contribution:
-     Reactions Single_gene  enzyme_mass
-0        DHAPT       b1200     0.034283
-1        DHAPT       b1198     0.025010
-2        DHAPT       b2416     0.021397
-3     SUCptspp       b2416     0.021397
-4     TREptspp       b2416     0.021397
-5    ACGAptspp       b2416     0.021397
-6  ACMANAptspp       b2416     0.021397
-7    ASCBptspp       b2416     0.021397
-8     SBTptspp       b2416     0.021397
-9     FRUptspp       b2416     0.021397
-
-  Saved merged DataFrame to: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/iML1515_GEM_20251117_9242/final_model_info.csv
-
-=== Step 6: Running Flux Variability Analysis ===
-  Using parallel FVA with 8 workers...
-  Parallel FVA configuration:
-    Method: dask
-    Workers: 8
-    Reactions: 2712
-    Chunk size: 22
-    Number of chunks: 124
-    Estimated memory: ~1.8 GB
-
-  Running baseline optimization...
-  Optimal biomass: 0.219015
-  Biomass constraint: 0.197113 ≤ biomass ≤ 0.219015 (opt_ratio=0.9)
-
-  Starting parallel FVA with 124 chunks...
-  Progress will be shown by chunk completion...
