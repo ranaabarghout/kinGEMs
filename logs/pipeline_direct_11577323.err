@@ -1,0 +1,17 @@
+2025-11-17 12:03:42.557 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2025-11-17 12:06:40.040 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2025-11-17 12:06:40.040 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2025-11-17 12:06:40.043 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2025-11-17 12:06:40.043 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2025-11-17 12:06:40.043 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2025-11-17 12:06:40.044 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2025-11-17 12:06:40.044 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2025-11-17 12:06:40.048 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+Traceback (most recent call last):
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_pipeline.py", line 735, in <module>
+    main()
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_pipeline.py", line 700, in main
+    run_fva_analysis(model, df_new, biomass_reaction, enzyme_upper_bound,
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_pipeline.py", line 292, in run_fva_analysis
+    plot_cumulative_fvi_distribution(
+TypeError: plot_cumulative_fvi_distribution() got an unexpected keyword argument 'dfs'
