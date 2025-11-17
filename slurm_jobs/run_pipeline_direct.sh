@@ -5,7 +5,7 @@
 #SBATCH --job-name=kinGEMs_direct
 #SBATCH --account=def-mahadeva
 #SBATCH --cpus-per-task=8
-#SBATCH --time=0-03:00:00
+#SBATCH --time=0-10:00:00
 #SBATCH --mem=32G
 #SBATCH --output=logs/pipeline_direct_%j.out
 #SBATCH --error=logs/pipeline_direct_%j.err
