@@ -62,7 +62,7 @@ def apply_experimental_fluxes(model: cobra.Model,
                         f"Experimental: ({new_lower_bound}, {new_upper_bound})")
                 
         except KeyError:
-            print(f"Error: Reaction ID {rxn_id} from data not found in model.")
+            print(f"\nError: Reaction ID {rxn_id} from data not found in model.")
             
     return model
 
