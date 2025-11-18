@@ -6,6 +6,11 @@
 
 A pipeline for automatic reconstruction of enzyme-constrained genome-scale models using CPI-Pred for kinetic parameter annotation.
 
+## TO DO:
+ - move plotting functions in validation (parallel) to src plots.py
+ - clean up docs 
+ - organize all results in results folder
+ 
 ## Quick Start
 
 ```bash

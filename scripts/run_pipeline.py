@@ -53,8 +53,10 @@ from kinGEMs.dataset_modelseed import prepare_modelseed_model_data
 from kinGEMs.modeling.fva import (
     flux_variability_analysis,
     flux_variability_analysis_parallel,
-    plot_cumulative_fvi_distribution,
     plot_flux_variability,
+)
+from kinGEMs.plots import (
+    plot_cumulative_fvi_distribution,
 )
 from kinGEMs.modeling.optimize import run_optimization_with_dataframe
 from kinGEMs.modeling.tuning import simulated_annealing
@@ -244,6 +246,7 @@ def run_fva_analysis(model, processed_df, biomass_reaction, enzyme_upper_bound,
     fva_config = fva_config or {}
     use_parallel = fva_config.get('parallel', False)
     n_workers = fva_config.get('workers', None)
+    opt_ratio = fva_config.get('opt_ratio', 0.9)
 
     fva_results_path = os.path.join(tuning_results_dir, f"{organism_strain_GEMname}_fva_results.csv")
     fva_plot_path = os.path.join(tuning_results_dir, f"{organism_strain_GEMname}_fva_flux_range_plot.png")
@@ -258,6 +261,7 @@ def run_fva_analysis(model, processed_df, biomass_reaction, enzyme_upper_bound,
             biomass_reaction=biomass_reaction,
             output_file=fva_results_path,
             enzyme_upper_bound=enzyme_upper_bound,
+            opt_ratio=opt_ratio,
             n_workers=n_workers
         )
     else:
@@ -267,7 +271,8 @@ def run_fva_analysis(model, processed_df, biomass_reaction, enzyme_upper_bound,
             processed_df=processed_df,
             biomass_reaction=biomass_reaction,
             output_file=fva_results_path,
-            enzyme_upper_bound=enzyme_upper_bound
+            enzyme_upper_bound=enzyme_upper_bound,
+            opt_ratio=opt_ratio
         )
     print(f"  kinGEMs FVA completed: {len(fva_results)} reactions analyzed")
 
@@ -288,9 +293,9 @@ def run_fva_analysis(model, processed_df, biomass_reaction, enzyme_upper_bound,
     print(f"  Saved FVA flux range plot to: {fva_plot_path}")
 
     plot_cumulative_fvi_distribution(
-        dfs=[fva_results, cobra_fva_df],
+        fva_dataframes=[fva_results, cobra_fva_df],
         labels=["kinGEMs FVA", "COBRApy FVA"],
-        output_file=fva_cumulative_path
+        output_path=fva_cumulative_path
     )
     print(f"  Saved FVA cumulative plot to: {fva_cumulative_path}")
 
@@ -414,7 +419,7 @@ def main():
     # File paths
     model_path = os.path.join(raw_data_dir, f"{model_name}.xml")
 
-    
+
 
     substrates_output = os.path.join(interim_data_dir, f"{model_name}_substrates.csv")
     sequences_output = os.path.join(interim_data_dir, f"{model_name}_sequences.csv")
@@ -446,6 +451,7 @@ def main():
         fva_config = config.get('fva', {})
         print("\nFVA Settings:")
         print(f"  Parallel execution: {fva_config.get('parallel', False)}")
+        print(f"  Biomass constraint ratio: {fva_config.get('opt_ratio', 0.9)}")
         if fva_config.get('parallel'):
             print(f"  Workers: {fva_config.get('workers', 'auto')}")
             print(f"  Method: {fva_config.get('method', 'dask')}")

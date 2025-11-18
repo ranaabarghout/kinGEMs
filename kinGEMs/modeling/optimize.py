@@ -98,6 +98,10 @@ def run_optimization(
     enzyme_upper_bound=0.125,
     enzyme_ratio=True,
     maximization=True,
+    multi_enzyme_off=False,
+    isoenzymes_off=False,
+    promiscuous_off=False,
+    complexes_off=False,
     solver_name='gurobi',
     tee=False,
     verbose=False,
@@ -251,11 +255,18 @@ def run_optimization(
     sense = maximize if maximization else minimize  # noqa: F405
     m.obj = Objective(expr=sum(obj_coef[r] * m.v[r] for r in m.R), sense=sense)  # noqa: F405
 
-    # 6a) AND‐GPR: single or complex (simple cases only)
+    # Initialize constraint counters
     constraints_added = 0
     constraints_skipped = 0
     skip_reasons = {'no_clauses': 0, 'gene_mismatch': 0, 'no_kcat': 0, 'multiple_clauses': 0}
+    iso_added = 0
+    iso_skipped = 0
+    mixed_added = 0
+    mixed_skipped = 0
+    promis_added = 0
+    promis_skipped = 0
 
+    # 6a) AND‐GPR: single or complex (simple cases only)
     def and_rule(mo, rxn_id, gene_id):
         nonlocal constraints_added, constraints_skipped
         clauses = dnf_clauses.get(rxn_id, [])
@@ -285,6 +296,11 @@ def run_optimization(
                 constraints_skipped += 1
                 skip_reasons['gene_mismatch'] += 1
                 return Constraint.Skip  # noqa: F405
+            # Skip if complexes are disabled
+            if complexes_off:
+                constraints_skipped += 1
+                skip_reasons['no_kcat'] += 1  # Reuse this category
+                return Constraint.Skip  # noqa: F405
             all_ks = []
             for g in clause:
                 all_ks.extend(kcat_dict.get((rxn_id, g), []))
@@ -299,11 +315,11 @@ def run_optimization(
         constraints_skipped += 1
         skip_reasons['multiple_clauses'] += 1
         return Constraint.Skip  # noqa: F405
-    m.kcat_and = Constraint(m.K, rule=and_rule)  # noqa: F405
+
+    if not multi_enzyme_off:
+        m.kcat_and = Constraint(m.K, rule=and_rule)  # noqa: F405
 
     # 6b) OR‐GPR: pure isoenzymes (no AND within clauses)
-    iso_added = 0
-    iso_skipped = 0
     def iso_rule(mo, rxn_id):
         nonlocal iso_added, iso_skipped
         clauses = dnf_clauses.get(rxn_id, [])
@@ -332,11 +348,11 @@ def run_optimization(
             return Constraint.Skip  # noqa: F405
         iso_added += 1
         return mo.v[rxn_id] <= sum(terms)
-    m.kcat_iso = Constraint(m.R, rule=iso_rule)  # noqa: F405
+
+    if not isoenzymes_off:
+        m.kcat_iso = Constraint(m.R, rule=iso_rule)  # noqa: F405
 
     # 6c) MIXED OR+AND: Handle complex cases like (g1 and g2) or (g3 and g4) or g5
-    mixed_added = 0
-    mixed_skipped = 0
     def mixed_rule(mo, rxn_id):
         nonlocal mixed_added, mixed_skipped
         clauses = dnf_clauses.get(rxn_id, [])
@@ -391,11 +407,11 @@ def run_optimization(
         # The reaction can use any of the alternative pathways
         return mo.v[rxn_id] <= sum(clause_terms)
 
-    m.kcat_mixed = Constraint(m.R, rule=mixed_rule)  # noqa: F405
+    # Only add mixed constraints if neither isoenzymes nor complexes are disabled
+    if not isoenzymes_off and not complexes_off:
+        m.kcat_mixed = Constraint(m.R, rule=mixed_rule)  # noqa: F405
 
     # 6d) Promiscuous enzymes
-    promis_added = 0
-    promis_skipped = 0
     def promis_rule(mo, g_id):
         nonlocal promis_added, promis_skipped
         usage = []
@@ -410,19 +426,43 @@ def run_optimization(
             return Constraint.Skip  # noqa: F405
         promis_added += 1
         return sum(usage) <= mo.E[g_id]
-    m.promiscuous = Constraint(m.G, rule=promis_rule)  # noqa: F405
+
+    if not promiscuous_off:
+        m.promiscuous = Constraint(m.G, rule=promis_rule)  # noqa: F405
 
     # Print constraint summary (only if verbose)
     if verbose:
         print(f"\n{'='*60}")
         print("ENZYME CONSTRAINT SUMMARY")
         print(f"{'='*60}")
-        print(f"AND constraints (single/complex):  {constraints_added:4d} added, {constraints_skipped:4d} skipped")
-        print(f"OR/ISO constraints (pure isozymes): {iso_added:4d} added, {iso_skipped:4d} skipped")
-        print(f"MIXED OR+AND constraints:          {mixed_added:4d} added, {mixed_skipped:4d} skipped")
-        print(f"Promiscuous enzyme constraints:    {promis_added:4d} added, {promis_skipped:4d} skipped")
+        if multi_enzyme_off:
+            print("AND constraints (single/complex): DISABLED")
+        else:
+            print(f"AND constraints (single/complex):  {constraints_added:4d} added, {constraints_skipped:4d} skipped")
+
+        if isoenzymes_off:
+            print("OR/ISO constraints (pure isozymes): DISABLED")
+        else:
+            print(f"OR/ISO constraints (pure isozymes): {iso_added:4d} added, {iso_skipped:4d} skipped")
+
+        if isoenzymes_off or complexes_off:
+            print("MIXED OR+AND constraints: DISABLED")
+        else:
+            print(f"MIXED OR+AND constraints:          {mixed_added:4d} added, {mixed_skipped:4d} skipped")
+
+        if promiscuous_off:
+            print("Promiscuous enzyme constraints: DISABLED")
+        else:
+            print(f"Promiscuous enzyme constraints:    {promis_added:4d} added, {promis_skipped:4d} skipped")
+
+        total_active = (
+            (constraints_added if not multi_enzyme_off else 0) +
+            (iso_added if not isoenzymes_off else 0) +
+            (mixed_added if not (isoenzymes_off or complexes_off) else 0) +
+            (promis_added if not promiscuous_off else 0)
+        )
         print(f"{'='*60}")
-        print(f"Total enzyme constraints:          {constraints_added + iso_added + mixed_added + promis_added:4d}")
+        print(f"Total active enzyme constraints:   {total_active:4d}")
         print(f"{'='*60}\n")
 
     # 7) Total enzyme pool / ratio
@@ -666,15 +706,19 @@ def run_optimization_with_dataframe(model, processed_df, objective_reaction,
     gene_sequences_dict = gene_seq_grouped.to_dict()
 
     if len(kcat_dict) > 0:
-        first_key = list(kcat_dict.keys())[0]
+        pass  # kcat_dict has entries
 
     solution_value, df_FBA, gene_sequences_dict, m = run_optimization(
-        model = model,
+        model=model,
         kcat_dict=kcat_dict,
         objective_reaction=objective_reaction,
         gene_sequences_dict=gene_sequences_dict,
         enzyme_upper_bound=enzyme_upper_bound,
         maximization=maximization,
+        multi_enzyme_off=multi_enzyme_off,
+        isoenzymes_off=isoenzymes_off,
+        promiscuous_off=promiscuous_off,
+        complexes_off=complexes_off,
         enzyme_ratio=True,
         tee=verbose,
         solver_name=solver_name,

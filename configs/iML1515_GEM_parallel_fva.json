@@ -2,7 +2,7 @@
   "model_name": "iML1515_GEM",
   "organism": "E coli",
   "biomass_reaction": null,
-  "enzyme_upper_bound": 0.35,
+  "enzyme_upper_bound": 0.20,
   "solver": "glpk",
   "enable_fva": true,
   "enable_biolog_validation": false,
@@ -12,6 +12,8 @@
     "workers": 4,
     "chunk_size": 50,
     "method": "dask",
+    "opt_ratio": 0.9,
+    "_comment_opt_ratio": "Fraction of optimal biomass to constrain during FVA (0.9 = 90% of optimal)",
     "_comment_method": "Options: 'dask' (distributed, scalable) or 'multiprocessing' (simpler, single-machine)",
     "_comment_workers": "Set to null for auto-detection (uses all CPU cores)",
     "_comment_chunk_size": "Number of reactions per task. null = auto-calculate. Larger = less overhead but less load balancing"

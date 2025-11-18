@@ -1,0 +1,5 @@
+,count,mean,std,min,25%,median,75%,max,negative_pct,positive_pct,neutral_pct,strong_negative_pct,strong_positive_pct
+Experimental,30102.0,-0.075,0.402,-2.0,-0.143,-0.018,0.086,8.518,54.7,45.2,46.2,3.7,0.6
+Baseline GEM,30102.0,-0.632,4.486,-34.051,-0.0,-0.0,0.0,0.0,74.5,25.5,97.0,1.9,0.0
+Pre-tuning kinGEMs,30102.0,-0.54,4.047,-32.892,0.0,0.022,0.041,7.131,21.3,78.7,96.2,2.0,0.0
+Post-tuning kinGEMs,30102.0,-0.563,4.159,-31.805,0.012,0.023,0.028,0.064,7.1,92.9,97.4,2.0,0.0

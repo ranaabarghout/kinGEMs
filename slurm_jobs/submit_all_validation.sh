@@ -7,13 +7,23 @@
 # in parallel and schedules a compilation job to run after all complete.
 #
 # Usage:
-#   bash slurm_jobs/submit_all.sh
+#   bash slurm_jobs/submit_all_validation.sh
 #
 # The script will:
-#   1. Submit baseline validation job (fastest, ~3 hours)
-#   2. Submit pre-tuning validation job (slowest, ~10 hours)
-#   3. Submit post-tuning validation job (slow, ~10 hours)
+#   1. Submit baseline validation job (fastest, ~45 min - 1 hour)
+#      - Calculates baseline wild-type growth (NO enzyme constraints)
+#      - Runs gene knockout simulations for baseline GEM
+#   2. Submit pre-tuning validation job (~2-3 hours)
+#      - Calculates pre-tuning wild-type growth (WITH initial kcat constraints)
+#      - Runs gene knockout simulations for pre-tuning kinGEMs
+#   3. Submit post-tuning validation job (~2-3 hours)
+#      - Calculates post-tuning wild-type growth (WITH tuned kcat constraints)
+#      - Runs gene knockout simulations for post-tuning kinGEMs
 #   4. Submit compilation job with dependency on all three
+#      - Uses model-specific wild-type files for fitness-based correlations
+#
+# NOTE: Each model now calculates its own wild-type growth rates with appropriate
+#       constraints, ensuring accurate fitness value calculations (log2 ratios).
 #
 # Email notifications will be sent for each job's start, completion, and failures.
 #
@@ -35,6 +45,16 @@ echo ""
 echo "========================================================================"
 echo "=== kinGEMs Parallel Validation - Job Submission ==="
 echo "========================================================================"
+echo ""
+echo -e "${YELLOW}IMPORTANT: Model-Specific Wild-Type Calculation${NC}"
+echo "----------------------------------------------------------------------"
+echo "Each model now calculates its own wild-type growth rates:"
+echo "  • Baseline:    No enzyme constraints → higher wild-type growth"
+echo "  • Pre-tuning:  Initial kcat constraints → constrained wild-type"
+echo "  • Post-tuning: Tuned kcat constraints → optimized wild-type"
+echo ""
+echo "This ensures accurate fitness calculations: log2(mutant/wild-type)"
+echo "----------------------------------------------------------------------"
 echo ""
 
 # Check if job scripts exist
@@ -113,12 +133,16 @@ echo -e "${BLUE}=== Submission Summary ===${NC}"
 echo "========================================================================"
 echo ""
 echo "Validation jobs (running in parallel):"
-echo "  Baseline:     Job ${JOB1} (estimated: 3 hours)"
-echo "  Pre-tuning:   Job ${JOB2} (estimated: 10 hours)"
-echo "  Post-tuning:  Job ${JOB3} (estimated: 10 hours)"
+echo "  Baseline:     Job ${JOB1} (estimated: 1 hour)"
+echo "                → Calculates baseline wild-type + gene knockouts"
+echo "  Pre-tuning:   Job ${JOB2} (estimated: 2-3 hours)"
+echo "                → Calculates pre-tuning wild-type + gene knockouts WITH enzyme constraints"
+echo "  Post-tuning:  Job ${JOB3} (estimated: 2-3 hours)"
+echo "                → Calculates post-tuning wild-type + gene knockouts WITH tuned constraints"
 echo ""
 echo "Compilation job (will run after all validation jobs complete):"
 echo "  Compile:      Job ${JOB4}"
+echo "                → Generates fitness-based correlations using model-specific wild-type files"
 echo ""
 echo "========================================================================"
 echo -e "${YELLOW}Monitoring Commands:${NC}"
@@ -146,10 +170,18 @@ echo -e "${BLUE}Expected Timeline:${NC}"
 echo "========================================================================"
 echo ""
 echo "  T+0h:    All validation jobs start"
-echo "  T+3h:    Baseline job completes (fastest)"
-echo "  T+10h:   Pre-tuning and post-tuning jobs complete (slowest)"
-echo "  T+10h:   Compilation job starts automatically"
-echo "  T+10.5h: Compilation job completes, final results ready"
+echo "  T+1h:    Baseline job completes (fastest, no enzyme constraints)"
+echo "  T+2-3h:  Pre-tuning and post-tuning jobs complete (enzyme-constrained)"
+echo "  T+3h:    Compilation job starts automatically"
+echo "  T+3.1h:  Compilation job completes, final results ready"
+echo ""
+echo "Output files per model:"
+echo "  - baseline_GEM.npy          (gene knockout results)"
+echo "  - baseline_wildtype.npy     (wild-type growth, no constraints)"
+echo "  - pre_tuning_GEM.npy        (gene knockout results)"
+echo "  - pretuning_wildtype.npy    (wild-type growth, initial kcats)"
+echo "  - post_tuning_GEM.npy       (gene knockout results)"
+echo "  - posttuning_wildtype.npy   (wild-type growth, tuned kcats)"
 echo ""
 echo "========================================================================"
 echo -e "${GREEN}Jobs submitted successfully!${NC}"

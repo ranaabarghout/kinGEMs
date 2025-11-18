@@ -3,7 +3,7 @@
   "model_name": "iML1515_GEM",
   "n_genes": 1326,
   "n_carbons": 25,
-  "timestamp": "2025-11-05T11:02:38.476722",
+  "timestamp": "2025-11-11T14:50:45.884502",
   "solver": "optlang.glpk_interface",
   "parallel": true,
   "method": "multiprocessing",

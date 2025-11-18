@@ -1,0 +1,25 @@
+{
+  "model_name": "e_coli_core",
+  "organism": "E coli",
+  "biomass_reaction": null,
+  "enzyme_upper_bound": 0.15,
+  "enable_fva": true,
+  "enable_biolog_validation": false,
+
+  "fva": {
+    "parallel": true,
+    "workers": 2,
+    "chunk_size": 10,
+    "method": "dask"
+  },
+
+  "simulated_annealing": {
+    "temperature": 1.0,
+    "cooling_rate": 0.95,
+    "min_temperature": 0.01,
+    "max_iterations": 10,
+    "max_unchanged_iterations": 3,
+    "change_threshold": 0.009,
+    "biomass_goal": 0.5
+  }
+}

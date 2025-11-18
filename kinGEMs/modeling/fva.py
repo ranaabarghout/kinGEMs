@@ -6,6 +6,7 @@ with enzyme constraints, allowing exploration of the solution space.
 """
 import logging
 import os
+import time
 import warnings
 
 from dask import compute, delayed
@@ -475,7 +476,6 @@ def _fva_for_reaction(model, processed_df,
             save_results=False,
             verbose=False
         )
-        print(f"[FVA] Max optimization done for {rxn_id}: {flux_max}")
     except Exception:
         flux_max = None
 
@@ -495,87 +495,85 @@ def _fva_for_reaction(model, processed_df,
             save_results=False,
             verbose=False
         )
-        print(f"[FVA] Min optimization done for {rxn_id}: {flux_min}")
     except Exception:
         flux_min = None
 
-    print(f"[FVA] Finished optimization for reaction: {rxn_id}")
     return rxn_id, flux_min, flux_max
 
 # 2) Your FVA, rewritten to launch in parallel:
-def flux_variability_analysis_parallel(model, processed_df, biomass_reaction,
-                               output_file=None,
-                               enzyme_upper_bound=0.15, enzyme_ratio=True,
-                               multi_enzyme_off=False, isoenzymes_off=False,
-                               promiscuous_off=False, complexes_off=False,
-                               n_workers=None):
-    """
-    Perform Flux Variability Analysis (FVA) in parallel using Dask.
-    """
-    # Spin up a local Dask client (optional; if you omit this, compute() will
-    # use threads by default)
-    client = Client(n_workers=(n_workers or os.cpu_count()),
-                processes=True,      # optional: use separate processes
-                threads_per_worker=1)  # you can tune this
+# def flux_variability_analysis_parallel(model, processed_df, biomass_reaction,
+#                                output_file=None,
+#                                enzyme_upper_bound=0.15, enzyme_ratio=True,
+#                                multi_enzyme_off=False, isoenzymes_off=False,
+#                                promiscuous_off=False, complexes_off=False,
+#                                n_workers=None):
+#     """
+#     Perform Flux Variability Analysis (FVA) in parallel using Dask.
+#     """
+#     # Spin up a local Dask client (optional; if you omit this, compute() will
+#     # use threads by default)
+#     client = Client(n_workers=(n_workers or os.cpu_count()),
+#                 processes=True,      # optional: use separate processes
+#                 threads_per_worker=1)  # you can tune this
 
-    # 1) baseline FBA to fix biomass
-    from .optimize import run_optimization_with_dataframe
-    sol_biomass, df_FBA, _, _ = run_optimization_with_dataframe(
-        model=model, processed_df=processed_df,
-        objective_reaction=biomass_reaction,
-        enzyme_upper_bound=enzyme_upper_bound,
-        enzyme_ratio=enzyme_ratio,
-        multi_enzyme_off=multi_enzyme_off,
-        isoenzymes_off=isoenzymes_off,
-        promiscuous_off=promiscuous_off,
-        complexes_off=complexes_off,
-        maximization=True, save_results=False,
-    )
-    # freeze biomass
-    # biomass_rxn = model.reactions.get_by_id(biomass_reaction)
-    biomass_bounds = (biomass_reaction, sol_biomass, sol_biomass)
+#     # 1) baseline FBA to fix biomass
+#     from .optimize import run_optimization_with_dataframe
+#     sol_biomass, df_FBA, _, _ = run_optimization_with_dataframe(
+#         model=model, processed_df=processed_df,
+#         objective_reaction=biomass_reaction,
+#         enzyme_upper_bound=enzyme_upper_bound,
+#         enzyme_ratio=enzyme_ratio,
+#         multi_enzyme_off=multi_enzyme_off,
+#         isoenzymes_off=isoenzymes_off,
+#         promiscuous_off=promiscuous_off,
+#         complexes_off=complexes_off,
+#         maximization=True, save_results=False,
+#     )
+#     # freeze biomass
+#     # biomass_rxn = model.reactions.get_by_id(biomass_reaction)
+#     biomass_bounds = (biomass_reaction, sol_biomass, sol_biomass)
 
-    # 2) create one delayed task per reaction
-    tasks = []
-    for rxn in model.reactions:
-        tasks.append(
-            delayed(_fva_for_reaction)(
-                model.copy(),           # each worker gets its own model copy
-                processed_df,
-                rxn.id,
-                biomass_bounds,
-                enzyme_upper_bound, enzyme_ratio,
-                multi_enzyme_off, isoenzymes_off,
-                promiscuous_off, complexes_off
-            )
-        )
+#     # 2) create one delayed task per reaction
+#     tasks = []
+#     for rxn in model.reactions:
+#         tasks.append(
+#             delayed(_fva_for_reaction)(
+#                 model.copy(),           # each worker gets its own model copy
+#                 processed_df,
+#                 rxn.id,
+#                 biomass_bounds,
+#                 enzyme_upper_bound, enzyme_ratio,
+#                 multi_enzyme_off, isoenzymes_off,
+#                 promiscuous_off, complexes_off
+#             )
+#         )
 
-    # 3) compute in parallel
-    results = compute(*tasks)  # by default uses the Client’s cluster
+#     # 3) compute in parallel
+#     results = compute(*tasks)  # by default uses the Client’s cluster
 
-    # Print condensed summary of min and max solution values for each reaction
-    print("\nFVA Results (Reaction | Min | Max):")
-    print("{:<20} {:>12} {:>12}".format("Reaction", "Min", "Max"))
-    print("-" * 46)
-    for rxn_id, min_val, max_val in results:
-        print("{:<20} {:>12.4g} {:>12.4g}".format(rxn_id, min_val if min_val is not None else float('nan'), max_val if max_val is not None else float('nan')))
+#     # Print condensed summary of min and max solution values for each reaction
+#     print("\nFVA Results (Reaction | Min | Max):")
+#     print("{:<20} {:>12} {:>12}".format("Reaction", "Min", "Max"))
+#     print("-" * 46)
+#     for rxn_id, min_val, max_val in results:
+#         print("{:<20} {:>12.4g} {:>12.4g}".format(rxn_id, min_val if min_val is not None else float('nan'), max_val if max_val is not None else float('nan')))
 
-    # 4) stitch results back into a DataFrame
-    reaction_ids, min_vals, max_vals = zip(*results)
-    df_FVA = pd.DataFrame({
-        "Reactions": reaction_ids,
-        "Min Solutions": min_vals,
-        "Max Solutions": max_vals,
-        "Solution Biomass": [sol_biomass] * len(results)
-    })
+#     # 4) stitch results back into a DataFrame
+#     reaction_ids, min_vals, max_vals = zip(*results)
+#     df_FVA = pd.DataFrame({
+#         "Reactions": reaction_ids,
+#         "Min Solutions": min_vals,
+#         "Max Solutions": max_vals,
+#         "Solution Biomass": [sol_biomass] * len(results)
+#     })
 
-    # 5) optionally save
-    if output_file:
-        os.makedirs(os.path.dirname(output_file), exist_ok=True)
-        df_FVA.to_csv(output_file, index=False)
+#     # 5) optionally save
+#     if output_file:
+#         os.makedirs(os.path.dirname(output_file), exist_ok=True)
+#         df_FVA.to_csv(output_file, index=False)
 
-    client.close()
-    return df_FVA, processed_df, df_FBA
+#     client.close()
+#     return df_FVA, processed_df, df_FBA
 
 
 # ============================================================================
@@ -585,13 +583,16 @@ def flux_variability_analysis_parallel(model, processed_df, biomass_reaction,
 def _fva_for_reaction_chunk(model, processed_df, rxn_ids, biomass_bounds,
                             enzyme_upper_bound, enzyme_ratio,
                             multi_enzyme_off, isoenzymes_off,
-                            promiscuous_off, complexes_off):
+                            promiscuous_off, complexes_off, chunk_id=None, total_chunks=None):
     """
     Process multiple reactions in one task (for chunked parallelization).
     Reduces task overhead by batching reactions together.
     """
+    if chunk_id is not None and total_chunks is not None:
+        print(f"  [Chunk {chunk_id:2d}/{total_chunks}] Processing {len(rxn_ids)} reactions...")
+
     results = []
-    for rxn_id in rxn_ids:
+    for i, rxn_id in enumerate(rxn_ids):
         result = _fva_for_reaction(
             model, processed_df, rxn_id, biomass_bounds,
             enzyme_upper_bound, enzyme_ratio,
@@ -599,12 +600,22 @@ def _fva_for_reaction_chunk(model, processed_df, rxn_ids, biomass_bounds,
             promiscuous_off, complexes_off
         )
         results.append(result)
+
+        # Progress within chunk (only for large chunks)
+        if len(rxn_ids) >= 10 and (i + 1) % max(1, len(rxn_ids) // 4) == 0:
+            progress = ((i + 1) / len(rxn_ids)) * 100
+            if chunk_id is not None:
+                print(f"    [Chunk {chunk_id:2d}] {progress:5.1f}% complete ({i+1}/{len(rxn_ids)} reactions)")
+
+    if chunk_id is not None and total_chunks is not None:
+        print(f"  [Chunk {chunk_id:2d}/{total_chunks}] ✓ Complete ({len(rxn_ids)} reactions)")
+
     return results
 
 
 def flux_variability_analysis_parallel_chunked(model, processed_df, biomass_reaction,
                                output_file=None,
-                               enzyme_upper_bound=0.15, enzyme_ratio=True,
+                               enzyme_upper_bound=0.15, opt_ratio=0.9, enzyme_ratio=True,
                                multi_enzyme_off=False, isoenzymes_off=False,
                                promiscuous_off=False, complexes_off=False,
                                n_workers=None, chunk_size=None, method='dask'):
@@ -627,6 +638,8 @@ def flux_variability_analysis_parallel_chunked(model, processed_df, biomass_reac
         File path to save FVA results
     enzyme_upper_bound : float, optional
         Enzyme pool constraint (default: 0.15)
+    opt_ratio : float, optional
+        Fraction of optimal biomass to constrain during FVA (default: 0.9)
     enzyme_ratio : bool, optional
         Whether to apply enzyme ratio constraint (default: True)
     multi_enzyme_off, isoenzymes_off, promiscuous_off, complexes_off : bool
@@ -662,7 +675,9 @@ def flux_variability_analysis_parallel_chunked(model, processed_df, biomass_reac
     print(f"    Workers: {n_workers}")
     print(f"    Reactions: {n_reactions}")
     print(f"    Chunk size: {chunk_size}")
-    print(f"    Number of chunks: {(n_reactions + chunk_size - 1) // chunk_size}")
+
+    n_chunks = (n_reactions + chunk_size - 1) // chunk_size
+    print(f"    Number of chunks: {n_chunks}")
 
     # Estimate memory usage
     # Rough estimate: COBRApy models are ~100-200 MB per copy in memory
@@ -702,17 +717,21 @@ def flux_variability_analysis_parallel_chunked(model, processed_df, biomass_reac
         verbose=False
     )
     print(f"  Optimal biomass: {sol_biomass:.6f}")
+    print(f"  Biomass constraint: {sol_biomass * opt_ratio:.6f} ≤ biomass ≤ {sol_biomass:.6f} (opt_ratio={opt_ratio})")
 
-    biomass_bounds = (biomass_reaction, sol_biomass, sol_biomass)
+    biomass_bounds = (biomass_reaction, sol_biomass * opt_ratio, sol_biomass)
 
     # 2) Create reaction chunks
     reaction_ids = [rxn.id for rxn in model.reactions]
     chunks = [reaction_ids[i:i+chunk_size]
               for i in range(0, len(reaction_ids), chunk_size)]
 
-    print(f"\n  Starting parallel FVA with {len(chunks)} chunks...")
+    print(f"\n  Starting parallel FVA with {n_chunks} chunks...")
+    print("  Progress will be shown by chunk completion...")
 
     # 3) Execute in parallel based on method
+    start_time = time.time()
+
     if method.lower() == 'multiprocessing':
         results = _run_fva_multiprocessing(
             model, processed_df, chunks, biomass_bounds,
@@ -730,10 +749,28 @@ def flux_variability_analysis_parallel_chunked(model, processed_df, biomass_reac
             n_workers
         )
 
+    # Record execution time
+    execution_time = time.time() - start_time
+
     # 4) Flatten results (each chunk returns a list of tuples)
     flat_results = []
     for chunk_results in results:
         flat_results.extend(chunk_results)
+
+    # Print completion summary
+    total_reactions = len(flat_results)
+    successful_reactions = sum(1 for _, min_val, max_val in flat_results
+                              if min_val is not None and max_val is not None)
+    failed_reactions = total_reactions - successful_reactions
+
+    print(f"\n  ✓ FVA Complete: {total_reactions} reactions processed")
+    print(f"    - Successful: {successful_reactions}")
+    if failed_reactions > 0:
+        print(f"    - Failed: {failed_reactions}")
+    print(f"    - Success rate: {(successful_reactions/total_reactions)*100:.1f}%")
+    print(f"    - Execution time: {execution_time/60:.1f} minutes ({execution_time:.1f} seconds)")
+    if successful_reactions > 0:
+        print(f"    - Average time per reaction: {execution_time/successful_reactions:.2f} seconds")
 
     # 5) Create DataFrame
     reaction_ids, min_vals, max_vals = zip(*flat_results)
@@ -787,7 +824,8 @@ def _run_fva_dask(model, processed_df, chunks, biomass_bounds,
 
     # Create delayed tasks
     tasks = []
-    for chunk in chunks:
+    total_chunks = len(chunks)
+    for i, chunk in enumerate(chunks, 1):
         tasks.append(
             delayed(_fva_for_reaction_chunk)(
                 model.copy(),
@@ -796,7 +834,8 @@ def _run_fva_dask(model, processed_df, chunks, biomass_bounds,
                 biomass_bounds,
                 enzyme_upper_bound, enzyme_ratio,
                 multi_enzyme_off, isoenzymes_off,
-                promiscuous_off, complexes_off
+                promiscuous_off, complexes_off,
+                i, total_chunks  # chunk_id and total_chunks for progress tracking
             )
         )
 
@@ -819,23 +858,27 @@ def _run_fva_multiprocessing(model, processed_df, chunks, biomass_bounds,
     from functools import partial
     from multiprocessing import Pool
 
-    # Create partial function with fixed arguments
-    worker_func = partial(
-        _fva_for_reaction_chunk,
-        model.copy(),  # Each worker gets model copy
-        processed_df,
-        biomass_bounds=biomass_bounds,
-        enzyme_upper_bound=enzyme_upper_bound,
-        enzyme_ratio=enzyme_ratio,
-        multi_enzyme_off=multi_enzyme_off,
-        isoenzymes_off=isoenzymes_off,
-        promiscuous_off=promiscuous_off,
-        complexes_off=complexes_off
-    )
+    def worker_func(chunk_info):
+        """Worker function that includes chunk progress info."""
+        chunk, chunk_id, total_chunks = chunk_info
+        return _fva_for_reaction_chunk(
+            model.copy(),  # Each worker gets model copy
+            processed_df,
+            chunk,
+            biomass_bounds,
+            enzyme_upper_bound, enzyme_ratio,
+            multi_enzyme_off, isoenzymes_off,
+            promiscuous_off, complexes_off,
+            chunk_id, total_chunks
+        )
+
+    # Create chunk info tuples (chunk, chunk_id, total_chunks)
+    total_chunks = len(chunks)
+    chunk_infos = [(chunk, i+1, total_chunks) for i, chunk in enumerate(chunks)]
 
     # Execute in parallel
     with Pool(processes=n_workers) as pool:
-        results = pool.map(worker_func, chunks)
+        results = pool.map(worker_func, chunk_infos)
 
     return results
 
@@ -843,7 +886,7 @@ def _run_fva_multiprocessing(model, processed_df, chunks, biomass_bounds,
 # Wrapper function that chooses implementation based on config
 def flux_variability_analysis_parallel(model, processed_df, biomass_reaction,
                                       output_file=None,
-                                      enzyme_upper_bound=0.15, enzyme_ratio=True,
+                                      enzyme_upper_bound=0.15, opt_ratio=0.9, enzyme_ratio=True,
                                       multi_enzyme_off=False, isoenzymes_off=False,
                                       promiscuous_off=False, complexes_off=False,
                                       n_workers=None, chunk_size=None, method='dask'):
@@ -862,6 +905,7 @@ def flux_variability_analysis_parallel(model, processed_df, biomass_reaction,
         biomass_reaction=biomass_reaction,
         output_file=output_file,
         enzyme_upper_bound=enzyme_upper_bound,
+        opt_ratio=opt_ratio,
         enzyme_ratio=enzyme_ratio,
         multi_enzyme_off=multi_enzyme_off,
         isoenzymes_off=isoenzymes_off,
