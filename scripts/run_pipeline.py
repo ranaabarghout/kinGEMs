@@ -251,6 +251,7 @@ def run_fva_analysis(model, processed_df, biomass_reaction, enzyme_upper_bound,
     fva_results_path = os.path.join(tuning_results_dir, f"{organism_strain_GEMname}_fva_results.csv")
     fva_plot_path = os.path.join(tuning_results_dir, f"{organism_strain_GEMname}_fva_flux_range_plot.png")
     fva_cumulative_path = os.path.join(tuning_results_dir, f"{organism_strain_GEMname}_fva_cumulative_plot.png")
+    fva_baseline_results_path = os.path.join(tuning_results_dir, f"{organism_strain_GEMname}_cobra_fva_results.csv")
 
     # Run kinGEMs FVA
     if use_parallel:
@@ -285,7 +286,9 @@ def run_fva_analysis(model, processed_df, biomass_reaction, enzyme_upper_bound,
         "Max Solutions": cobra_fva_results['maximum'],
         "Solution Biomass": [model.slim_optimize()] * len(cobra_fva_results)
     })
-    print(f"  COBRApy FVA completed: {len(cobra_fva_df)} reactions analyzed")
+    
+    cobra_fva_df.to_csv(fva_baseline_results_path, index=False)
+    print(f"  COBRApy FVA completed: {len(cobra_fva_df)} reactions analyzed and results saved to {fva_baseline_results_path}")
 
     # Generate plots
     print("  Generating FVA plots...")
@@ -734,6 +737,9 @@ def main():
         fva_config = config.get('fva', {})
         run_fva_analysis(model, df_new, biomass_reaction, enzyme_upper_bound,
                         tuning_results_dir, model_name, fva_config)
+
+        run_fva_analysis(model, processed_data, biomass_reaction, enzyme_upper_bound,
+                        tuning_results_dir, f"{model_name}_pre_tuning", fva_config)
 
     if enable_biolog:
         biolog_config = config.get('biolog_validation', {})
