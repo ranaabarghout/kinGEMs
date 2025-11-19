@@ -578,11 +578,9 @@ def main():
     # === Step 4: Optimization ===
     print("\n=== Step 4: Running optimization ===")
 
-    # Extract medium constraints from config
-    sa_config_temp = config.get('simulated_annealing', {})
-    medium_temp = sa_config_temp.get('medium', None)
-    medium_upper_bound_temp = sa_config_temp.get('medium_upper_bound', True)
-
+    # Extract medium constraints from config 
+    medium_temp = config.get('medium', None)
+    medium_upper_bound_temp = config.get('medium_upper_bound', True)
     # First run standard COBRApy optimization for comparison
     print("  Running standard COBRApy FBA (no enzyme constraints)...")
     
@@ -658,8 +656,9 @@ def main():
     change_threshold = sa_config.get('change_threshold', 0.009)
     biomass_goal = sa_config.get('biomass_goal', 0.5)
     verbose = sa_config.get('verbose', False)
-    medium = sa_config.get('medium', None)
-    medium_upper_bound = sa_config.get('medium_upper_bound', True)
+    medium = config.get('medium', None)
+    medium_upper_bound = config.get('medium_upper_bound', True)
+
 
     print("  Configuration:")
     print(f"    - Temperature: {temperature}")

@@ -181,9 +181,9 @@ def run_optimization(
         print("\n=== DIAGNOSTIC: Checking captured bounds ===")
         for rxn_id in medium.keys():
             if rxn_id in lb:
-                print(f"  {rxn_id} lower bound in lb dict: {lb[rxn_id]:.4f} (should be {medium[rxn_id]:.4f})")
+                print(f"  {rxn_id} lower bound in lb dict: {lb[rxn_id]:.4f}")
             if rxn_id in ub:
-                print(f"  {rxn_id} upper bound in ub dict: {ub[rxn_id]:.4f} (should be {medium[rxn_id]:.4f})")
+                print(f"  {rxn_id} upper bound in ub dict: {ub[rxn_id]:.4f}")
             else:
                 print(f"  {rxn_id} NOT FOUND in lb or ub dict!")
         print("=== END DIAGNOSTIC ===\n")
