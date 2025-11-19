@@ -1,32 +1,41 @@
-[build-system]
-requires = ["flit_core >=3.2,<4"]
-build-backend = "flit_core.buildapi"
-
 [project]
-name = "kinGEMs"
-version = "0.0.1"
+name = "kingems"
+version = "0.1.0"
 description = "A pipeline for automatic reconstruction of enzyme-constrained genome-scale models using CPI-Pred for kinetic parameter annotation."
 authors = [
   { name = "Rana A. Barghout" },
+  { name = "Lya Chinas" },
 ]
-license = { file = "LICENSE" }
-readme = "README.md"
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License"
+requires-python = ">=3.10"
+
+dependencies = [
+  "loguru",
+  "python-dotenv",
+  "ruff",
+  "tqdm",
+  "typer",
+  "bioservices",
+  "cobra",
+  "scipy",
+  "numpy",
+  "pandas",
+  "pubchempy",
+  "requests",
+  "biopython",
+  "pyomo",
+  "seaborn",
+  "ipykernel",
+  "dask",
+  "distributed",
+  "matplotlib",
+  "escher",
+  "pyomo[appsi]",
+  "highspy",
 ]
-requires-python = "~=3.9"
 
+[tool.uv]
 
-[tool.ruff]
-line-length = 99
-src = ["kinGEMs"]
-include = ["pyproject.toml", "kinGEMs/**/*.py"]
-
-[tool.ruff.lint]
-extend-select = ["I"]  # Add import sorting
-
-[tool.ruff.lint.isort]
-known-first-party = ["kinGEMs"]
-force-sort-within-sections = true
-
+[project.optional-dependencies]
+dev = [
+  "mkdocs",
+]
