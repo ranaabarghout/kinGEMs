@@ -9,7 +9,7 @@
 #SBATCH --mem=64G
 #SBATCH --output=logs/pipeline_direct_%j.out
 #SBATCH --error=logs/pipeline_direct_%j.err
-#SBATCH --mail-user=ranamoneim@gmail.com
+#SBATCH --mail-user=lya.chinas@mail.utoronto.ca
 #SBATCH --mail-type=BEGIN,END,FAIL
 # ---------------------------------------------------------------------
 echo "========================================="
@@ -25,7 +25,7 @@ echo "========================================="
 module load python/3.11
 
 # Activate virtual environment
-source venv/bin/activate
+source .venv/bin/activate
 
 # Create logs directory if it doesn't exist
 mkdir -p logs

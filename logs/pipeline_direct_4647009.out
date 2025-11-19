@@ -1,0 +1,570 @@
+=========================================
+Job: kinGEMs General Pipeline (Direct)
+Job ID: 4647009
+Node: c91
+Current working directory: /scratch/chinasse/kinGEMs_v2
+Starting run at: Tue Nov 18 04:31:44 PM EST 2025
+=========================================
+
+Configuration: configs/fluxomics_iML1515_GEM.json
+CPUs allocated: 8
+
+Updated FVA workers to match SLURM CPUs: 8
+Using temporary config: /tmp/tmp.QtPb6NghEt.json
+
+Running kinGEMs pipeline...
+Loading configuration from: /tmp/tmp.QtPb6NghEt.json
+
+======================================================================
+=== kinGEMs Pipeline for iML1515_GEM ===
+======================================================================
+Run ID: iML1515_GEM_20251118_8183
+Model type: Standard
+Organism: E coli
+Results directory: /scratch/chinasse/kinGEMs_v2/results/tuning_results/iML1515_GEM_20251118_8183
+Solver: glpk
+======================================================================
+
+=== Configuration Summary ===
+Config file: /tmp/tmp.QtPb6NghEt.json
+Model name: iML1515_GEM
+Enzyme upper bound: 0.5
+Enable FVA: False
+Enable Biolog validation: False
+
+Simulated Annealing Settings:
+  Temperature: 1.0
+  Cooling rate: 0.975
+  Min temperature: 0.001
+  Max iterations: 100
+  Max unchanged iterations: 5
+  Change threshold: 0.009
+  Biomass goal: 0.8
+======================================================================
+
+Biomass reaction: BIOMASS_Ec_iML1515_core_75p37M
+
+=== Step 1: Preparing model data ===
+  ✓ Found existing files, loading cached data:
+    - /scratch/chinasse/kinGEMs_v2/data/interim/iML1515_GEM/iML1515_GEM_substrates.csv
+    - /scratch/chinasse/kinGEMs_v2/data/interim/iML1515_GEM/iML1515_GEM_sequences.csv
+Warning: Model has 8 validation errors
+  Model: 1516 genes, 2712 reactions
+
+=== Step 2: Merging substrate and sequence data ===
+  ✓ Found existing file, loading cached data:
+    - /scratch/chinasse/kinGEMs_v2/data/interim/iML1515_GEM/iML1515_GEM_merged_data.csv
+  Merged data: 12229 rows
+  Found predictions file: X06A_kinGEMs_ecoli_iML1515_predictions.csv
+
+=== Step 3: Processing CPI-Pred kcat values & annotating model ===
+  ✓ Found existing file, loading cached data:
+    - /scratch/chinasse/kinGEMs_v2/data/processed/iML1515_GEM/iML1515_GEM_processed_data.csv
+  Processed data: 33934 rows
+  Reactions with kcat: 2136/2712
+
+=== Step 4: Running optimization ===
+  Running standard COBRApy FBA (no enzyme constraints)...
+  Applying medium conditions (fixed fluxes) to COBRApy model:
+    Fixed EX_glc__D_e: -9.99998
+    Fixed EX_so4_e: -0.175297
+    Fixed EX_o2_e: -14.2804
+    Fixed EX_nh4_e: -5.23859
+    COBRApy biomass: 0.4851
+  Running kinGEMs enzyme-constrained optimization...
+
+=== DIAGNOSTIC: Checking captured bounds ===
+  EX_glc__D_e lower bound in lb dict: -10.0000 (should be -10.0000)
+  EX_glc__D_e upper bound in ub dict: -10.0000 (should be -10.0000)
+  EX_so4_e lower bound in lb dict: -0.1753 (should be -0.1753)
+  EX_so4_e upper bound in ub dict: -0.1753 (should be -0.1753)
+  EX_o2_e lower bound in lb dict: -14.2804 (should be -14.2804)
+  EX_o2_e upper bound in ub dict: -14.2804 (should be -14.2804)
+  EX_nh4_e lower bound in lb dict: -5.2386 (should be -5.2386)
+  EX_nh4_e upper bound in ub dict: -5.2386 (should be -5.2386)
+=== END DIAGNOSTIC ===
+
+
+=== DIAGNOSTIC: Exchange reaction fluxes after optimization ===
+  EX_glc__D_e: flux = -10.0000 (bound was -10.0000)
+  EX_so4_e: flux = -0.1753 (bound was -0.1753)
+  EX_o2_e: flux = -14.2804 (bound was -14.2804)
+  EX_nh4_e: flux = -5.2386 (bound was -5.2386)
+Objective value: 0.182351
+=== END DIAGNOSTIC ===
+
+    kinGEMs biomass: 0.1824
+
+  Comparison:
+    Standard FBA:           0.4851
+    Enzyme-constrained FBA: 0.1824
+    Reduction due to enzyme budget: 62.4%
+  Using standard model - may need additional constraint processing
+
+=== Step 5: Running simulated annealing ===
+  Configuration:
+    - Temperature: 1.0
+    - Cooling rate: 0.975
+    - Max iterations: 100
+    - Max unchanged iterations: 5
+    - Change threshold: 0.009
+    - Biomass goal: 0.8
+    - Medium conditions: 4 reactions (fixed fluxes)
+  Starting optimization...
+
+
+=== DIAGNOSTIC: Checking captured bounds ===
+  EX_glc__D_e lower bound in lb dict: -10.0000 (should be -10.0000)
+  EX_glc__D_e upper bound in ub dict: -10.0000 (should be -10.0000)
+  EX_so4_e lower bound in lb dict: -0.1753 (should be -0.1753)
+  EX_so4_e upper bound in ub dict: -0.1753 (should be -0.1753)
+  EX_o2_e lower bound in lb dict: -14.2804 (should be -14.2804)
+  EX_o2_e upper bound in ub dict: -14.2804 (should be -14.2804)
+  EX_nh4_e lower bound in lb dict: -5.2386 (should be -5.2386)
+  EX_nh4_e upper bound in ub dict: -5.2386 (should be -5.2386)
+=== END DIAGNOSTIC ===
+
+
+=== DIAGNOSTIC: Exchange reaction fluxes after optimization ===
+  EX_glc__D_e: flux = -10.0000 (bound was -10.0000)
+  EX_so4_e: flux = -0.1753 (bound was -0.1753)
+  EX_o2_e: flux = -14.2804 (bound was -14.2804)
+  EX_nh4_e: flux = -5.2386 (bound was -5.2386)
+Objective value: 0.182351
+=== END DIAGNOSTIC ===
+
+
+=== DIAGNOSTIC: Checking captured bounds ===
+  EX_glc__D_e lower bound in lb dict: -10.0000 (should be -10.0000)
+  EX_glc__D_e upper bound in ub dict: -10.0000 (should be -10.0000)
+  EX_so4_e lower bound in lb dict: -0.1753 (should be -0.1753)
+  EX_so4_e upper bound in ub dict: -0.1753 (should be -0.1753)
+  EX_o2_e lower bound in lb dict: -14.2804 (should be -14.2804)
+  EX_o2_e upper bound in ub dict: -14.2804 (should be -14.2804)
+  EX_nh4_e lower bound in lb dict: -5.2386 (should be -5.2386)
+  EX_nh4_e upper bound in ub dict: -5.2386 (should be -5.2386)
+=== END DIAGNOSTIC ===
+
+
+=== DIAGNOSTIC: Exchange reaction fluxes after optimization ===
+  EX_glc__D_e: flux = -10.0000 (bound was -10.0000)
+  EX_so4_e: flux = -0.1753 (bound was -0.1753)
+  EX_o2_e: flux = -14.2804 (bound was -14.2804)
+  EX_nh4_e: flux = -5.2386 (bound was -5.2386)
+Objective value: 0.182839
+=== END DIAGNOSTIC ===
+
+  Iter 1/100: biomass=0.182839, temp=1.0000
+=== DIAGNOSTIC: Checking captured bounds ===
+  EX_glc__D_e lower bound in lb dict: -10.0000 (should be -10.0000)
+  EX_glc__D_e upper bound in ub dict: -10.0000 (should be -10.0000)
+  EX_so4_e lower bound in lb dict: -0.1753 (should be -0.1753)
+  EX_so4_e upper bound in ub dict: -0.1753 (should be -0.1753)
+  EX_o2_e lower bound in lb dict: -14.2804 (should be -14.2804)
+  EX_o2_e upper bound in ub dict: -14.2804 (should be -14.2804)
+  EX_nh4_e lower bound in lb dict: -5.2386 (should be -5.2386)
+  EX_nh4_e upper bound in ub dict: -5.2386 (should be -5.2386)
+=== END DIAGNOSTIC ===
+
+
+=== DIAGNOSTIC: Exchange reaction fluxes after optimization ===
+  EX_glc__D_e: flux = -10.0000 (bound was -10.0000)
+  EX_so4_e: flux = -0.1753 (bound was -0.1753)
+  EX_o2_e: flux = -14.2804 (bound was -14.2804)
+  EX_nh4_e: flux = -5.2386 (bound was -5.2386)
+Objective value: 0.210676
+=== END DIAGNOSTIC ===
+
+  Iter 2/100: biomass=0.210676, temp=0.9750
+=== DIAGNOSTIC: Checking captured bounds ===
+  EX_glc__D_e lower bound in lb dict: -10.0000 (should be -10.0000)
+  EX_glc__D_e upper bound in ub dict: -10.0000 (should be -10.0000)
+  EX_so4_e lower bound in lb dict: -0.1753 (should be -0.1753)
+  EX_so4_e upper bound in ub dict: -0.1753 (should be -0.1753)
+  EX_o2_e lower bound in lb dict: -14.2804 (should be -14.2804)
+  EX_o2_e upper bound in ub dict: -14.2804 (should be -14.2804)
+  EX_nh4_e lower bound in lb dict: -5.2386 (should be -5.2386)
+  EX_nh4_e upper bound in ub dict: -5.2386 (should be -5.2386)
+=== END DIAGNOSTIC ===
+
+
+=== DIAGNOSTIC: Exchange reaction fluxes after optimization ===
+  EX_glc__D_e: flux = -10.0000 (bound was -10.0000)
+  EX_so4_e: flux = -0.1753 (bound was -0.1753)
+  EX_o2_e: flux = -14.2804 (bound was -14.2804)
+  EX_nh4_e: flux = -5.2386 (bound was -5.2386)
+Objective value: 0.243810
+=== END DIAGNOSTIC ===
+
+  Iter 3/100: biomass=0.243810, temp=0.9506
+=== DIAGNOSTIC: Checking captured bounds ===
+  EX_glc__D_e lower bound in lb dict: -10.0000 (should be -10.0000)
+  EX_glc__D_e upper bound in ub dict: -10.0000 (should be -10.0000)
+  EX_so4_e lower bound in lb dict: -0.1753 (should be -0.1753)
+  EX_so4_e upper bound in ub dict: -0.1753 (should be -0.1753)
+  EX_o2_e lower bound in lb dict: -14.2804 (should be -14.2804)
+  EX_o2_e upper bound in ub dict: -14.2804 (should be -14.2804)
+  EX_nh4_e lower bound in lb dict: -5.2386 (should be -5.2386)
+  EX_nh4_e upper bound in ub dict: -5.2386 (should be -5.2386)
+=== END DIAGNOSTIC ===
+
+
+=== DIAGNOSTIC: Exchange reaction fluxes after optimization ===
+  EX_glc__D_e: flux = -10.0000 (bound was -10.0000)
+  EX_so4_e: flux = -0.1753 (bound was -0.1753)
+  EX_o2_e: flux = -14.2804 (bound was -14.2804)
+  EX_nh4_e: flux = -5.2386 (bound was -5.2386)
+Objective value: 0.287011
+=== END DIAGNOSTIC ===
+
+  Iter 4/100: biomass=0.287011, temp=0.9269
+=== DIAGNOSTIC: Checking captured bounds ===
+  EX_glc__D_e lower bound in lb dict: -10.0000 (should be -10.0000)
+  EX_glc__D_e upper bound in ub dict: -10.0000 (should be -10.0000)
+  EX_so4_e lower bound in lb dict: -0.1753 (should be -0.1753)
+  EX_so4_e upper bound in ub dict: -0.1753 (should be -0.1753)
+  EX_o2_e lower bound in lb dict: -14.2804 (should be -14.2804)
+  EX_o2_e upper bound in ub dict: -14.2804 (should be -14.2804)
+  EX_nh4_e lower bound in lb dict: -5.2386 (should be -5.2386)
+  EX_nh4_e upper bound in ub dict: -5.2386 (should be -5.2386)
+=== END DIAGNOSTIC ===
+
+
+=== DIAGNOSTIC: Exchange reaction fluxes after optimization ===
+  EX_glc__D_e: flux = -10.0000 (bound was -10.0000)
+  EX_so4_e: flux = -0.1753 (bound was -0.1753)
+  EX_o2_e: flux = -14.2804 (bound was -14.2804)
+  EX_nh4_e: flux = -5.2386 (bound was -5.2386)
+Objective value: 0.304099
+=== END DIAGNOSTIC ===
+
+  Iter 5/100: biomass=0.304099, temp=0.9037
+=== DIAGNOSTIC: Checking captured bounds ===
+  EX_glc__D_e lower bound in lb dict: -10.0000 (should be -10.0000)
+  EX_glc__D_e upper bound in ub dict: -10.0000 (should be -10.0000)
+  EX_so4_e lower bound in lb dict: -0.1753 (should be -0.1753)
+  EX_so4_e upper bound in ub dict: -0.1753 (should be -0.1753)
+  EX_o2_e lower bound in lb dict: -14.2804 (should be -14.2804)
+  EX_o2_e upper bound in ub dict: -14.2804 (should be -14.2804)
+  EX_nh4_e lower bound in lb dict: -5.2386 (should be -5.2386)
+  EX_nh4_e upper bound in ub dict: -5.2386 (should be -5.2386)
+=== END DIAGNOSTIC ===
+
+
+=== DIAGNOSTIC: Exchange reaction fluxes after optimization ===
+  EX_glc__D_e: flux = -10.0000 (bound was -10.0000)
+  EX_so4_e: flux = -0.1753 (bound was -0.1753)
+  EX_o2_e: flux = -14.2804 (bound was -14.2804)
+  EX_nh4_e: flux = -5.2386 (bound was -5.2386)
+Objective value: 0.329669
+=== END DIAGNOSTIC ===
+
+  Iter 6/100: biomass=0.329669, temp=0.8811
+=== DIAGNOSTIC: Checking captured bounds ===
+  EX_glc__D_e lower bound in lb dict: -10.0000 (should be -10.0000)
+  EX_glc__D_e upper bound in ub dict: -10.0000 (should be -10.0000)
+  EX_so4_e lower bound in lb dict: -0.1753 (should be -0.1753)
+  EX_so4_e upper bound in ub dict: -0.1753 (should be -0.1753)
+  EX_o2_e lower bound in lb dict: -14.2804 (should be -14.2804)
+  EX_o2_e upper bound in ub dict: -14.2804 (should be -14.2804)
+  EX_nh4_e lower bound in lb dict: -5.2386 (should be -5.2386)
+  EX_nh4_e upper bound in ub dict: -5.2386 (should be -5.2386)
+=== END DIAGNOSTIC ===
+
+
+=== DIAGNOSTIC: Exchange reaction fluxes after optimization ===
+  EX_glc__D_e: flux = -10.0000 (bound was -10.0000)
+  EX_so4_e: flux = -0.1753 (bound was -0.1753)
+  EX_o2_e: flux = -14.2804 (bound was -14.2804)
+  EX_nh4_e: flux = -5.2386 (bound was -5.2386)
+Objective value: 0.341721
+=== END DIAGNOSTIC ===
+
+  Iter 7/100: biomass=0.341721, temp=0.8591
+=== DIAGNOSTIC: Checking captured bounds ===
+  EX_glc__D_e lower bound in lb dict: -10.0000 (should be -10.0000)
+  EX_glc__D_e upper bound in ub dict: -10.0000 (should be -10.0000)
+  EX_so4_e lower bound in lb dict: -0.1753 (should be -0.1753)
+  EX_so4_e upper bound in ub dict: -0.1753 (should be -0.1753)
+  EX_o2_e lower bound in lb dict: -14.2804 (should be -14.2804)
+  EX_o2_e upper bound in ub dict: -14.2804 (should be -14.2804)
+  EX_nh4_e lower bound in lb dict: -5.2386 (should be -5.2386)
+  EX_nh4_e upper bound in ub dict: -5.2386 (should be -5.2386)
+=== END DIAGNOSTIC ===
+
+
+=== DIAGNOSTIC: Exchange reaction fluxes after optimization ===
+  EX_glc__D_e: flux = -10.0000 (bound was -10.0000)
+  EX_so4_e: flux = -0.1753 (bound was -0.1753)
+  EX_o2_e: flux = -14.2804 (bound was -14.2804)
+  EX_nh4_e: flux = -5.2386 (bound was -5.2386)
+Objective value: 0.350543
+=== END DIAGNOSTIC ===
+
+  Iter 8/100: biomass=0.350543, temp=0.8376
+=== DIAGNOSTIC: Checking captured bounds ===
+  EX_glc__D_e lower bound in lb dict: -10.0000 (should be -10.0000)
+  EX_glc__D_e upper bound in ub dict: -10.0000 (should be -10.0000)
+  EX_so4_e lower bound in lb dict: -0.1753 (should be -0.1753)
+  EX_so4_e upper bound in ub dict: -0.1753 (should be -0.1753)
+  EX_o2_e lower bound in lb dict: -14.2804 (should be -14.2804)
+  EX_o2_e upper bound in ub dict: -14.2804 (should be -14.2804)
+  EX_nh4_e lower bound in lb dict: -5.2386 (should be -5.2386)
+  EX_nh4_e upper bound in ub dict: -5.2386 (should be -5.2386)
+=== END DIAGNOSTIC ===
+
+
+=== DIAGNOSTIC: Exchange reaction fluxes after optimization ===
+  EX_glc__D_e: flux = -10.0000 (bound was -10.0000)
+  EX_so4_e: flux = -0.1753 (bound was -0.1753)
+  EX_o2_e: flux = -14.2804 (bound was -14.2804)
+  EX_nh4_e: flux = -5.2386 (bound was -5.2386)
+Objective value: 0.357195
+=== END DIAGNOSTIC ===
+
+  Iter 9/100: biomass=0.357195, temp=0.8167
+=== DIAGNOSTIC: Checking captured bounds ===
+  EX_glc__D_e lower bound in lb dict: -10.0000 (should be -10.0000)
+  EX_glc__D_e upper bound in ub dict: -10.0000 (should be -10.0000)
+  EX_so4_e lower bound in lb dict: -0.1753 (should be -0.1753)
+  EX_so4_e upper bound in ub dict: -0.1753 (should be -0.1753)
+  EX_o2_e lower bound in lb dict: -14.2804 (should be -14.2804)
+  EX_o2_e upper bound in ub dict: -14.2804 (should be -14.2804)
+  EX_nh4_e lower bound in lb dict: -5.2386 (should be -5.2386)
+  EX_nh4_e upper bound in ub dict: -5.2386 (should be -5.2386)
+=== END DIAGNOSTIC ===
+
+
+=== DIAGNOSTIC: Exchange reaction fluxes after optimization ===
+  EX_glc__D_e: flux = -10.0000 (bound was -10.0000)
+  EX_so4_e: flux = -0.1753 (bound was -0.1753)
+  EX_o2_e: flux = -14.2804 (bound was -14.2804)
+  EX_nh4_e: flux = -5.2386 (bound was -5.2386)
+Objective value: 0.358563
+=== END DIAGNOSTIC ===
+
+  Iter 10/100: biomass=0.358563, temp=0.7962
+=== DIAGNOSTIC: Checking captured bounds ===
+  EX_glc__D_e lower bound in lb dict: -10.0000 (should be -10.0000)
+  EX_glc__D_e upper bound in ub dict: -10.0000 (should be -10.0000)
+  EX_so4_e lower bound in lb dict: -0.1753 (should be -0.1753)
+  EX_so4_e upper bound in ub dict: -0.1753 (should be -0.1753)
+  EX_o2_e lower bound in lb dict: -14.2804 (should be -14.2804)
+  EX_o2_e upper bound in ub dict: -14.2804 (should be -14.2804)
+  EX_nh4_e lower bound in lb dict: -5.2386 (should be -5.2386)
+  EX_nh4_e upper bound in ub dict: -5.2386 (should be -5.2386)
+=== END DIAGNOSTIC ===
+
+
+=== DIAGNOSTIC: Exchange reaction fluxes after optimization ===
+  EX_glc__D_e: flux = -10.0000 (bound was -10.0000)
+  EX_so4_e: flux = -0.1753 (bound was -0.1753)
+  EX_o2_e: flux = -14.2804 (bound was -14.2804)
+  EX_nh4_e: flux = -5.2386 (bound was -5.2386)
+Objective value: 0.363424
+=== END DIAGNOSTIC ===
+
+  Iter 11/100: biomass=0.363424, temp=0.7763
+=== DIAGNOSTIC: Checking captured bounds ===
+  EX_glc__D_e lower bound in lb dict: -10.0000 (should be -10.0000)
+  EX_glc__D_e upper bound in ub dict: -10.0000 (should be -10.0000)
+  EX_so4_e lower bound in lb dict: -0.1753 (should be -0.1753)
+  EX_so4_e upper bound in ub dict: -0.1753 (should be -0.1753)
+  EX_o2_e lower bound in lb dict: -14.2804 (should be -14.2804)
+  EX_o2_e upper bound in ub dict: -14.2804 (should be -14.2804)
+  EX_nh4_e lower bound in lb dict: -5.2386 (should be -5.2386)
+  EX_nh4_e upper bound in ub dict: -5.2386 (should be -5.2386)
+=== END DIAGNOSTIC ===
+
+
+=== DIAGNOSTIC: Exchange reaction fluxes after optimization ===
+  EX_glc__D_e: flux = -10.0000 (bound was -10.0000)
+  EX_so4_e: flux = -0.1753 (bound was -0.1753)
+  EX_o2_e: flux = -14.2804 (bound was -14.2804)
+  EX_nh4_e: flux = -5.2386 (bound was -5.2386)
+Objective value: 0.367836
+=== END DIAGNOSTIC ===
+
+  Iter 12/100: biomass=0.367836, temp=0.7569
+=== DIAGNOSTIC: Checking captured bounds ===
+  EX_glc__D_e lower bound in lb dict: -10.0000 (should be -10.0000)
+  EX_glc__D_e upper bound in ub dict: -10.0000 (should be -10.0000)
+  EX_so4_e lower bound in lb dict: -0.1753 (should be -0.1753)
+  EX_so4_e upper bound in ub dict: -0.1753 (should be -0.1753)
+  EX_o2_e lower bound in lb dict: -14.2804 (should be -14.2804)
+  EX_o2_e upper bound in ub dict: -14.2804 (should be -14.2804)
+  EX_nh4_e lower bound in lb dict: -5.2386 (should be -5.2386)
+  EX_nh4_e upper bound in ub dict: -5.2386 (should be -5.2386)
+=== END DIAGNOSTIC ===
+
+
+=== DIAGNOSTIC: Exchange reaction fluxes after optimization ===
+  EX_glc__D_e: flux = -10.0000 (bound was -10.0000)
+  EX_so4_e: flux = -0.1753 (bound was -0.1753)
+  EX_o2_e: flux = -14.2804 (bound was -14.2804)
+  EX_nh4_e: flux = -5.2386 (bound was -5.2386)
+Objective value: 0.370487
+=== END DIAGNOSTIC ===
+
+  Iter 13/100: biomass=0.370487, temp=0.7380
+=== DIAGNOSTIC: Checking captured bounds ===
+  EX_glc__D_e lower bound in lb dict: -10.0000 (should be -10.0000)
+  EX_glc__D_e upper bound in ub dict: -10.0000 (should be -10.0000)
+  EX_so4_e lower bound in lb dict: -0.1753 (should be -0.1753)
+  EX_so4_e upper bound in ub dict: -0.1753 (should be -0.1753)
+  EX_o2_e lower bound in lb dict: -14.2804 (should be -14.2804)
+  EX_o2_e upper bound in ub dict: -14.2804 (should be -14.2804)
+  EX_nh4_e lower bound in lb dict: -5.2386 (should be -5.2386)
+  EX_nh4_e upper bound in ub dict: -5.2386 (should be -5.2386)
+=== END DIAGNOSTIC ===
+
+
+=== DIAGNOSTIC: Exchange reaction fluxes after optimization ===
+  EX_glc__D_e: flux = -10.0000 (bound was -10.0000)
+  EX_so4_e: flux = -0.1753 (bound was -0.1753)
+  EX_o2_e: flux = -14.2804 (bound was -14.2804)
+  EX_nh4_e: flux = -5.2386 (bound was -5.2386)
+Objective value: 0.372937
+=== END DIAGNOSTIC ===
+
+  Iter 14/100: biomass=0.372937, temp=0.7195
+=== DIAGNOSTIC: Checking captured bounds ===
+  EX_glc__D_e lower bound in lb dict: -10.0000 (should be -10.0000)
+  EX_glc__D_e upper bound in ub dict: -10.0000 (should be -10.0000)
+  EX_so4_e lower bound in lb dict: -0.1753 (should be -0.1753)
+  EX_so4_e upper bound in ub dict: -0.1753 (should be -0.1753)
+  EX_o2_e lower bound in lb dict: -14.2804 (should be -14.2804)
+  EX_o2_e upper bound in ub dict: -14.2804 (should be -14.2804)
+  EX_nh4_e lower bound in lb dict: -5.2386 (should be -5.2386)
+  EX_nh4_e upper bound in ub dict: -5.2386 (should be -5.2386)
+=== END DIAGNOSTIC ===
+
+
+=== DIAGNOSTIC: Exchange reaction fluxes after optimization ===
+  EX_glc__D_e: flux = -10.0000 (bound was -10.0000)
+  EX_so4_e: flux = -0.1753 (bound was -0.1753)
+  EX_o2_e: flux = -14.2804 (bound was -14.2804)
+  EX_nh4_e: flux = -5.2386 (bound was -5.2386)
+Objective value: 0.375900
+=== END DIAGNOSTIC ===
+
+  Iter 15/100: biomass=0.375900, temp=0.7016
+=== DIAGNOSTIC: Checking captured bounds ===
+  EX_glc__D_e lower bound in lb dict: -10.0000 (should be -10.0000)
+  EX_glc__D_e upper bound in ub dict: -10.0000 (should be -10.0000)
+  EX_so4_e lower bound in lb dict: -0.1753 (should be -0.1753)
+  EX_so4_e upper bound in ub dict: -0.1753 (should be -0.1753)
+  EX_o2_e lower bound in lb dict: -14.2804 (should be -14.2804)
+  EX_o2_e upper bound in ub dict: -14.2804 (should be -14.2804)
+  EX_nh4_e lower bound in lb dict: -5.2386 (should be -5.2386)
+  EX_nh4_e upper bound in ub dict: -5.2386 (should be -5.2386)
+=== END DIAGNOSTIC ===
+
+
+=== DIAGNOSTIC: Exchange reaction fluxes after optimization ===
+  EX_glc__D_e: flux = -10.0000 (bound was -10.0000)
+  EX_so4_e: flux = -0.1753 (bound was -0.1753)
+  EX_o2_e: flux = -14.2804 (bound was -14.2804)
+  EX_nh4_e: flux = -5.2386 (bound was -5.2386)
+Objective value: 0.376944
+=== END DIAGNOSTIC ===
+
+  Iter 16/100: biomass=0.376944, temp=0.6840
+=== DIAGNOSTIC: Checking captured bounds ===
+  EX_glc__D_e lower bound in lb dict: -10.0000 (should be -10.0000)
+  EX_glc__D_e upper bound in ub dict: -10.0000 (should be -10.0000)
+  EX_so4_e lower bound in lb dict: -0.1753 (should be -0.1753)
+  EX_so4_e upper bound in ub dict: -0.1753 (should be -0.1753)
+  EX_o2_e lower bound in lb dict: -14.2804 (should be -14.2804)
+  EX_o2_e upper bound in ub dict: -14.2804 (should be -14.2804)
+  EX_nh4_e lower bound in lb dict: -5.2386 (should be -5.2386)
+  EX_nh4_e upper bound in ub dict: -5.2386 (should be -5.2386)
+=== END DIAGNOSTIC ===
+
+
+=== DIAGNOSTIC: Exchange reaction fluxes after optimization ===
+  EX_glc__D_e: flux = -10.0000 (bound was -10.0000)
+  EX_so4_e: flux = -0.1753 (bound was -0.1753)
+  EX_o2_e: flux = -14.2804 (bound was -14.2804)
+  EX_nh4_e: flux = -5.2386 (bound was -5.2386)
+Objective value: 0.379099
+=== END DIAGNOSTIC ===
+
+  Iter 17/100: biomass=0.379099, temp=0.6669
+  Early stop: No change for 5 iterations
+
+
+  Annealing complete!
+  Initial biomass: 0.1824
+  Final biomass: 0.3791
+  Improvement: 107.9%
+  Total iterations: 18
+
+  Biomass progression:
+    Iter   0: 0.182351
+    Iter   1: 0.182839 (+0.27%)
+    Iter   2: 0.210676 (+15.22%)
+    Iter   3: 0.243810 (+15.73%)
+    Iter   4: 0.287011 (+17.72%)
+    Iter   5: 0.304099 (+5.95%)
+    Iter   6: 0.329669 (+8.41%)
+    Iter   7: 0.341721 (+3.66%)
+    Iter   8: 0.350543 (+2.58%)
+    Iter   9: 0.357195 (+1.90%)
+    Iter  10: 0.358563 (+0.38%)
+    Iter  11: 0.363424 (+1.36%)
+    Iter  12: 0.367836 (+1.21%)
+    Iter  13: 0.370487 (+0.72%)
+    Iter  14: 0.372937 (+0.66%)
+    Iter  15: 0.375900 (+0.79%)
+    Iter  16: 0.376944 (+0.28%)
+    Iter  17: 0.379099 (+0.57%)
+
+  Top 10 enzymes by mass contribution:
+   Reactions Single_gene  enzyme_mass
+0        PDH       b0114     0.062247
+1      DHAPT       b1200     0.035256
+2       PTAr       b2297     0.032940
+3       PTA2       b2297     0.032940
+4     GLUtex       b1377     0.031209
+5     GLYtex       b1377     0.031209
+6  GLYALDtex       b1377     0.031209
+7    GLYBtex       b1377     0.031209
+8    GLYCtex       b1377     0.031209
+9  GLYC3Ptex       b1377     0.031209
+
+  Saved merged DataFrame to: /scratch/chinasse/kinGEMs_v2/results/tuning_results/iML1515_GEM_20251118_8183/final_model_info.csv
+
+=== Step 7: Saving final model ===
+  Final GEM saved to: /scratch/chinasse/kinGEMs_v2/models/iML1515_GEM_20251118_8183.xml
+
+======================================================================
+=== Pipeline Complete ===
+======================================================================
+Run ID: iML1515_GEM_20251118_8183
+Model: iML1515_GEM (Standard)
+Initial biomass: 0.1824
+Final biomass: 0.3791
+Improvement: 107.9%
+Iterations: 18
+
+Results directory: /scratch/chinasse/kinGEMs_v2/results/tuning_results/iML1515_GEM_20251118_8183
+Final model: /scratch/chinasse/kinGEMs_v2/models/iML1515_GEM_20251118_8183.xml
+======================================================================
+
+Memory Usage Statistics:
+4647009                                       
+4647009.bat+                                  
+4647009.ext+                                  
+Peak memory usage:            
+
+Results disk usage:
+48M	results/tuning_results/iML1515_GEM_20251118_6160
+48M	results/tuning_results/iML1515_GEM_20251118_6514
+48M	results/tuning_results/iML1515_GEM_20251118_8045
+48M	results/tuning_results/iML1515_GEM_20251118_8183
+0	results/tuning_results/iML1515_GEM_20251118_8744
+=========================================
+Finished at: Tue Nov 18 04:34:01 PM EST 2025
+Exit code: 0
+=========================================
