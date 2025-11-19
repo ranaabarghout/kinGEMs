@@ -578,14 +578,35 @@ def main():
     # === Step 4: Optimization ===
     print("\n=== Step 4: Running optimization ===")
 
+    # Extract medium constraints from config 
+    medium_temp = config.get('medium', None)
+    medium_upper_bound_temp = config.get('medium_upper_bound', True)
     # First run standard COBRApy optimization for comparison
     print("  Running standard COBRApy FBA (no enzyme constraints)...")
+    
+    # Apply medium constraints if specified
+    if medium_temp is not None:
+        mode = "fixed fluxes" if medium_upper_bound_temp else "max uptake rates"
+        print(f"  Applying medium conditions ({mode}) to COBRApy model:")
+        for rxn_id, flux_value in medium_temp.items():
+            try:
+                rxn = model.reactions.get_by_id(rxn_id)
+                rxn.lower_bound = flux_value
+                if medium_upper_bound_temp:
+                    rxn.upper_bound = flux_value
+                    print(f"    Fixed {rxn_id}: {flux_value}")
+                else:
+                    print(f"    Set {rxn_id} lower bound: {flux_value} (upper: {rxn.upper_bound})")
+            except KeyError:
+                print(f"    Warning: Reaction '{rxn_id}' not found in model")
+    
     cobra_solution = model.optimize()
     cobra_biomass = cobra_solution.objective_value
     print(f"    COBRApy biomass: {cobra_biomass:.4f}")
 
     # Now run enzyme-constrained optimization
     print("  Running kinGEMs enzyme-constrained optimization...")
+    
     (solution_value, df_FBA, gene_sequences_dict, _) = run_optimization_with_dataframe(
         model=model,
         processed_df=processed_data,
@@ -601,7 +622,9 @@ def main():
         save_results=False,
         print_reaction_conditions=True,
         verbose=False,
-        solver_name=solver_name
+        solver_name=solver_name,
+        medium=medium_temp,
+        medium_upper_bound=medium_upper_bound_temp
     )
     print(f"    kinGEMs biomass: {solution_value:.4f}")
 
@@ -633,6 +656,9 @@ def main():
     change_threshold = sa_config.get('change_threshold', 0.009)
     biomass_goal = sa_config.get('biomass_goal', 0.5)
     verbose = sa_config.get('verbose', False)
+    medium = config.get('medium', None)
+    medium_upper_bound = config.get('medium_upper_bound', True)
+
 
     print("  Configuration:")
     print(f"    - Temperature: {temperature}")
@@ -641,6 +667,9 @@ def main():
     print(f"    - Max unchanged iterations: {max_unchanged_iterations}")
     print(f"    - Change threshold: {change_threshold}")
     print(f"    - Biomass goal: {biomass_goal}")
+    if medium:
+        mode = "fixed fluxes" if medium_upper_bound else "max uptake rates"
+        print(f"    - Medium conditions: {len(medium)} reactions ({mode})")
     print("  Starting optimization...\n")
 
     kcat_dict, top_targets, df_new, iterations, biomasses, df_FBA = simulated_annealing(
@@ -657,7 +686,9 @@ def main():
         max_iterations=max_iterations,
         max_unchanged_iterations=max_unchanged_iterations,
         change_threshold=change_threshold,
-        verbose=verbose
+        verbose=verbose,
+        medium=medium,
+        medium_upper_bound=medium_upper_bound
     )
 
     improvement = (biomasses[-1] - biomasses[0]) / biomasses[0] * 100 if biomasses[0] > 0 else 0

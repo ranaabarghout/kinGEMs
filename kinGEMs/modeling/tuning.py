@@ -49,6 +49,8 @@ def simulated_annealing(
     max_unchanged_iterations=3,
     change_threshold=0.001,
     verbose=False,
+    medium=None,
+    medium_upper_bound=False
 ):
     """
     Use simulated annealing to tune kcat values for improved biomass production.
@@ -126,7 +128,9 @@ def simulated_annealing(
         enzyme_upper_bound=enzyme_fraction,
         output_dir=output_dir,
         save_results=False,
-        verbose=False
+        verbose=False,
+        medium=medium,
+        medium_upper_bound=medium_upper_bound
     )
 
     # pick top 65
@@ -226,7 +230,9 @@ def simulated_annealing(
             enzyme_upper_bound=enzyme_fraction,
             output_dir=None,
             save_results=False,
-            verbose=False
+            verbose=False,
+            medium=medium,
+            medium_upper_bound=medium_upper_bound
         )
 
         # Debug: Check if enzyme allocations changed even if biomass didn't

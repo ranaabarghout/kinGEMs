@@ -1,0 +1,26 @@
+{
+  "model_name": "e_coli_core",
+  "organism": "E coli",
+  "biomass_reaction": "BIOMASS_Ecoli_core_w_GAM",
+  "enzyme_upper_bound": 0.5,
+  "solver": "glpk",
+  "enable_fva": true,
+  "enable_biolog_validation": false,
+  "medium": {
+    "EX_glc__D_e": -9.99998,
+    "EX_so4_e": -0.175297,
+    "EX_o2_e": -14.2804,
+    "EX_nh4_e": -5.23859
+  },
+  "medium_upper_bound": true,
+  "simulated_annealing": {
+    "temperature": 1.0,
+    "cooling_rate": 0.975,
+    "min_temperature": 0.001,
+    "max_iterations": 100,
+    "max_unchanged_iterations": 5,
+    "change_threshold": 0.009,
+    "biomass_goal": 0.8,
+    "verbose": false
+  }
+}
