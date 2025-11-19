@@ -1,6 +1,11 @@
 [project]
 name = "kingems"
 version = "0.1.0"
+description = "A pipeline for automatic reconstruction of enzyme-constrained genome-scale models using CPI-Pred for kinetic parameter annotation."
+authors = [
+  { name = "Rana A. Barghout" },
+  { name = "Lya Chinas" },
+]
 requires-python = ">=3.10"
 
 dependencies = [

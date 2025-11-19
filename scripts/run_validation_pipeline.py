@@ -27,22 +27,23 @@ import cobra
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from scipy.stats import pearsonr, spearmanr
 import seaborn as sns
-from sklearn.metrics import auc as sk_auc
-from sklearn.metrics import confusion_matrix, roc_auc_score
-from sklearn.metrics import precision_recall_curve as pre_rec
 from sklearn.metrics import (
     accuracy_score,
+    average_precision_score,
     balanced_accuracy_score,
+    confusion_matrix,
+    f1_score,
+    matthews_corrcoef,
+    precision_recall_curve,
     precision_score,
     recall_score,
-    f1_score,
-    average_precision_score,
-    matthews_corrcoef,
+    roc_auc_score,
     roc_curve,
-    precision_recall_curve,
 )
-from scipy.stats import pearsonr, spearmanr
+from sklearn.metrics import auc as sk_auc
+from sklearn.metrics import precision_recall_curve as pre_rec
 
 # Add parent directory to Python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
