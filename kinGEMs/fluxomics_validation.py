@@ -8,177 +8,10 @@ This module provides functions to:
 
 import pandas as pd
 import cobra
-
-
-def apply_ecomics_condition(model: cobra.Model, medium_id: str, stress: str):
-    """
-    Modify iML1515 GEM based on specified experimental conditions.
-    
-    Parameters:
-        model: cobra.Model
-            Genome-scale model to modify
-        medium_id : str
-            Medium identifier. Options: 'MD066', 'MD120', 'MD004', 'MD121'
-        stress : str
-            Stress condition. Options: 'none', 'NADH-limitation', 'ATP-limitation'
-    
-    Returns:
-        modified_model: cobra.Model
-            Modified GEM model
-    """
-    
-    # Validate input parameters
-    valid_medium_ids = {'MD066', 'MD120', 'MD004', 'MD121'}
-    valid_stress = {'none', 'NADH-limitation', 'ATP-limitation'}
-    
-    if medium_id not in valid_medium_ids:
-        raise ValueError(f"Invalid medium_id '{medium_id}'. Must be one of {valid_medium_ids}")
-    if stress not in valid_stress:
-        raise ValueError(f"Invalid stress '{stress}'. Must be one of {valid_stress}")
-    
-    # Apply medium-specific modifications
-    _apply_medium_conditions(model, medium_id)
-    
-    # Apply stress-specific modifications
-    _apply_stress_conditions(model, stress)
-    
-    
-    return model
-
-
-def get_medium_dict(medium_id: str) -> dict:
-    """
-    Get medium composition as a dictionary for a given medium ID.
-    
-    Parameters:
-        medium_id : str
-            Medium identifier. Options: 'MD066', 'MD120', 'MD004', 'MD121'
-    
-    Returns:
-        dict: Dictionary mapping exchange reaction IDs to their lower bounds (uptake rates)
-    """
-    
-    valid_medium_ids = {'MD066', 'MD120', 'MD004', 'MD121'}
-    if medium_id not in valid_medium_ids:
-        raise ValueError(f"Invalid medium_id '{medium_id}'. Must be one of {valid_medium_ids}")
-    
-    if medium_id == 'MD066':
-        # synthetic+Glu medium
-        # TODO: add medium composition
-        return {
-            "EX_glc__D_e": -10
-        }
-        
-    elif medium_id == 'MD004':
-        # synthetic+Glu medium with higher glucose uptake
-        # TODO: add medium composition
-        return {
-            "EX_glc__D_e": -10
-        }
-    
-    elif medium_id == 'MD120':
-        # MOPS+Glu(0.4%) medium
-        # TODO: add medium composition
-        return {
-            "EX_glc__D_e": -10
-        }
-    
-    elif medium_id == 'MD121':
-        # M9+Glu medium
-        return {
-            "EX_glc__D_e": -10,
-            "EX_so4_e": -1.699,
-            "EX_o2_e": -14.49,
-            #"EX_co2_e": 16.22,
-            "EX_nh4_e": -5.229,
-            "EX_h2o_e": -6.96
-        }
-
-
-def _apply_medium_conditions(model: cobra.Model, medium_id: str) -> None:
-    """
-    Apply medium-specific modifications to the model.
-    
-    Parameters:
-        model : cobra.Model
-            The genome-scale model to modify
-        medium_id : str
-            Medium identifier
-    """
-    
-    # Get the medium dictionary
-    medium = get_medium_dict(medium_id)
-    
-    # Print which medium is being applied
-    medium_names = {
-        'MD066': 'synthetic+Glu medium',
-        'MD004': 'synthetic+Glu medium with higher glucose uptake',
-        'MD120': 'MOPS+Glu(0.4%) medium',
-        'MD121': 'M9+Glu medium'
-    }
-    print(f"Applying {medium_names.get(medium_id, medium_id)}")
-    
-    # Apply the medium by setting lower bounds
-    for rxn_id, uptake in medium.items():
-        try:
-            rxn = model.reactions.get_by_id(rxn_id)
-            rxn.lower_bound = uptake
-            # rxn.upper_bound = uptake
-            print(f"Set {rxn_id} lower bound to {uptake}")
-            print(f"Set {rxn_id} upper bound to {uptake}")
-        except KeyError:
-            print(f"Reaction {rxn_id} not found in model.")
-
-
-def _apply_stress_conditions(model: cobra.Model, stress: str) -> None:
-    """
-    Apply stress-specific modifications to the model.
-    
-    Parameters:
-        model : cobra.Model
-            The genome-scale model to modify
-        stress : str
-            Stress condition
-    """
-    
-    if stress == 'NADH-limitation':
-        try:
-            # Limit NADH dehydrogenase
-            nadh_dehyd = model.reactions.get_by_id("NADH16pp")
-            nadh_dehyd.upper_bound = 3
-            print("Applied NADH dehydrogenase limitation")
-            
-            # Add NADH drain reaction
-            nadh = model.metabolites.nadh_c
-            dm_nadh = cobra.Reaction("DM_nadh_c")
-            dm_nadh.name = "NADH drain reaction"
-            dm_nadh.add_metabolites({nadh: -1})  # drains 1 NADH
-            dm_nadh.lower_bound = dm_nadh.upper_bound = 0.1
-            model.add_reactions([dm_nadh])
-            print("Added NADH drain reaction")
-            
-        except KeyError as e:
-            print(f"Error applying NADH limitation: {e}")
-    
-    elif stress == 'ATP-limitation':
-        try:
-            # Increase ATP maintenance requirement
-            atp_maint = model.reactions.get_by_id("ATPM")
-            atp_maint.lower_bound = 20 
-            atp_maint.upper_bound = 20
-            print("Increased ATP maintenance requirement")
-            
-            # Limit ATP synthase
-            atp_synth = model.reactions.get_by_id("ATPS4rpp")
-            atp_synth.upper_bound = 5
-            print("Limited ATP synthase capacity")
-            
-        except KeyError as e:
-            print(f"Error applying ATP limitation: {e}")
-    
-    elif stress == 'none':
-        # No stress modifications
-        pass
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
 
 
 def compare_fluxomics(fba_results_path: str, exp_fluxes_path: str) -> pd.DataFrame:
@@ -227,4 +60,342 @@ def compare_fluxomics(fba_results_path: str, exp_fluxes_path: str) -> pd.DataFra
     return result_df
 
 
+def create_fva_comparison_dataframe(
+    fva_results_path: str,
+    mfa_results_path: str,
+    fva_columns: list[str],
+    mfa_columns: list[str]
+) -> pd.DataFrame:
+    """
+    Compare FVA simulation results with MFA experimental data.
     
+    Parameters:
+        fva_results_path : str
+            Path to the CSV file with FVA results
+        mfa_results_path : str
+            Path to the CSV file with MFA experimental fluxes
+        fva_columns : list[str]
+            List of 3 column names for FVA file: [rxn_id, lb_flux, ub_flux]
+        mfa_columns : list[str]
+            List of 3 column names for MFA file: [rxn_id, lb_flux, ub_flux]
+    
+    Returns:
+        pd.DataFrame: DataFrame with columns: 'rxn_id', 'fva_lb', 'fva_ub', 'mfa_lb', 'mfa_ub'
+    """
+    
+    # Load FVA results
+    fva_df = pd.read_csv(fva_results_path)
+    
+    # Extract and rename FVA columns
+    fva_rxn_id_col, fva_lb_col, fva_ub_col = fva_columns
+    fva_df = fva_df[[fva_rxn_id_col, fva_lb_col, fva_ub_col]].copy()
+    fva_df = fva_df.rename(columns={
+        fva_rxn_id_col: 'rxn_id',
+        fva_lb_col: 'fva_lb',
+        fva_ub_col: 'fva_ub'
+    })
+    
+    # Load MFA results
+    mfa_df = pd.read_csv(mfa_results_path)
+    
+    # Extract and rename MFA columns
+    mfa_rxn_id_col, mfa_lb_col, mfa_ub_col = mfa_columns
+    mfa_df = mfa_df[[mfa_rxn_id_col, mfa_lb_col, mfa_ub_col]].copy()
+    mfa_df = mfa_df.rename(columns={
+        mfa_rxn_id_col: 'rxn_id',
+        mfa_lb_col: 'mfa_lb',
+        mfa_ub_col: 'mfa_ub'
+    })
+    
+    # Merge the dataframes on rxn_id, keeping all FVA rows
+    result_df = fva_df.merge(mfa_df, on='rxn_id', how='left')
+    
+    # Reorder columns
+    result_df = result_df[['rxn_id', 'fva_lb', 'fva_ub', 'mfa_lb', 'mfa_ub']]
+    
+    print(f"Loaded {len(fva_df)} FVA flux results")
+    print(f"Loaded {len(mfa_df)} MFA flux measurements")
+    print(f"Merged dataframe has {len(result_df)} rows")
+    print(f"Matched reactions: {result_df['mfa_lb'].notna().sum()}")
+    print(f"Unmatched reactions: {result_df['mfa_lb'].isna().sum()}")
+    
+    return result_df
+
+
+def calculate_consistency_score(
+    comparison_df: pd.DataFrame
+) -> float:
+    """
+    Calculate the Consistency Score (fraction of overlapping ranges).
+    
+    Parameters:
+        comparison_df : pd.DataFrame
+            DataFrame with columns: 'rxn_id', 'fva_lb', 'fva_ub', 'mfa_lb', 'mfa_ub'
+    
+    Returns:
+        float: The fraction of reactions (0.0 to 1.0) where FVA and MFA ranges overlap.
+    """
+    
+    # Drop rows where MFA data is missing (cannot compare)
+    df = comparison_df.dropna(subset=['mfa_lb', 'mfa_ub']).copy()
+    
+    # Determine overlap
+    # Overlap exists if the lower bound of one is <= the upper bound of the other
+    # Logic: max(lb1, lb2) <= min(ub1, ub2)
+    overlap_lower = df[['fva_lb', 'mfa_lb']].max(axis=1)
+    overlap_upper = df[['fva_ub', 'mfa_ub']].min(axis=1)
+    
+    consistent_mask = overlap_lower <= overlap_upper
+    score = consistent_mask.mean()
+    
+    print(f"--- Consistency Score Analysis ---")
+    print(f"Evaluated {len(df)} reactions")
+    print(f"Consistent reactions: {consistent_mask.sum()}")
+    print(f"Consistency Score: {score:.4f}")
+    
+    return score
+
+
+def calculate_range_precision_ratio(
+    comparison_df: pd.DataFrame
+) -> pd.Series:
+    """
+    Calculate the Ratio of FVA width to MFA width.
+    A value < 1.0 indicates the model is more precise than the experiment.
+    
+    Parameters:
+        comparison_df : pd.DataFrame
+            DataFrame with columns: 'rxn_id', 'fva_lb', 'fva_ub', 'mfa_lb', 'mfa_ub'
+            
+    Returns:
+        pd.Series: Series containing the width ratio for each reaction.
+    """
+    
+    df = comparison_df.dropna(subset=['mfa_lb', 'mfa_ub']).copy()
+    
+    # Calculate widths
+    fva_width = df['fva_ub'] - df['fva_lb']
+    mfa_width = df['mfa_ub'] - df['mfa_lb']
+    
+    # Avoid division by zero by adding a small epsilon where width is 0
+    epsilon = 1e-9
+    mfa_width = mfa_width.replace(0, epsilon)
+    
+    ratio = fva_width / mfa_width
+    
+    print(f"--- Range Precision Analysis ---")
+    print(f"Evaluated {len(df)} reactions")
+    print(f"Median FVA width: {fva_width.median():.4f}")
+    print(f"Median MFA width: {mfa_width.median():.4f}")
+    print(f"Median Precision Ratio: {ratio.median():.4f}")
+    
+    return ratio
+
+
+def calculate_normalized_euclidean_dist(
+    comparison_df: pd.DataFrame
+) -> float:
+    """
+    Calculate the Normalized Euclidean Distance (Sum of Squared Distances).
+    Measures the distance from the MFA mean to the nearest FVA bound.
+    
+    Parameters:
+        comparison_df : pd.DataFrame
+            DataFrame with columns: 'rxn_id', 'fva_lb', 'fva_ub', 'mfa_lb', 'mfa_ub'
+            
+    Returns:
+        float: The Sum of Squared Distances (SSD) across all reactions.
+    """
+    
+    df = comparison_df.dropna(subset=['mfa_lb', 'mfa_ub']).copy()
+    
+    # Calculate MFA mean
+    mfa_mean = (df['mfa_lb'] + df['mfa_ub']) / 2
+    
+    # Calculate distance to range
+    # If mean is inside [fva_lb, fva_ub], distance is 0
+    # If mean < fva_lb, distance is fva_lb - mean
+    # If mean > fva_ub, distance is mean - fva_ub
+    # This can be vectorized as: max(0, fva_lb - mean, mean - fva_ub)
+    
+    dist_lower = df['fva_lb'] - mfa_mean
+    dist_upper = mfa_mean - df['fva_ub']
+    zero_baseline = pd.Series(0, index=df.index)
+    
+    # Find the max of (0, dist_lower, dist_upper)
+    distance = pd.concat([zero_baseline, dist_lower, dist_upper], axis=1).max(axis=1)
+    
+    # Calculate Sum of Squared Errors
+    ssd = (distance ** 2).sum()
+    
+    print(f"--- Euclidean Distance Analysis ---")
+    print(f"Evaluated {len(df)} reactions")
+    print(f"Reactions with mean outside FVA range: {(distance > 0).sum()}")
+    print(f"Sum of Squared Distances (SSD): {ssd:.4f}")
+    
+    return ssd
+
+
+def calculate_jaccard_index(
+    comparison_df: pd.DataFrame
+) -> float:
+    """
+    Calculate the mean Jaccard Index (Intersection over Union).
+    1.0 = Perfect overlap, 0.0 = No overlap.
+    
+    Parameters:
+        comparison_df : pd.DataFrame
+            DataFrame with columns: 'rxn_id', 'fva_lb', 'fva_ub', 'mfa_lb', 'mfa_ub'
+            
+    Returns:
+        float: The average Jaccard Index across all evaluated reactions.
+    """
+    
+    df = comparison_df.dropna(subset=['mfa_lb', 'mfa_ub']).copy()
+    
+    # Calculate Intersection
+    # Max of lower bounds, Min of upper bounds
+    inter_lb = df[['fva_lb', 'mfa_lb']].max(axis=1)
+    inter_ub = df[['fva_ub', 'mfa_ub']].min(axis=1)
+    
+    # Intersection width (clip negative values to 0 for non-overlapping cases)
+    intersection = (inter_ub - inter_lb).clip(lower=0)
+    
+    # Calculate Union
+    # Min of lower bounds, Max of upper bounds
+    union_lb = df[['fva_lb', 'mfa_lb']].min(axis=1)
+    union_ub = df[['fva_ub', 'mfa_ub']].max(axis=1)
+    union = union_ub - union_lb
+    
+    # Avoid division by zero
+    epsilon = 1e-9
+    union = union.replace(0, epsilon)
+    
+    jaccard = intersection / union
+    mean_jaccard = jaccard.mean()
+    
+    print(f"--- Jaccard Index Analysis ---")
+    print(f"Evaluated {len(df)} reactions")
+    print(f"Perfect overlaps (J=1.0): {(jaccard >= 0.99).sum()}")
+    print(f"Zero overlaps (J=0.0): {(jaccard <= 0.01).sum()}")
+    print(f"Mean Jaccard Index: {mean_jaccard:.4f}")
+    
+    return mean_jaccard
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
+
+def plot_fva_mfa_comparison(
+    models_data: dict[str, pd.DataFrame],
+    split_charts: bool = True,
+    reactions_per_plot: int = 25
+) -> None:
+    """
+    Generates a bar plot comparing MFA experimental ranges against 
+    FVA prediction ranges for multiple models.
+    
+    Parameters:
+        models_data : dict[str, pd.DataFrame]
+            A dictionary where keys are model names and values are the DataFrames obtained with create_fva_comparison_dataframe()
+        split_charts : bool
+            If True, splits the plot into multiple figures if reaction count exceeds reactions_per_plot.
+        reactions_per_plot : int
+            Number of reactions to show per figure chunk.
+    """
+    
+    # 1. Consolidate Data
+    # Take the first dataframe as the master for the reaction list and MFA values.
+    primary_name = list(models_data.keys())[0]
+    master_df = models_data[primary_name].copy()
+    
+    # Filter for reactions that have MFA data
+    master_df = master_df.dropna(subset=['mfa_lb', 'mfa_ub'])
+    all_reactions = master_df['rxn_id'].unique()
+    
+    # 2. Setup Visualization Constants
+    colors = ['#1f77b4', '#2ca02c', '#d62728', '#9467bd']
+    bar_height = 0.6
+    
+    # Calculate offsets to 'dodge' the bars if multiple models exist
+    num_models = len(models_data)
+    # If 1 model, offset is 0. If 3, offsets might be [-0.2, 0, 0.2]
+    offsets = [i - (num_models - 1) / 2 for i in range(num_models)]
+    # Scale offsets to fit within a row height of 1.0
+    step_size = 0.6 / max(num_models, 1)
+    offsets = [o * step_size for o in offsets]
+    
+    # 3. Chunking Logic (to handle large lists of reactions)
+    chunks = [all_reactions]
+    if split_charts and len(all_reactions) > reactions_per_plot:
+        chunks = [all_reactions[i:i + reactions_per_plot] 
+                  for i in range(0, len(all_reactions), reactions_per_plot)]
+        print(f"Splitting visualization into {len(chunks)} plots for readability.")
+
+    # 4. Plotting Loop
+    for chunk_idx, rxn_chunk in enumerate(chunks):
+        
+        # Dynamic height: 0.5 inch per reaction + buffer
+        fig_height = len(rxn_chunk) * 0.5 + 2
+        fig, ax = plt.subplots(figsize=(12, fig_height))
+        
+        # Iterate through reactions in this chunk
+        for i, rxn in enumerate(rxn_chunk):
+            y_pos = i  # Base Y position for this reaction
+            
+            # A. Plot MFA Reference (Black Error Bar)
+            # We get MFA data from the master_df
+            row = master_df[master_df['rxn_id'] == rxn].iloc[0]
+            mfa_center = (row['mfa_lb'] + row['mfa_ub']) / 2
+            mfa_err = (row['mfa_ub'] - row['mfa_lb']) / 2
+            
+            # Plot the "Target" zone
+            ax.errorbar(
+                x=mfa_center, y=y_pos, xerr=mfa_err, 
+                color='black', capsize=5, elinewidth=2, markeredgewidth=2,
+                zorder=10, label='MFA Experiment' if i == 0 else ""
+            )
+            
+            # B. Plot Each Model's FVA Range
+            for model_idx, (name, df) in enumerate(models_data.items()):
+                # Find the row for this reaction in this specific model's DF
+                model_row = df[df['rxn_id'] == rxn]
+                
+                if not model_row.empty:
+                    fva_lb = model_row.iloc[0]['fva_lb']
+                    fva_ub = model_row.iloc[0]['fva_ub']
+                    
+                    # Calculate dodged Y position
+                    y_offset = y_pos + offsets[model_idx]
+                    
+                    # Draw the Range Bar
+                    ax.hlines(
+                        y=y_offset, xmin=fva_lb, xmax=fva_ub,
+                        color=colors[model_idx % len(colors)],
+                        linewidth=4, alpha=0.8,
+                        label=name if i == 0 else ""
+                    )
+                    
+                    # Draw faint guideline across the plot for readability
+                    ax.axhline(y=y_pos, color='gray', linestyle=':', alpha=0.1, linewidth=0.5)
+
+        # 5. Formatting
+        ax.set_yticks(range(len(rxn_chunk)))
+        ax.set_yticklabels(rxn_chunk, fontsize=10, fontfamily='monospace')
+        ax.invert_yaxis()  # Top-down list
+        ax.set_xlabel('Flux (mmol/gDW/h)')
+        ax.set_title(f'MFA vs FVA Range Comparison (Part {chunk_idx + 1})')
+        ax.grid(axis='x', linestyle='--', alpha=0.5)
+        
+        # Create a custom legend to avoid duplicates
+        handles = [
+            mlines.Line2D([], [], color='black', marker='|', markersize=10, 
+                          linestyle='-', linewidth=2, label='MFA Range')
+        ]
+        for idx, name in enumerate(models_data.keys()):
+            handles.append(mlines.Line2D([], [], color=colors[idx], linewidth=4, label=name))
+            
+        ax.legend(handles=handles, loc='upper right', frameon=True)
+        
+        plt.tight_layout()
+        plt.show()
