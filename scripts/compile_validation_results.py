@@ -15,13 +15,11 @@ import argparse
 from datetime import datetime
 import json
 import os
-import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy.stats import energy_distance, pearsonr, spearmanr, wasserstein_distance
-import seaborn as sns
 from sklearn.metrics import (
     accuracy_score,
     average_precision_score,
@@ -34,6 +32,7 @@ from sklearn.metrics import (
     recall_score,
     roc_auc_score,
     roc_curve,
+    r2_score,
 )
 
 
@@ -98,7 +97,7 @@ def load_wild_type_growth(input_dir, mode='baseline'):
         return None
 
 
-def calculate_correlations(experimental, predicted, fit_thresh=-2):
+def calculate_correlations(experimental, predicted, fit_thresh=None, pred_thresh=None, scenario_name=""):
     """Calculate correlation metrics between experimental and predicted fitness.
 
     Parameters
@@ -107,8 +106,12 @@ def calculate_correlations(experimental, predicted, fit_thresh=-2):
         Experimental fitness values
     predicted : numpy.ndarray
         Predicted growth rates
-    fit_thresh : float
-        Only include data points where experimental fitness > fit_thresh
+    fit_thresh : float or None
+        If provided, only include data points where experimental fitness > fit_thresh
+    pred_thresh : float or None
+        If provided, only include data points where predicted growth rate > pred_thresh
+    scenario_name : str
+        Name of the filtering scenario for reporting
     """
     from scipy.stats import kendalltau
     from sklearn.metrics import r2_score
@@ -117,9 +120,18 @@ def calculate_correlations(experimental, predicted, fit_thresh=-2):
     exp_flat = experimental.flatten()
     pred_flat = predicted.flatten()
 
-    # Remove NaN and Inf values, and filter by fitness threshold
+    # Start with basic NaN and Inf filtering
     mask = ~(np.isnan(exp_flat) | np.isnan(pred_flat) |
-             np.isinf(exp_flat) | np.isinf(pred_flat)) & (exp_flat > fit_thresh)
+             np.isinf(exp_flat) | np.isinf(pred_flat))
+
+    # Apply fitness threshold if provided
+    if fit_thresh is not None:
+        mask = mask & (exp_flat > fit_thresh)
+
+    # Apply prediction threshold if provided
+    if pred_thresh is not None:
+        mask = mask & (pred_flat > pred_thresh)
+
     exp_clean = exp_flat[mask]
     pred_clean = pred_flat[mask]
 
@@ -171,11 +183,13 @@ def calculate_correlations(experimental, predicted, fit_thresh=-2):
         'n_points': len(exp_clean),
         'n_total_before_filter': len(experimental.flatten()),
         'n_filtered_out': len(experimental.flatten()) - len(exp_clean),
-        'fitness_threshold_used': fit_thresh
+        'fitness_threshold_used': fit_thresh if fit_thresh is not None else 'None',
+        'pred_threshold_used': pred_thresh if pred_thresh is not None else 'None',
+        'scenario': scenario_name
     }
 
 
-def calculate_fitness_correlations(experimental, predicted, wild_type_growth=None, fit_thresh=-2):
+def calculate_fitness_correlations(experimental, predicted, wild_type_growth=None, fit_thresh=None, pred_thresh=None, scenario_name=""):
     """Calculate correlation metrics after converting growth rates to fitness values.
 
     Fitness is calculated as log2(mutant_growth / wild_type_growth).
@@ -192,8 +206,13 @@ def calculate_fitness_correlations(experimental, predicted, wild_type_growth=Non
         Wild-type growth rate for each carbon source. Should be shape (n_carbons,)
         or a scalar if same for all conditions. If None, must be provided externally
         or function will raise an error.
-    fit_thresh : float
-        Only include data points where experimental fitness > fit_thresh
+    fit_thresh : float or None
+        If provided, only include data points where experimental fitness > fit_thresh
+    pred_thresh : float or None
+        If provided, only include data points where predicted growth rate > pred_thresh
+        (applied BEFORE conversion to fitness)
+    scenario_name : str
+        Name of the filtering scenario for reporting
 
     Returns
     -------
@@ -219,9 +238,18 @@ def calculate_fitness_correlations(experimental, predicted, wild_type_growth=Non
     exp_flat = experimental.flatten()
     pred_flat = predicted.flatten()
 
-    # Remove NaN and Inf values, and filter by fitness threshold
+    # Start with basic NaN and Inf filtering
     mask = ~(np.isnan(exp_flat) | np.isnan(pred_flat) |
-             np.isinf(exp_flat) | np.isinf(pred_flat)) & (exp_flat > fit_thresh)
+             np.isinf(exp_flat) | np.isinf(pred_flat))
+
+    # Apply fitness threshold if provided
+    if fit_thresh is not None:
+        mask = mask & (exp_flat > fit_thresh)
+
+    # Apply prediction threshold if provided (BEFORE fitness conversion)
+    if pred_thresh is not None:
+        mask = mask & (pred_flat > pred_thresh)
+
     exp_clean = exp_flat[mask]
     pred_clean = pred_flat[mask]
 
@@ -309,11 +337,174 @@ def calculate_fitness_correlations(experimental, predicted, wild_type_growth=Non
         'n_points': len(exp_clean),
         'n_total_before_filter': len(experimental.flatten()),
         'n_filtered_out': len(experimental.flatten()) - len(exp_clean),
-        'fitness_threshold_used': fit_thresh,
+        'fitness_threshold_used': fit_thresh if fit_thresh is not None else 'None',
+        'pred_threshold_used': pred_thresh if pred_thresh is not None else 'None',
+        'scenario': scenario_name,
         'pred_fitness_mean': np.mean(pred_fitness),
         'pred_fitness_std': np.std(pred_fitness),
         'pred_fitness_min': np.min(pred_fitness),
         'pred_fitness_max': np.max(pred_fitness)
+    }
+
+
+def calculate_normalized_growth_correlations(experimental, predicted, wild_type_growth=None, fit_thresh=None, pred_thresh=None, scenario_name=""):
+    """Calculate correlation metrics after converting growth rates to normalized ratios.
+
+    Normalized growth is calculated as mutant_growth / wild_type_growth (linear ratio).
+    This provides a different perspective from fitness (log2 ratio) and allows direct
+    comparison of fold-changes in growth rate.
+
+    Parameters
+    ----------
+    experimental : numpy.ndarray
+        Experimental fitness values (genes × carbons), already log2 ratios
+    predicted : numpy.ndarray
+        Predicted growth rates (genes × carbons), to be converted to normalized ratios
+    wild_type_growth : numpy.ndarray or float, optional
+        Wild-type growth rate for each carbon source. Should be shape (n_carbons,)
+        or a scalar if same for all conditions. If None, must be provided externally
+        or function will raise an error.
+    fit_thresh : float or None
+        If provided, only include data points where experimental fitness > fit_thresh
+    pred_thresh : float or None
+        If provided, only include data points where predicted growth rate > pred_thresh
+        (applied BEFORE normalization)
+    scenario_name : str
+        Name of the filtering scenario for reporting
+
+    Returns
+    -------
+    dict
+        Dictionary of correlation metrics plus normalized growth values
+
+    Notes
+    -----
+    The wild-type growth rate should be the model's predicted growth WITHOUT any
+    gene deletions for each carbon source condition. This represents the reference
+    growth rate that all mutant growth values are normalized against.
+
+    Unlike fitness (log2 scale), normalized growth is on linear scale:
+    - 1.0 = no change from wild-type
+    - 0.5 = 50% of wild-type growth
+    - 2.0 = 200% of wild-type growth (2x improvement)
+    """
+    # Check if wild_type_growth is provided
+    if wild_type_growth is None:
+        raise ValueError(
+            "wild_type_growth must be provided. It should be the model's predicted "
+            "growth rate without any gene deletions for each carbon source. "
+            "Calculate this by simulating the wild-type model (no knockouts) on each "
+            "carbon source and passing the result as wild_type_growth parameter."
+        )
+
+    # Flatten arrays
+    exp_flat = experimental.flatten()
+    pred_flat = predicted.flatten()
+
+    # Start with basic NaN and Inf filtering
+    mask = ~(np.isnan(exp_flat) | np.isnan(pred_flat) |
+             np.isinf(exp_flat) | np.isinf(pred_flat))
+
+    # Apply fitness threshold if provided
+    if fit_thresh is not None:
+        mask = mask & (exp_flat > fit_thresh)
+
+    # Apply prediction threshold if provided (BEFORE normalization)
+    if pred_thresh is not None:
+        mask = mask & (pred_flat > pred_thresh)
+
+    exp_clean = exp_flat[mask]
+    pred_clean = pred_flat[mask]
+
+    # Handle wild_type_growth: if it's per-condition, expand it to match flattened data
+    if isinstance(wild_type_growth, np.ndarray):
+        # If it's 1D (per carbon source), tile it for each gene
+        if wild_type_growth.ndim == 1:
+            n_genes = experimental.shape[0] if experimental.ndim == 2 else int(len(experimental.flatten()) / len(wild_type_growth))
+            wt_expanded = np.tile(wild_type_growth, n_genes)
+        else:
+            wt_expanded = wild_type_growth.flatten()
+    else:
+        # Scalar wild-type growth (same for all conditions)
+        wt_expanded = np.full_like(exp_flat, wild_type_growth)
+
+    wt_clean = wt_expanded[mask]
+
+    # Convert predicted growth rates to normalized ratios
+    # Normalized growth = mutant_growth / wild_type_growth
+    # Handle zero or very small growth rates
+    epsilon = 1e-10  # Small value to avoid division by zero
+    pred_clean_safe = np.maximum(pred_clean, epsilon)
+    wt_clean_safe = np.maximum(wt_clean, epsilon) if isinstance(wt_clean, np.ndarray) else max(wt_clean, epsilon)
+    pred_normalized = pred_clean_safe / wt_clean_safe
+
+    # Calculate correlations with normalized predictions
+    from scipy.stats import kendalltau
+    from sklearn.metrics import r2_score
+
+    pearson_r, pearson_p = pearsonr(exp_clean, pred_normalized)
+    spearman_r, spearman_p = spearmanr(exp_clean, pred_normalized)
+
+    # Calculate Kendall's tau on normalized scale
+    try:
+        kendall_tau, kendall_p = kendalltau(exp_clean, pred_normalized)
+    except Exception:
+        kendall_tau, kendall_p = np.nan, np.nan
+
+    # Calculate R² on normalized scale
+    try:
+        r2 = r2_score(exp_clean, pred_normalized)
+    except Exception:
+        r2 = np.nan
+
+    # Calculate RMSE on normalized scale
+    rmse = np.sqrt(np.mean((exp_clean - pred_normalized) ** 2))
+
+    # Calculate MAE on normalized scale
+    mae = np.mean(np.abs(exp_clean - pred_normalized))
+
+    # Calculate Energy Distance and Wasserstein Distance on normalized scale
+    try:
+        energy_dist = energy_distance(exp_clean, pred_normalized)
+    except Exception:
+        energy_dist = np.nan
+
+    try:
+        wasserstein_dist = wasserstein_distance(exp_clean, pred_normalized)
+    except Exception:
+        wasserstein_dist = np.nan
+
+    # Get representative wild-type growth value for reporting
+    if isinstance(wt_clean, np.ndarray):
+        wt_mean = np.mean(wt_clean)
+        wt_std = np.std(wt_clean)
+        wt_repr = f"mean={wt_mean:.6f}, std={wt_std:.6f}"
+    else:
+        wt_repr = float(wt_clean)
+
+    return {
+        'pearson_r_normalized': pearson_r,
+        'pearson_p_normalized': pearson_p,
+        'spearman_r_normalized': spearman_r,
+        'spearman_p_normalized': spearman_p,
+        'kendall_tau_normalized': kendall_tau,
+        'kendall_p_normalized': kendall_p,
+        'r2_normalized': r2,
+        'rmse_normalized': rmse,
+        'mae_normalized': mae,
+        'energy_distance_normalized': energy_dist,
+        'wasserstein_distance_normalized': wasserstein_dist,
+        'wild_type_growth_used': wt_repr,
+        'n_points': len(exp_clean),
+        'n_total_before_filter': len(experimental.flatten()),
+        'n_filtered_out': len(experimental.flatten()) - len(exp_clean),
+        'fitness_threshold_used': fit_thresh if fit_thresh is not None else 'None',
+        'pred_threshold_used': pred_thresh if pred_thresh is not None else 'None',
+        'scenario': scenario_name,
+        'pred_normalized_mean': np.mean(pred_normalized),
+        'pred_normalized_std': np.std(pred_normalized),
+        'pred_normalized_min': np.min(pred_normalized),
+        'pred_normalized_max': np.max(pred_normalized)
     }
 
 
@@ -424,6 +615,579 @@ def calculate_classification_metrics(experimental, predicted, fit_thresh=-2, sim
         'true_positives': int(tp),
         'n_samples': len(y_true)
     }
+
+
+def create_multi_scenario_scatter_plots(experimental, models_data, model_names, model_wt, scenarios, output_dir):
+    """Create comprehensive scatter plots for all scenarios and comparison types.
+
+    This creates:
+    1. Growth rate vs experimental fitness scatter plots
+    2. Fitness vs experimental fitness scatter plots
+    3. Normalized growth vs experimental fitness scatter plots
+
+    For each of the 3 filtering scenarios.
+
+    Parameters
+    ----------
+    experimental : numpy.ndarray
+        Experimental fitness values (genes × carbons)
+    models_data : list of numpy.ndarray or None
+        List of model predictions (growth rates)
+    model_names : list of str
+        Names of the models
+    model_wt : list of numpy.ndarray or None
+        List of wild-type growth rates for each model
+    scenarios : list of dict
+        Filtering scenarios with 'name', 'fit_thresh', 'pred_thresh', 'label'
+    output_dir : str
+        Directory to save plots
+    """
+    print("  Creating multi-scenario scatter plots...")
+
+    # Colors for models
+    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']  # Blue, Orange, Green, Red
+
+    # Remove None models
+    valid_models = [(data, name, wt, color) for data, name, wt, color in
+                   zip(models_data, model_names, model_wt, colors)
+                   if data is not None]
+
+    if not valid_models:
+        print("  ⚠️ No valid models for scatter plots")
+        return
+
+    exp_flat = experimental.flatten()
+
+    for scenario in scenarios:
+        scenario_name = scenario['name']
+        scenario_label = scenario['label']
+        fit_thresh = scenario['fit_thresh']
+        pred_thresh = scenario['pred_thresh']
+
+        print(f"    Creating scatter plots for scenario: {scenario_label}")
+
+        # === 1. Growth Rate vs Experimental Fitness ===
+        fig, axes = plt.subplots(1, len(valid_models), figsize=(6*len(valid_models), 5))
+        if len(valid_models) == 1:
+            axes = [axes]
+
+        for idx, ((model_data, model_name, model_wt, color), ax) in enumerate(zip(valid_models, axes)):
+            pred_flat = model_data.flatten()
+
+            # Apply filters
+            mask = ~(np.isnan(exp_flat) | np.isnan(pred_flat) | np.isinf(exp_flat) | np.isinf(pred_flat))
+            if fit_thresh is not None:
+                mask = mask & (exp_flat > fit_thresh)
+            if pred_thresh is not None:
+                mask = mask & (pred_flat > pred_thresh)
+
+            exp_clean = exp_flat[mask]
+            pred_clean = pred_flat[mask]
+
+            if len(exp_clean) == 0:
+                ax.text(0.5, 0.5, 'No data after filtering', ha='center', va='center', transform=ax.transAxes)
+                ax.set_title(f'{model_name}\n(No data)')
+                continue
+
+            # Calculate correlation
+            try:
+                pearson_r, pearson_p = pearsonr(exp_clean, pred_clean)
+                r2 = r2_score(exp_clean, pred_clean) if len(np.unique(exp_clean)) > 1 else np.nan
+            except Exception:
+                pearson_r, pearson_p, r2 = np.nan, np.nan, np.nan
+
+            # Create scatter plot
+            ax.scatter(exp_clean, pred_clean, alpha=0.3, s=8, color=color, edgecolors='none')
+
+            # Fit line if enough data
+            if len(exp_clean) > 10 and not np.isnan(pearson_r):
+                try:
+                    z = np.polyfit(exp_clean, pred_clean, 1)
+                    p = np.poly1d(z)
+                    x_line = np.linspace(exp_clean.min(), exp_clean.max(), 100)
+                    ax.plot(x_line, p(x_line), color='red', linewidth=2, alpha=0.8)
+                except Exception:
+                    pass
+
+            ax.set_xlabel('Experimental Fitness (log₂ ratio)', fontsize=11)
+            ax.set_ylabel('Predicted Growth Rate', fontsize=11)
+            ax.set_title(f'{model_name}\nr={pearson_r:.3f}, R²={r2:.3f}', fontsize=12)
+            ax.grid(True, alpha=0.3)
+
+            # Add stats box
+            stats_text = f'n = {len(exp_clean):,}\nr = {pearson_r:.3f}\nR² = {r2:.3f}'
+            if pearson_p < 0.001:
+                stats_text += '\np < 0.001'
+            else:
+                stats_text += f'\np = {pearson_p:.3f}'
+
+            ax.text(0.02, 0.98, stats_text, transform=ax.transAxes, fontsize=9,
+                   verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.7))
+
+        plt.suptitle(f'Growth Rate vs Experimental Fitness\n{scenario_label}', fontsize=14)
+        plt.tight_layout()
+        plot_file = os.path.join(output_dir, f'scatter_growth_rate_{scenario_name}.png')
+        plt.savefig(plot_file, dpi=300, bbox_inches='tight')
+        plt.close()
+        print(f"      ✓ Saved growth rate scatter: {plot_file}")
+
+        # === 2. Fitness vs Experimental Fitness ===
+        valid_fitness_models = [(data, name, wt, color) for data, name, wt, color in valid_models if wt is not None]
+
+        if valid_fitness_models:
+            fig, axes = plt.subplots(1, len(valid_fitness_models), figsize=(6*len(valid_fitness_models), 5))
+            if len(valid_fitness_models) == 1:
+                axes = [axes]
+
+            for idx, ((model_data, model_name, model_wt, color), ax) in enumerate(zip(valid_fitness_models, axes)):
+                pred_flat = model_data.flatten()
+
+                # Expand wild-type growth
+                if model_wt.ndim == 1:
+                    n_genes = experimental.shape[0] if experimental.ndim == 2 else int(len(experimental.flatten()) / len(model_wt))
+                    wt_expanded = np.tile(model_wt, n_genes)
+                else:
+                    wt_expanded = model_wt.flatten()
+
+                # Apply filters
+                mask = (~(np.isnan(exp_flat) | np.isnan(pred_flat) | np.isinf(exp_flat) | np.isinf(pred_flat) |
+                         np.isnan(wt_expanded) | np.isinf(wt_expanded)))
+                if fit_thresh is not None:
+                    mask = mask & (exp_flat > fit_thresh)
+                if pred_thresh is not None:
+                    mask = mask & (pred_flat > pred_thresh)
+
+                exp_clean = exp_flat[mask]
+                pred_clean = pred_flat[mask]
+                wt_clean = wt_expanded[mask]
+
+                if len(exp_clean) == 0:
+                    ax.text(0.5, 0.5, 'No data after filtering', ha='center', va='center', transform=ax.transAxes)
+                    ax.set_title(f'{model_name}\n(No data)')
+                    continue
+
+                # Convert to fitness
+                epsilon = 1e-10
+                pred_clean_safe = np.maximum(pred_clean, epsilon)
+                wt_clean_safe = np.maximum(wt_clean, epsilon)
+                pred_fitness = np.log2(pred_clean_safe / wt_clean_safe)
+
+                # Calculate correlation
+                try:
+                    pearson_r, pearson_p = pearsonr(exp_clean, pred_fitness)
+                    r2 = r2_score(exp_clean, pred_fitness) if len(np.unique(exp_clean)) > 1 else np.nan
+                except Exception:
+                    pearson_r, pearson_p, r2 = np.nan, np.nan, np.nan
+
+                # Create scatter plot
+                ax.scatter(exp_clean, pred_fitness, alpha=0.3, s=8, color=color, edgecolors='none')
+
+                # Add diagonal line
+                min_val = min(exp_clean.min(), pred_fitness.min())
+                max_val = max(exp_clean.max(), pred_fitness.max())
+                ax.plot([min_val, max_val], [min_val, max_val], 'r--', alpha=0.8, linewidth=1.5)
+
+                ax.set_xlabel('Experimental Fitness (log₂ ratio)', fontsize=11)
+                ax.set_ylabel('Predicted Fitness (log₂ ratio)', fontsize=11)
+                ax.set_title(f'{model_name}\nr={pearson_r:.3f}, R²={r2:.3f}', fontsize=12)
+                ax.grid(True, alpha=0.3)
+                ax.set_aspect('equal', adjustable='box')
+
+                # Add stats box
+                stats_text = f'n = {len(exp_clean):,}\nr = {pearson_r:.3f}\nR² = {r2:.3f}'
+                if pearson_p < 0.001:
+                    stats_text += '\np < 0.001'
+                else:
+                    stats_text += f'\np = {pearson_p:.3f}'
+
+                ax.text(0.02, 0.98, stats_text, transform=ax.transAxes, fontsize=9,
+                       verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.7))
+
+            plt.suptitle(f'Predicted Fitness vs Experimental Fitness\n{scenario_label}', fontsize=14)
+            plt.tight_layout()
+            plot_file = os.path.join(output_dir, f'scatter_fitness_{scenario_name}.png')
+            plt.savefig(plot_file, dpi=300, bbox_inches='tight')
+            plt.close()
+            print(f"      ✓ Saved fitness scatter: {plot_file}")
+
+        # === 3. Normalized Growth vs Experimental Fitness ===
+        if valid_fitness_models:  # Same models that have wild-type data
+            fig, axes = plt.subplots(1, len(valid_fitness_models), figsize=(6*len(valid_fitness_models), 5))
+            if len(valid_fitness_models) == 1:
+                axes = [axes]
+
+            for idx, ((model_data, model_name, model_wt, color), ax) in enumerate(zip(valid_fitness_models, axes)):
+                pred_flat = model_data.flatten()
+
+                # Expand wild-type growth
+                if model_wt.ndim == 1:
+                    n_genes = experimental.shape[0] if experimental.ndim == 2 else int(len(experimental.flatten()) / len(model_wt))
+                    wt_expanded = np.tile(model_wt, n_genes)
+                else:
+                    wt_expanded = model_wt.flatten()
+
+                # Apply filters
+                mask = (~(np.isnan(exp_flat) | np.isnan(pred_flat) | np.isinf(exp_flat) | np.isinf(pred_flat) |
+                         np.isnan(wt_expanded) | np.isinf(wt_expanded)))
+                if fit_thresh is not None:
+                    mask = mask & (exp_flat > fit_thresh)
+                if pred_thresh is not None:
+                    mask = mask & (pred_flat > pred_thresh)
+
+                exp_clean = exp_flat[mask]
+                pred_clean = pred_flat[mask]
+                wt_clean = wt_expanded[mask]
+
+                if len(exp_clean) == 0:
+                    ax.text(0.5, 0.5, 'No data after filtering', ha='center', va='center', transform=ax.transAxes)
+                    ax.set_title(f'{model_name}\n(No data)')
+                    continue
+
+                # Convert to normalized growth
+                epsilon = 1e-10
+                pred_clean_safe = np.maximum(pred_clean, epsilon)
+                wt_clean_safe = np.maximum(wt_clean, epsilon)
+                pred_normalized = pred_clean_safe / wt_clean_safe
+
+                # Calculate correlation
+                try:
+                    pearson_r, pearson_p = pearsonr(exp_clean, pred_normalized)
+                    r2 = r2_score(exp_clean, pred_normalized) if len(np.unique(exp_clean)) > 1 else np.nan
+                except Exception:
+                    pearson_r, pearson_p, r2 = np.nan, np.nan, np.nan
+
+                # Create scatter plot
+                ax.scatter(exp_clean, pred_normalized, alpha=0.3, s=8, color=color, edgecolors='none')
+
+                # Add horizontal line at y=1 (no change)
+                ax.axhline(y=1, color='gray', linestyle='--', alpha=0.6, linewidth=1)
+
+                ax.set_xlabel('Experimental Fitness (log₂ ratio)', fontsize=11)
+                ax.set_ylabel('Predicted Normalized Growth\n(mutant/wildtype)', fontsize=11)
+                ax.set_title(f'{model_name}\nr={pearson_r:.3f}, R²={r2:.3f}', fontsize=12)
+                ax.grid(True, alpha=0.3)
+
+                # Add stats box
+                stats_text = f'n = {len(exp_clean):,}\nr = {pearson_r:.3f}\nR² = {r2:.3f}'
+                if pearson_p < 0.001:
+                    stats_text += '\np < 0.001'
+                else:
+                    stats_text += f'\np = {pearson_p:.3f}'
+
+                ax.text(0.02, 0.98, stats_text, transform=ax.transAxes, fontsize=9,
+                       verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.7))
+
+            plt.suptitle(f'Normalized Growth vs Experimental Fitness\n{scenario_label}', fontsize=14)
+            plt.tight_layout()
+            plot_file = os.path.join(output_dir, f'scatter_normalized_{scenario_name}.png')
+            plt.savefig(plot_file, dpi=300, bbox_inches='tight')
+            plt.close()
+            print(f"      ✓ Saved normalized growth scatter: {plot_file}")
+
+
+def create_multi_scenario_histograms(experimental, models_data, model_names, model_wt, scenarios, output_dir):
+    """Create comprehensive histograms for all scenarios and comparison types.
+
+    This creates histograms showing distributions of:
+    1. Experimental fitness values
+    2. Predicted growth rates
+    3. Predicted fitness values
+    4. Predicted normalized growth values
+
+    For each filtering scenario, with separate subplots for each model/experimental.
+
+    Parameters
+    ----------
+    experimental : numpy.ndarray
+        Experimental fitness values (genes × carbons)
+    models_data : list of numpy.ndarray or None
+        List of model predictions (growth rates)
+    model_names : list of str
+        Names of the models
+    model_wt : list of numpy.ndarray or None
+        List of wild-type growth rates for each model
+    scenarios : list of dict
+        Filtering scenarios with 'name', 'fit_thresh', 'pred_thresh', 'label'
+    output_dir : str
+        Directory to save plots
+    """
+    print("  Creating multi-scenario histogram plots...")
+
+    # Colors for models and experimental
+    colors = ['#333333', '#1f77b4', '#ff7f0e', '#2ca02c']  # Dark Gray for experimental, then model colors
+
+    # Prepare data - include experimental first, then valid models
+    all_names = ['Experimental'] + [name for data, name in zip(models_data, model_names) if data is not None]
+    all_data = [experimental] + [data for data in models_data if data is not None]
+    all_colors = colors[:len(all_names)]
+
+    exp_flat = experimental.flatten()
+
+    for scenario in scenarios:
+        scenario_name = scenario['name']
+        scenario_label = scenario['label']
+        fit_thresh = scenario['fit_thresh']
+        pred_thresh = scenario['pred_thresh']
+
+        print(f"    Creating histograms for scenario: {scenario_label}")
+
+        # === 1. Growth Rate Distributions (Raw Values) ===
+        fig, axes = plt.subplots(1, len(all_names), figsize=(6*len(all_names), 5))
+        if len(all_names) == 1:
+            axes = [axes]
+
+        for idx, (data, name, color, ax) in enumerate(zip(all_data, all_names, all_colors, axes)):
+            if idx == 0:  # Experimental data
+                # For experimental, we show the fitness values directly
+                data_flat = exp_flat
+                mask = ~(np.isnan(data_flat) | np.isinf(data_flat))
+                if fit_thresh is not None:
+                    mask = mask & (data_flat > fit_thresh)
+                data_clean = data_flat[mask]
+
+                ylabel = 'Frequency'
+                xlabel = 'Experimental Fitness (log₂ ratio)'
+                title_suffix = 'Fitness Distribution'
+            else:  # Model predictions
+                pred_flat = data.flatten()
+                mask = ~(np.isnan(exp_flat) | np.isnan(pred_flat) | np.isinf(exp_flat) | np.isinf(pred_flat))
+                if fit_thresh is not None:
+                    mask = mask & (exp_flat > fit_thresh)
+                if pred_thresh is not None:
+                    mask = mask & (pred_flat > pred_thresh)
+                data_clean = pred_flat[mask]
+
+                ylabel = 'Frequency'
+                xlabel = 'Predicted Growth Rate'
+                title_suffix = 'Growth Rate Distribution'
+
+            if len(data_clean) == 0:
+                ax.text(0.5, 0.5, 'No data after filtering', ha='center', va='center', transform=ax.transAxes)
+                ax.set_title(f'{name}\n(No data)')
+                continue
+
+            # Create histogram
+            ax.hist(data_clean, bins=50, color=color, alpha=0.7, edgecolor='black', linewidth=0.5)
+            ax.axvline(np.mean(data_clean), color='red', linestyle='--', linewidth=2,
+                      label=f'Mean = {np.mean(data_clean):.3f}')
+            ax.axvline(np.median(data_clean), color='darkred', linestyle=':', linewidth=2,
+                      label=f'Median = {np.median(data_clean):.3f}')
+
+            if idx == 0:  # Add zero line for experimental fitness
+                ax.axvline(0, color='gray', linestyle='-', linewidth=1, alpha=0.8, label='No effect')
+
+            ax.set_xlabel(xlabel, fontsize=11)
+            ax.set_ylabel(ylabel, fontsize=11)
+            ax.set_title(f'{name}\n{title_suffix}', fontsize=12)
+            ax.legend(fontsize=9)
+            ax.grid(True, alpha=0.3, axis='y')
+
+            # Add statistics text box
+            stats_text = (f'n = {len(data_clean):,}\n'
+                         f'μ = {np.mean(data_clean):.3f}\n'
+                         f'σ = {np.std(data_clean):.3f}\n'
+                         f'min = {np.min(data_clean):.3f}\n'
+                         f'max = {np.max(data_clean):.3f}')
+
+            if idx == 0:
+                # Add percentage breakdowns for experimental fitness
+                neg_pct = (np.sum(data_clean < 0) / len(data_clean)) * 100
+                pos_pct = (np.sum(data_clean > 0) / len(data_clean)) * 100
+                stats_text += f'\n< 0: {neg_pct:.1f}%\n> 0: {pos_pct:.1f}%'
+            else:
+                # Add zero count for predicted growth
+                zero_pct = (np.sum(data_clean == 0) / len(data_clean)) * 100
+                stats_text += f'\n= 0: {zero_pct:.1f}%'
+
+            ax.text(0.98, 0.98, stats_text, transform=ax.transAxes,
+                   fontsize=8, verticalalignment='top', horizontalalignment='right',
+                   bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.6))
+
+        plt.suptitle(f'Value Distributions - {scenario_label}', fontsize=14)
+        plt.tight_layout()
+        plot_file = os.path.join(output_dir, f'histograms_raw_{scenario_name}.png')
+        plt.savefig(plot_file, dpi=300, bbox_inches='tight')
+        plt.close()
+        print(f"      ✓ Saved raw value histograms: {plot_file}")
+
+        # === 2. Fitness Distributions (Models converted to fitness scale) ===
+        # Only include models with wild-type data
+        fitness_names = ['Experimental'] + [name for data, name, wt in zip(models_data, model_names, model_wt)
+                                           if data is not None and wt is not None]
+        fitness_data = [experimental] + [data for data, wt in zip(models_data, model_wt)
+                                       if data is not None and wt is not None]
+        fitness_wt = [None] + [wt for data, wt in zip(models_data, model_wt)
+                             if data is not None and wt is not None]
+        fitness_colors = colors[:len(fitness_names)]
+
+        if len(fitness_names) > 1:  # Only create if we have models with wild-type data
+            fig, axes = plt.subplots(1, len(fitness_names), figsize=(6*len(fitness_names), 5))
+            if len(fitness_names) == 1:
+                axes = [axes]
+
+            for idx, (data, name, wt, color, ax) in enumerate(zip(fitness_data, fitness_names, fitness_wt, fitness_colors, axes)):
+                if idx == 0:  # Experimental data - already fitness values
+                    data_flat = exp_flat
+                    mask = ~(np.isnan(data_flat) | np.isinf(data_flat))
+                    if fit_thresh is not None:
+                        mask = mask & (data_flat > fit_thresh)
+                    data_clean = data_flat[mask]
+                    title_suffix = 'Experimental Fitness'
+                else:  # Model predictions - convert to fitness
+                    pred_flat = data.flatten()
+
+                    # Expand wild-type growth
+                    if wt.ndim == 1:
+                        n_genes = experimental.shape[0] if experimental.ndim == 2 else int(len(experimental.flatten()) / len(wt))
+                        wt_expanded = np.tile(wt, n_genes)
+                    else:
+                        wt_expanded = wt.flatten()
+
+                    # Apply filters
+                    mask = (~(np.isnan(exp_flat) | np.isnan(pred_flat) | np.isinf(exp_flat) | np.isinf(pred_flat) |
+                             np.isnan(wt_expanded) | np.isinf(wt_expanded)))
+                    if fit_thresh is not None:
+                        mask = mask & (exp_flat > fit_thresh)
+                    if pred_thresh is not None:
+                        mask = mask & (pred_flat > pred_thresh)
+
+                    pred_clean = pred_flat[mask]
+                    wt_clean = wt_expanded[mask]
+
+                    # Convert to fitness
+                    epsilon = 1e-10
+                    pred_clean_safe = np.maximum(pred_clean, epsilon)
+                    wt_clean_safe = np.maximum(wt_clean, epsilon)
+                    data_clean = np.log2(pred_clean_safe / wt_clean_safe)
+                    title_suffix = 'Predicted Fitness'
+
+                if len(data_clean) == 0:
+                    ax.text(0.5, 0.5, 'No data after filtering', ha='center', va='center', transform=ax.transAxes)
+                    ax.set_title(f'{name}\n(No data)')
+                    continue
+
+                # Create histogram
+                ax.hist(data_clean, bins=50, color=color, alpha=0.7, edgecolor='black', linewidth=0.5)
+                ax.axvline(np.mean(data_clean), color='red', linestyle='--', linewidth=2,
+                          label=f'Mean = {np.mean(data_clean):.3f}')
+                ax.axvline(np.median(data_clean), color='darkred', linestyle=':', linewidth=2,
+                          label=f'Median = {np.median(data_clean):.3f}')
+                ax.axvline(0, color='gray', linestyle='-', linewidth=1, alpha=0.8, label='No effect')
+
+                ax.set_xlabel('Fitness (log₂ ratio)', fontsize=11)
+                ax.set_ylabel('Frequency', fontsize=11)
+                ax.set_title(f'{name}\n{title_suffix}', fontsize=12)
+                ax.legend(fontsize=9)
+                ax.grid(True, alpha=0.3, axis='y')
+
+                # Add statistics text box
+                neg_pct = (np.sum(data_clean < 0) / len(data_clean)) * 100
+                pos_pct = (np.sum(data_clean > 0) / len(data_clean)) * 100
+                neutral_pct = (np.sum(np.abs(data_clean) < 0.1) / len(data_clean)) * 100
+
+                stats_text = (f'n = {len(data_clean):,}\n'
+                             f'μ = {np.mean(data_clean):.3f}\n'
+                             f'σ = {np.std(data_clean):.3f}\n'
+                             f'< 0: {neg_pct:.1f}%\n'
+                             f'> 0: {pos_pct:.1f}%\n'
+                             f'~0: {neutral_pct:.1f}%')
+
+                ax.text(0.98, 0.98, stats_text, transform=ax.transAxes,
+                       fontsize=8, verticalalignment='top', horizontalalignment='right',
+                       bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.6))
+
+            plt.suptitle(f'Fitness Distributions - {scenario_label}', fontsize=14)
+            plt.tight_layout()
+            plot_file = os.path.join(output_dir, f'histograms_fitness_{scenario_name}.png')
+            plt.savefig(plot_file, dpi=300, bbox_inches='tight')
+            plt.close()
+            print(f"      ✓ Saved fitness histograms: {plot_file}")
+
+        # === 3. Normalized Growth Distributions ===
+        if len(fitness_names) > 1:  # Only create if we have models with wild-type data
+            fig, axes = plt.subplots(1, len(fitness_names), figsize=(6*len(fitness_names), 5))
+            if len(fitness_names) == 1:
+                axes = [axes]
+
+            for idx, (data, name, wt, color, ax) in enumerate(zip(fitness_data, fitness_names, fitness_wt, fitness_colors, axes)):
+                if idx == 0:  # Experimental data - convert fitness to normalized growth
+                    data_flat = exp_flat
+                    mask = ~(np.isnan(data_flat) | np.isinf(data_flat))
+                    if fit_thresh is not None:
+                        mask = mask & (data_flat > fit_thresh)
+                    exp_fitness_clean = data_flat[mask]
+                    # Convert experimental fitness (log2) to normalized growth (linear)
+                    data_clean = 2**exp_fitness_clean  # 2^(log2(mutant/wt)) = mutant/wt
+                    title_suffix = 'Experimental Normalized Growth'
+                else:  # Model predictions - convert to normalized growth
+                    pred_flat = data.flatten()
+
+                    # Expand wild-type growth
+                    if wt.ndim == 1:
+                        n_genes = experimental.shape[0] if experimental.ndim == 2 else int(len(experimental.flatten()) / len(wt))
+                        wt_expanded = np.tile(wt, n_genes)
+                    else:
+                        wt_expanded = wt.flatten()
+
+                    # Apply filters
+                    mask = (~(np.isnan(exp_flat) | np.isnan(pred_flat) | np.isinf(exp_flat) | np.isinf(pred_flat) |
+                             np.isnan(wt_expanded) | np.isinf(wt_expanded)))
+                    if fit_thresh is not None:
+                        mask = mask & (exp_flat > fit_thresh)
+                    if pred_thresh is not None:
+                        mask = mask & (pred_flat > pred_thresh)
+
+                    pred_clean = pred_flat[mask]
+                    wt_clean = wt_expanded[mask]
+
+                    # Convert to normalized growth
+                    epsilon = 1e-10
+                    pred_clean_safe = np.maximum(pred_clean, epsilon)
+                    wt_clean_safe = np.maximum(wt_clean, epsilon)
+                    data_clean = pred_clean_safe / wt_clean_safe
+                    title_suffix = 'Predicted Normalized Growth'
+
+                if len(data_clean) == 0:
+                    ax.text(0.5, 0.5, 'No data after filtering', ha='center', va='center', transform=ax.transAxes)
+                    ax.set_title(f'{name}\n(No data)')
+                    continue
+
+                # Create histogram
+                ax.hist(data_clean, bins=50, color=color, alpha=0.7, edgecolor='black', linewidth=0.5)
+                ax.axvline(np.mean(data_clean), color='red', linestyle='--', linewidth=2,
+                          label=f'Mean = {np.mean(data_clean):.3f}')
+                ax.axvline(np.median(data_clean), color='darkred', linestyle=':', linewidth=2,
+                          label=f'Median = {np.median(data_clean):.3f}')
+                ax.axvline(1, color='gray', linestyle='-', linewidth=1, alpha=0.8, label='No change')
+
+                ax.set_xlabel('Normalized Growth (mutant/wildtype)', fontsize=11)
+                ax.set_ylabel('Frequency', fontsize=11)
+                ax.set_title(f'{name}\n{title_suffix}', fontsize=12)
+                ax.legend(fontsize=9)
+                ax.grid(True, alpha=0.3, axis='y')
+
+                # Add statistics text box
+                below_1_pct = (np.sum(data_clean < 1) / len(data_clean)) * 100
+                above_1_pct = (np.sum(data_clean > 1) / len(data_clean)) * 100
+                near_1_pct = (np.sum(np.abs(data_clean - 1) < 0.1) / len(data_clean)) * 100
+
+                stats_text = (f'n = {len(data_clean):,}\n'
+                             f'μ = {np.mean(data_clean):.3f}\n'
+                             f'σ = {np.std(data_clean):.3f}\n'
+                             f'< 1: {below_1_pct:.1f}%\n'
+                             f'> 1: {above_1_pct:.1f}%\n'
+                             f'~1: {near_1_pct:.1f}%')
+
+                ax.text(0.98, 0.98, stats_text, transform=ax.transAxes,
+                       fontsize=8, verticalalignment='top', horizontalalignment='right',
+                       bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.6))
+
+            plt.suptitle(f'Normalized Growth Distributions - {scenario_label}', fontsize=14)
+            plt.tight_layout()
+            plot_file = os.path.join(output_dir, f'histograms_normalized_{scenario_name}.png')
+            plt.savefig(plot_file, dpi=300, bbox_inches='tight')
+            plt.close()
+            print(f"      ✓ Saved normalized growth histograms: {plot_file}")
 
 
 def create_comparison_plot(experimental, baseline, pretuning, posttuning, output_dir):
@@ -1436,31 +2200,124 @@ def main():
     posttuning_meta = load_metadata(args.input, 'posttuning')
 
     # === Step 2: Calculate correlation metrics ===
-    print("\n=== Step 2: Calculating correlation metrics ===")
+    print("\n=== Step 2: Calculating correlation metrics across 9 scenarios ===")
+    print("Scenarios:")
+    print("  1. No filtering (all data)")
+    print("  2. Experimental fitness > -2")
+    print("  3. Experimental fitness > -2 AND predicted growth > 0.0001")
+    print("")
+    print("Comparison Types:")
+    print("  A. Growth Rate Space: Direct predicted growth vs experimental fitness")
+    print("  B. Fitness Space: Predicted fitness vs experimental fitness")
+    print("  C. Normalized Growth Space: Predicted normalized growth vs experimental fitness")
 
+    # Define the 3 scenarios for filtering
+    scenarios = [
+        {'name': 'no_filter', 'fit_thresh': None, 'pred_thresh': None, 'label': 'No filtering'},
+        {'name': 'fit_filter', 'fit_thresh': -2, 'pred_thresh': None, 'label': 'Exp fitness > -2'},
+        {'name': 'both_filter', 'fit_thresh': -2, 'pred_thresh': 0.0001, 'label': 'Exp fitness > -2 AND Pred > 0.0001'}
+    ]
+
+    # Storage for all scenario results (3 comparison types × 3 scenarios = 9 total)
+    correlation_metrics_all_scenarios = {}
+    fitness_correlation_metrics_all_scenarios = {}
+    normalized_correlation_metrics_all_scenarios = {}
+
+    # Calculate for each model and each scenario
+    models = [
+        ('Baseline GEM', baseline_GEM, baseline_wildtype),
+        ('Pre-tuning kinGEMs', pretuning_GEM, pretuning_wildtype),
+        ('Post-tuning kinGEMs', posttuning_GEM, posttuning_wildtype)
+    ]
+
+    for model_name, model_data, model_wt in models:
+        if model_data is None:
+            continue
+
+        print(f"\n  Processing {model_name}...")
+
+        for scenario in scenarios:
+            scenario_key = f"{model_name} [{scenario['name']}]"
+
+            # A. Growth rate space correlation
+            print(f"    - Growth rate space: {scenario['label']}")
+            correlation_metrics_all_scenarios[scenario_key] = calculate_correlations(
+                experimental,
+                model_data,
+                fit_thresh=scenario['fit_thresh'],
+                pred_thresh=scenario['pred_thresh'],
+                scenario_name=scenario['name']
+            )
+
+            # B. Fitness space correlation (if wild-type available)
+            if model_wt is not None:
+                print(f"    - Fitness space: {scenario['label']}")
+                fitness_correlation_metrics_all_scenarios[scenario_key] = calculate_fitness_correlations(
+                    experimental,
+                    model_data,
+                    wild_type_growth=model_wt,
+                    fit_thresh=scenario['fit_thresh'],
+                    pred_thresh=scenario['pred_thresh'],
+                    scenario_name=scenario['name']
+                )
+
+                # C. Normalized growth space correlation
+                print(f"    - Normalized growth space: {scenario['label']}")
+                normalized_correlation_metrics_all_scenarios[scenario_key] = calculate_normalized_growth_correlations(
+                    experimental,
+                    model_data,
+                    wild_type_growth=model_wt,
+                    fit_thresh=scenario['fit_thresh'],
+                    pred_thresh=scenario['pred_thresh'],
+                    scenario_name=scenario['name']
+                )
+
+        print(f"  ✓ {model_name} - all scenarios calculated")
+
+    # Also keep legacy single-scenario metrics for backward compatibility
+    # (using scenario 2: fit_thresh=-2, pred_thresh=None)
     correlation_metrics = {}
     fitness_correlation_metrics = {}
 
-    if baseline_GEM is not None:
-        correlation_metrics['Baseline GEM'] = calculate_correlations(experimental, baseline_GEM, args.fit_thresh)
-        if baseline_wildtype is not None:
-            fitness_correlation_metrics['Baseline GEM'] = calculate_fitness_correlations(
-                experimental, baseline_GEM, baseline_wildtype, args.fit_thresh)
-        print("  ✓ Baseline correlation metrics calculated")
+    for model_name, model_data, model_wt in models:
+        if model_data is None:
+            continue
+        correlation_metrics[model_name] = calculate_correlations(
+            experimental, model_data, fit_thresh=-2, pred_thresh=None, scenario_name='fit_filter'
+        )
+        if model_wt is not None:
+            fitness_correlation_metrics[model_name] = calculate_fitness_correlations(
+                experimental, model_data, model_wt, fit_thresh=-2, pred_thresh=None, scenario_name='fit_filter'
+            )
 
-    if pretuning_GEM is not None:
-        correlation_metrics['Pre-tuning kinGEMs'] = calculate_correlations(experimental, pretuning_GEM, args.fit_thresh)
-        if pretuning_wildtype is not None:
-            fitness_correlation_metrics['Pre-tuning kinGEMs'] = calculate_fitness_correlations(
-                experimental, pretuning_GEM, pretuning_wildtype, args.fit_thresh)
-        print("  ✓ Pre-tuning correlation metrics calculated")
+    # Print filtering summary across all scenarios
+    print("\n" + "="*100)
+    print("=== Data Filtering Summary Across All Scenarios ===")
+    print("="*100)
 
-    if posttuning_GEM is not None:
-        correlation_metrics['Post-tuning kinGEMs'] = calculate_correlations(experimental, posttuning_GEM, args.fit_thresh)
-        if posttuning_wildtype is not None:
-            fitness_correlation_metrics['Post-tuning kinGEMs'] = calculate_fitness_correlations(
-                experimental, posttuning_GEM, posttuning_wildtype, args.fit_thresh)
-        print("  ✓ Post-tuning correlation metrics calculated")
+    if correlation_metrics_all_scenarios:
+        # Extract scenario info
+        for scenario in scenarios:
+            scenario_name = scenario['name']
+            scenario_label = scenario['label']
+            print(f"\n📊 Scenario: {scenario_label} ({scenario_name})")
+            print("-" * 100)
+
+            for model_name, _, _ in models:
+                scenario_key = f"{model_name} [{scenario_name}]"
+                if scenario_key in correlation_metrics_all_scenarios:
+                    metrics = correlation_metrics_all_scenarios[scenario_key]
+                    n_points = metrics.get('n_points', 'N/A')
+                    n_filtered = metrics.get('n_filtered_out', 'N/A')
+                    n_total = metrics.get('n_total_before_filter', 'N/A')
+                    pct_kept = (n_points / n_total * 100) if isinstance(n_points, int) and isinstance(n_total, int) else 'N/A'
+
+                    if isinstance(pct_kept, float):
+                        print(f"  {model_name:30s}: {n_points:>6,} / {n_total:>6,} points ({pct_kept:>5.1f}% kept, {n_filtered:>6,} filtered)")
+                    else:
+                        print(f"  {model_name:30s}: {n_points} / {n_total} points")
+
+    print("="*100)
 
     # === Step 3: Calculate classification metrics ===
     print("\n=== Step 3: Calculating classification metrics ===")
@@ -1506,6 +2363,27 @@ def main():
                                     baseline_wildtype, pretuning_wildtype, posttuning_wildtype,
                                     args.output, args.fit_thresh)
 
+    # === Step 4d: Create multi-scenario scatter plots ===
+    print("\n=== Step 4d: Creating multi-scenario scatter plots ===")
+
+    # Prepare data for multi-scenario visualization
+    models_data = [baseline_GEM, pretuning_GEM, posttuning_GEM]
+    model_names = ['Baseline GEM', 'Pre-tuning kinGEMs', 'Post-tuning kinGEMs']
+    model_wt = [baseline_wildtype, pretuning_wildtype, posttuning_wildtype]
+
+    scenarios = [
+        {'name': 'no_filter', 'fit_thresh': None, 'pred_thresh': None, 'label': 'No filtering'},
+        {'name': 'fit_filter', 'fit_thresh': -2, 'pred_thresh': None, 'label': 'Exp fitness > -2'},
+        {'name': 'both_filter', 'fit_thresh': -2, 'pred_thresh': 0.0001, 'label': 'Exp fitness > -2 AND Pred > 0.0001'}
+    ]
+
+    create_multi_scenario_scatter_plots(experimental, models_data, model_names, model_wt, scenarios, args.output)
+
+    # === Step 4e: Create multi-scenario histograms ===
+    print("\n=== Step 4e: Creating multi-scenario histograms ===")
+
+    create_multi_scenario_histograms(experimental, models_data, model_names, model_wt, scenarios, args.output)
+
     # === Step 5: Create classification visualizations ===
     print("\n=== Step 5: Creating classification visualizations ===")
 
@@ -1523,6 +2401,213 @@ def main():
 
     # === Step 6: Create metrics tables ===
     print("\n=== Step 6: Creating metrics tables ===")
+
+    # === 6a: Multi-scenario correlation metrics (growth rate space) ===
+    print("\n  Creating multi-scenario correlation metrics tables...")
+
+    if correlation_metrics_all_scenarios:
+        corr_all_df = pd.DataFrame(correlation_metrics_all_scenarios).T
+
+        # Round values
+        corr_all_df = corr_all_df.round({
+            'pearson_r': 4,
+            'pearson_p': 6,
+            'spearman_r': 4,
+            'spearman_p': 6,
+            'kendall_tau': 4,
+            'kendall_p': 6,
+            'r2': 4,
+            'rmse': 4,
+            'mae': 4,
+            'energy_distance': 4,
+            'wasserstein_distance': 4
+        })
+
+        # Save to CSV
+        corr_all_csv = os.path.join(args.output, 'validation_metrics_all_scenarios.csv')
+        corr_all_df.to_csv(corr_all_csv)
+        print(f"  ✓ Saved multi-scenario growth rate metrics: {corr_all_csv}")
+
+        # Print summary to console
+        print("\n" + "="*100)
+        print("=== Growth Rate Space Correlation Metrics - All Scenarios ===")
+        print("="*100)
+        # Show key columns for readability
+        display_cols = ['scenario', 'n_points', 'n_filtered_out', 'pearson_r', 'spearman_r', 'kendall_tau', 'r2', 'rmse']
+        available_cols = [col for col in display_cols if col in corr_all_df.columns]
+        print(corr_all_df[available_cols].to_string())
+        print("="*100)
+
+        # Print data point summary
+        if 'n_points' in corr_all_df.columns:
+            print("\n" + "="*100)
+            print("=== Data Points Summary (Growth Rate Space) ===")
+            print("="*100)
+            summary_cols = ['scenario', 'n_points', 'n_filtered_out', 'n_total_before_filter']
+            summary_available = [col for col in summary_cols if col in corr_all_df.columns]
+            print(corr_all_df[summary_available].to_string())
+            print("="*100)
+            print("Note: n_points = number of data points used in analysis")
+            print("      n_filtered_out = number of data points excluded by filtering")
+            print("      n_total_before_filter = total data points before any filtering")
+            print("="*100)
+
+    # === 6b: Multi-scenario fitness correlation metrics ===
+    if fitness_correlation_metrics_all_scenarios:
+        fit_all_df = pd.DataFrame(fitness_correlation_metrics_all_scenarios).T
+
+        # Round values
+        fit_all_df = fit_all_df.round({
+            'pearson_r_fitness': 4,
+            'pearson_p_fitness': 6,
+            'spearman_r_fitness': 4,
+            'spearman_p_fitness': 6,
+            'kendall_tau_fitness': 4,
+            'kendall_p_fitness': 6,
+            'r2_fitness': 4,
+            'rmse_fitness': 4,
+            'mae_fitness': 4,
+            'energy_distance_fitness': 4,
+            'wasserstein_distance_fitness': 4,
+            'pred_fitness_mean': 4,
+            'pred_fitness_std': 4,
+            'pred_fitness_min': 4,
+            'pred_fitness_max': 4
+        })
+
+        # Save to CSV
+        fit_all_csv = os.path.join(args.output, 'validation_metrics_fitness_all_scenarios.csv')
+        fit_all_df.to_csv(fit_all_csv)
+        print(f"  ✓ Saved multi-scenario fitness metrics: {fit_all_csv}")
+
+        # Print summary to console
+        print("\n" + "="*100)
+        print("=== Fitness Space Correlation Metrics - All Scenarios ===")
+        print("="*100)
+        # Show key columns for readability
+        display_cols = ['scenario', 'n_points', 'n_filtered_out', 'pearson_r_fitness', 'spearman_r_fitness', 'kendall_tau_fitness', 'r2_fitness', 'rmse_fitness']
+        available_cols = [col for col in display_cols if col in fit_all_df.columns]
+        print(fit_all_df[available_cols].to_string())
+        print("="*100)
+
+        # Print data point summary
+        if 'n_points' in fit_all_df.columns:
+            print("\n" + "="*100)
+            print("=== Data Points Summary (Fitness Space) ===")
+            print("="*100)
+            summary_cols = ['scenario', 'n_points', 'n_filtered_out', 'n_total_before_filter']
+            summary_available = [col for col in summary_cols if col in fit_all_df.columns]
+            print(fit_all_df[summary_available].to_string())
+            print("="*100)
+            print("Note: n_points = number of data points used in analysis")
+            print("      n_filtered_out = number of data points excluded by filtering")
+            print("      n_total_before_filter = total data points before any filtering")
+            print("="*100)
+
+    # === 6b2: Multi-scenario normalized growth metrics ===
+    if normalized_correlation_metrics_all_scenarios:
+        print("\n  Creating multi-scenario normalized growth metrics table...")
+        norm_all_df = pd.DataFrame(normalized_correlation_metrics_all_scenarios).T
+
+        # Add scenario column for better organization
+        norm_all_df.reset_index(inplace=True)
+        norm_all_df.rename(columns={'index': 'scenario'}, inplace=True)
+
+        # Format numeric columns for better display
+        norm_all_df = norm_all_df.round({
+            'pearson_r_norm': 4,
+            'spearman_r_norm': 4,
+            'kendall_tau_norm': 4,
+            'r2_norm': 4,
+            'rmse_norm': 4,
+            'mae_norm': 4,
+            'energy_distance_norm': 4,
+            'wasserstein_distance_norm': 4,
+            'pred_norm_mean': 4,
+            'pred_norm_std': 4,
+            'pred_norm_min': 4,
+            'pred_norm_max': 4
+        })
+
+        # Save to CSV
+        norm_all_csv = os.path.join(args.output, 'validation_metrics_normalized_growth_all_scenarios.csv')
+        norm_all_df.to_csv(norm_all_csv)
+        print(f"  ✓ Saved multi-scenario normalized growth metrics: {norm_all_csv}")
+
+        # Print summary to console
+        print("\n" + "="*100)
+        print("=== Normalized Growth Space Correlation Metrics - All Scenarios ===")
+        print("="*100)
+        # Show key columns for readability
+        display_cols = ['scenario', 'n_points', 'n_filtered_out', 'pearson_r_norm', 'spearman_r_norm', 'kendall_tau_norm', 'r2_norm', 'rmse_norm']
+        available_cols = [col for col in display_cols if col in norm_all_df.columns]
+        print(norm_all_df[available_cols].to_string())
+        print("="*100)
+
+        # Print data point summary
+        if 'n_points' in norm_all_df.columns:
+            print("\n" + "="*100)
+            print("=== Data Points Summary (Normalized Growth Space) ===")
+            print("="*100)
+            summary_cols = ['scenario', 'n_points', 'n_filtered_out', 'n_total_before_filter']
+            summary_available = [col for col in summary_cols if col in norm_all_df.columns]
+            print(norm_all_df[summary_available].to_string())
+            print("="*100)
+            print("Note: n_points = number of data points used in analysis")
+            print("      n_filtered_out = number of data points excluded by filtering")
+            print("      n_total_before_filter = total data points before any filtering")
+            print("      Normalized growth = predicted_growth / wild_type_growth (linear scale)")
+            print("="*100)
+
+    # === 6c: Save data points summary CSV ===
+    print("\n  Creating data points summary table...")
+
+    if correlation_metrics_all_scenarios:
+        # Create a focused summary of just data point counts
+        data_points_summary = {}
+
+        for key, metrics in correlation_metrics_all_scenarios.items():
+            data_points_summary[key] = {
+                'scenario': metrics.get('scenario', 'unknown'),
+                'n_total_before_filter': metrics.get('n_total_before_filter', 0),
+                'n_points_used': metrics.get('n_points', 0),
+                'n_filtered_out': metrics.get('n_filtered_out', 0),
+                'percent_kept': (metrics.get('n_points', 0) / metrics.get('n_total_before_filter', 1) * 100) if metrics.get('n_total_before_filter', 0) > 0 else 0,
+                'fitness_threshold': metrics.get('fitness_threshold_used', 'None'),
+                'pred_threshold': metrics.get('pred_threshold_used', 'None')
+            }
+
+        dp_summary_df = pd.DataFrame(data_points_summary).T
+        dp_summary_df = dp_summary_df.round({'percent_kept': 2})
+
+        dp_summary_csv = os.path.join(args.output, 'data_points_summary.csv')
+        dp_summary_df.to_csv(dp_summary_csv)
+        print(f"  ✓ Saved data points summary: {dp_summary_csv}")
+
+        # Also create a fitness-space version if available
+        if fitness_correlation_metrics_all_scenarios:
+            data_points_summary_fitness = {}
+
+            for key, metrics in fitness_correlation_metrics_all_scenarios.items():
+                data_points_summary_fitness[key] = {
+                    'scenario': metrics.get('scenario', 'unknown'),
+                    'n_total_before_filter': metrics.get('n_total_before_filter', 0),
+                    'n_points_used': metrics.get('n_points', 0),
+                    'n_filtered_out': metrics.get('n_filtered_out', 0),
+                    'percent_kept': (metrics.get('n_points', 0) / metrics.get('n_total_before_filter', 1) * 100) if metrics.get('n_total_before_filter', 0) > 0 else 0,
+                    'fitness_threshold': metrics.get('fitness_threshold_used', 'None'),
+                    'pred_threshold': metrics.get('pred_threshold_used', 'None')
+                }
+
+            dp_summary_fitness_df = pd.DataFrame(data_points_summary_fitness).T
+            dp_summary_fitness_df = dp_summary_fitness_df.round({'percent_kept': 2})
+
+            dp_summary_fitness_csv = os.path.join(args.output, 'data_points_summary_fitness.csv')
+            dp_summary_fitness_df.to_csv(dp_summary_fitness_csv)
+            print(f"  ✓ Saved data points summary (fitness space): {dp_summary_fitness_csv}")
+
+    # === 6d: Legacy single-scenario tables (for backward compatibility) ===
+    print("\n  Creating legacy single-scenario metrics tables...")
 
     # Correlation metrics table (growth rate space)
     create_metrics_table(correlation_metrics, args.output)
@@ -1615,9 +2700,16 @@ def main():
         'output_directory': args.output,
         'fit_threshold': args.fit_thresh,
         'sim_threshold': args.sim_thresh,
+        'scenarios_info': {
+            'no_filter': 'No filtering - all data points',
+            'fit_filter': 'Experimental fitness > -2',
+            'both_filter': 'Experimental fitness > -2 AND predicted growth > 0.0001'
+        },
         'baseline': baseline_meta,
         'pretuning': pretuning_meta,
         'posttuning': posttuning_meta,
+        'correlation_metrics_all_scenarios': correlation_metrics_all_scenarios,
+        'fitness_correlation_metrics_all_scenarios': fitness_correlation_metrics_all_scenarios,
         'correlation_metrics': correlation_metrics,
         'fitness_correlation_metrics': fitness_correlation_metrics,
         'classification_metrics': classification_metrics
@@ -1633,8 +2725,14 @@ def main():
     print("="*70)
     print(f"Results saved to: {args.output}")
     print("\nGenerated files:")
-    print("  - validation_metrics.csv (correlation metrics in growth rate space)")
-    print("  - validation_metrics_fitness.csv (correlation metrics in fitness space)")
+    print("\n📊 MULTI-SCENARIO METRICS (NEW):")
+    print("  - validation_metrics_all_scenarios.csv (growth rate space - 3 filtering scenarios)")
+    print("  - validation_metrics_fitness_all_scenarios.csv (fitness space - 3 filtering scenarios)")
+    print("  - data_points_summary.csv (data point counts for growth rate space)")
+    print("  - data_points_summary_fitness.csv (data point counts for fitness space)")
+    print("\n📈 LEGACY SINGLE-SCENARIO METRICS:")
+    print("  - validation_metrics.csv (growth rate space - exp fitness > -2)")
+    print("  - validation_metrics_fitness.csv (fitness space - exp fitness > -2)")
     print("  - classification_metrics.csv (classification metrics)")
     print("  - validation_improvements.csv")
     print("  - validation_comparison.png (scatter: experimental fitness vs predicted growth)")

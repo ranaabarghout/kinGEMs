@@ -128,7 +128,7 @@ def run_optimization(
         )
     else:
         mod = model
-    
+
     # 1a) Apply medium conditions if provided
     if medium is not None:
         for rxn_id, flux_value in medium.items():
@@ -175,7 +175,7 @@ def run_optimization(
     genes = [g.id for g in mod.genes]
     lb = {r.id: r.lower_bound for r in mod.reactions}
     ub = {r.id: r.upper_bound for r in mod.reactions}
-    
+
     # DIAGNOSTIC: Print the bounds that will be used in optimization
     if medium is not None:
         print("\n=== DIAGNOSTIC: Checking captured bounds ===")
@@ -512,9 +512,9 @@ def run_optimization(
     elif solver_name.lower() == 'gurobi':
         solver.options['FeasibilityTol'] = 1e-9
         solver.options['OptimalityTol'] = 1e-9
-    elif solver_name.lower() == 'cplex':
+    # elif solver_name.lower() == 'cplex':
         # CPLEX options for better performance
-        solver.options['timelimit'] = 300  # time limit in seconds
+        # solver.options['timelimit'] = 300  # time limit in seconds
 
     #solver.options['threads'] = 4
     # print("Solver:", solver)
@@ -552,7 +552,7 @@ def run_optimization(
     records = [('flux', r, m.v[r].value) for r in m.R]
     records += [('enzyme', g, m.E[g].value) for g in m.G]
     df_FBA = pd.DataFrame(records, columns=['Variable','Index','Value'])
-    
+
     # DIAGNOSTIC: Print exchange reaction fluxes if medium was provided
     if medium is not None:
         print("\n=== DIAGNOSTIC: Exchange reaction fluxes after optimization ===")
