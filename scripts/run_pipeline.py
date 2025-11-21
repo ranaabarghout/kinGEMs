@@ -469,6 +469,7 @@ def main():
     print(f"  Max unchanged iterations: {sa_config.get('max_unchanged_iterations', 5)}")
     print(f"  Change threshold: {sa_config.get('change_threshold', 0.009)}")
     print(f"  Biomass goal: {sa_config.get('biomass_goal', 0.5)}")
+    print(f"  Top enzymes to tune: {sa_config.get('n_top_enzymes', 65)}")
 
     # Print Biolog config if enabled
     if enable_biolog:
@@ -658,6 +659,7 @@ def main():
     max_unchanged_iterations = sa_config.get('max_unchanged_iterations', 5)
     change_threshold = sa_config.get('change_threshold', 0.009)
     biomass_goal = sa_config.get('biomass_goal', 0.5)
+    n_top_enzymes = sa_config.get('n_top_enzymes', 65)
     verbose = sa_config.get('verbose', False)
     medium = config.get('medium', None)
     medium_upper_bound = config.get('medium_upper_bound', True)
@@ -670,6 +672,7 @@ def main():
     print(f"    - Max unchanged iterations: {max_unchanged_iterations}")
     print(f"    - Change threshold: {change_threshold}")
     print(f"    - Biomass goal: {biomass_goal}")
+    print(f"    - Top enzymes to tune: {n_top_enzymes}")
     if medium:
         mode = "fixed fluxes" if medium_upper_bound else "max uptake rates"
         print(f"    - Medium conditions: {len(medium)} reactions ({mode})")
@@ -683,6 +686,7 @@ def main():
         gene_sequences_dict=gene_sequences_dict,
         output_dir=tuning_results_dir,
         enzyme_fraction=enzyme_upper_bound,
+        n_top_enzymes=n_top_enzymes,
         temperature=temperature,
         cooling_rate=cooling_rate,
         min_temperature=min_temperature,

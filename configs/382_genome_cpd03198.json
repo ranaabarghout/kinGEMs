@@ -14,7 +14,8 @@
     "max_iterations": 100,
     "max_unchanged_iterations": 4,
     "change_threshold": 0.009,
-    "biomass_goal": 1.0
+    "biomass_goal": 1.0,
+    "n_top_enzymes": 65
   },
   "biolog_validation": {
     "experiments_file": "data/Biolog experiments/FBA_results.xlsx",
