@@ -22,7 +22,8 @@ import numpy as np  # noqa: F401
 import pandas as pd
 import pyomo.environ as pyo
 from pyomo.environ import *  # noqa: F403
-from pyomo.opt import SolverFactory, SolverStatus, TerminationCondition
+from pyomo.environ import value  # Explicit import to fix lint warning
+from pyomo.opt import SolverFactory
 
 from ..config import ensure_dir_exists  # noqa: F401
 
@@ -105,6 +106,7 @@ def run_optimization(
     verbose=False,
     medium=None,
     medium_upper_bound=False,
+    bidirectional_constraints=True,
 ):
     """
     Enzyme-constrained FBA via Pyomo, handling:
@@ -112,6 +114,7 @@ def run_optimization(
       - enzyme complexes (avg kcat)
       - isoenzymes (OR-GPR)
       - promiscuous enzymes
+      - bidirectional constraints (substrate-specific kcats for reversible reactions)
     Returns: sol_val, df_FBA, gene_sequences_dict, model
     """
 
@@ -205,17 +208,86 @@ def run_optimization(
     m.M = Set(initialize=mets)  # noqa: F405
     m.R = Set(initialize=rxns)  # noqa: F405
     m.G = Set(initialize=genes)  # noqa: F405
+
+    # For bidirectional constraints, identify reversible reactions
+    if bidirectional_constraints:
+        # Find reversible reactions with both forward and reverse kcat data
+        reversible_reactions = set()
+        irreversible_reactions = set(rxns)  # Start with all reactions
+
+        for key in kcat_dict.keys():
+            if len(key) == 3:  # (reaction, gene, direction) format
+                rxn_id, gene_id, direction = key
+                if direction in ['forward', 'reverse']:
+                    reversible_reactions.add(rxn_id)
+
+        # Filter to only those with both directions
+        true_reversible = set()
+        for rxn_id in reversible_reactions:
+            has_forward = any(key[0] == rxn_id and key[2] == 'forward' for key in kcat_dict.keys() if len(key) == 3)
+            has_reverse = any(key[0] == rxn_id and key[2] == 'reverse' for key in kcat_dict.keys() if len(key) == 3)
+            if has_forward and has_reverse:
+                true_reversible.add(rxn_id)
+                irreversible_reactions.discard(rxn_id)
+
+        m.R_rev = Set(initialize=list(true_reversible))  # noqa: F405
+        m.R_irr = Set(initialize=list(irreversible_reactions))  # noqa: F405
+
+        if verbose:
+            print(f"Identified {len(true_reversible)} truly reversible reactions with bidirectional kcat data")
+            print(f"Treating {len(irreversible_reactions)} reactions as irreversible")
+    else:
+        m.R_rev = Set(initialize=[])  # noqa: F405
+        m.R_irr = Set(initialize=rxns)  # noqa: F405
+
     # OPTIMIZED: Only include (rxn, gene) pairs that have kcat data
     # This avoids creating millions of unnecessary constraint checks
-    m.K = Set(initialize=list(kcat_dict.keys()), dimen=2)  # noqa: F405
+    if bidirectional_constraints:
+        # For bidirectional constraints, we have 3-tuples (rxn, gene, direction)
+        m.K = Set(initialize=list(kcat_dict.keys()), dimen=3)  # noqa: F405
+    else:
+        # For standard constraints, we have 2-tuples (rxn, gene)
+        m.K = Set(initialize=list(kcat_dict.keys()), dimen=2)  # noqa: F405
 
     # Variables
-    m.v = Var(  # noqa: F405
-        m.R,
-        domain=Reals,  # noqa: F405
-        bounds=lambda mo, j: (lb[j], ub[j]),
-        initialize=lambda mo, j: flux0.get(j, 0.0)
-    )
+    if bidirectional_constraints:
+        # Create separate forward and reverse variables for reversible reactions
+        def v_fwd_bounds(mo, j):
+            if j in m.R_rev:
+                return (0, max(0, ub[j]))  # Forward flux is non-negative, upper bound is positive part
+            else:
+                return (0, 0)  # Not used for irreversible reactions
+
+        def v_rev_bounds(mo, j):
+            if j in m.R_rev:
+                return (0, max(0, -lb[j]))  # Reverse flux is non-negative, upper bound is negative part
+            else:
+                return (0, 0)  # Not used for irreversible reactions
+
+        def v_irr_bounds(mo, j):
+            if j in m.R_irr:
+                return (lb[j], ub[j])  # Standard bounds for irreversible reactions
+            else:
+                return (0, 0)  # Not used for reversible reactions
+
+        # Forward and reverse flux variables for reversible reactions
+        m.v_fwd = Var(m.R_rev, domain=NonNegativeReals, bounds=v_fwd_bounds,  # noqa: F405
+                      initialize=lambda mo, j: max(0, flux0.get(j, 0.0)))
+        m.v_rev = Var(m.R_rev, domain=NonNegativeReals, bounds=v_rev_bounds,  # noqa: F405
+                      initialize=lambda mo, j: max(0, -flux0.get(j, 0.0)))
+
+        # Standard flux variables for irreversible reactions
+        m.v_irr = Var(m.R_irr, domain=Reals, bounds=v_irr_bounds,  # noqa: F405
+                      initialize=lambda mo, j: flux0.get(j, 0.0))
+    else:
+        # Standard single flux variable for all reactions
+        m.v = Var(  # noqa: F405
+            m.R,
+            domain=Reals,  # noqa: F405
+            bounds=lambda mo, j: (lb[j], ub[j]),
+            initialize=lambda mo, j: flux0.get(j, 0.0)
+        )
+
     m.E = Var(m.G, domain=NonNegativeReals, initialize=0.01)  # noqa: F405
 
     # Mass balance
@@ -245,13 +317,43 @@ def run_optimization(
             return Constraint.Feasible  # noqa: F405
 
         i = met_index[met]
-        return sum(S[i, rxn_index[r]] * mo.v[r] for r in relevant_rxns) == 0
+
+        if bidirectional_constraints:
+            # Sum contributions from reversible and irreversible reactions
+            flux_terms = []
+            for r in relevant_rxns:
+                stoich = S[i, rxn_index[r]]
+                if r in mo.R_rev:
+                    # For reversible reactions: net flux = v_fwd - v_rev
+                    flux_terms.append(stoich * (mo.v_fwd[r] - mo.v_rev[r]))
+                elif r in mo.R_irr:
+                    # For irreversible reactions: use standard flux variable
+                    flux_terms.append(stoich * mo.v_irr[r])
+            return sum(flux_terms) == 0
+        else:
+            # Standard mass balance
+            return sum(S[i, rxn_index[r]] * mo.v[r] for r in relevant_rxns) == 0
 
     m.mass_balance = Constraint(m.M, rule=mass_balance_sparse)  # noqa: F405
 
     # Objective
     sense = maximize if maximization else minimize  # noqa: F405
-    m.obj = Objective(expr=sum(obj_coef[r] * m.v[r] for r in m.R), sense=sense)  # noqa: F405
+    if bidirectional_constraints:
+        # Objective using net flux for reversible reactions and standard flux for irreversible
+        obj_terms = []
+        for r in rxns:
+            coeff = obj_coef[r]
+            if coeff != 0:  # Only include reactions with non-zero objective coefficient
+                if r in m.R_rev:
+                    # Net flux for reversible reactions
+                    obj_terms.append(coeff * (m.v_fwd[r] - m.v_rev[r]))
+                elif r in m.R_irr:
+                    # Standard flux for irreversible reactions
+                    obj_terms.append(coeff * m.v_irr[r])
+        m.obj = Objective(expr=sum(obj_terms) if obj_terms else 0, sense=sense)  # noqa: F405
+    else:
+        # Standard objective
+        m.obj = Objective(expr=sum(obj_coef[r] * m.v[r] for r in m.R), sense=sense)  # noqa: F405
 
     # Initialize constraint counters
     constraints_added = 0
@@ -265,13 +367,37 @@ def run_optimization(
     promis_skipped = 0
 
     # 6a) AND‐GPR: single or complex (simple cases only)
-    def and_rule(mo, rxn_id, gene_id):
+    def and_rule(mo, *args):
         nonlocal constraints_added, constraints_skipped
+
+        if bidirectional_constraints:
+            # For bidirectional: args = (rxn_id, gene_id, direction)
+            if len(args) != 3:
+                constraints_skipped += 1
+                return Constraint.Skip  # noqa: F405
+            rxn_id, gene_id, direction = args
+            kcat_key = (rxn_id, gene_id, direction)
+        else:
+            # For standard: args = (rxn_id, gene_id)
+            if len(args) != 2:
+                constraints_skipped += 1
+                return Constraint.Skip  # noqa: F405
+            rxn_id, gene_id = args
+            kcat_key = (rxn_id, gene_id)
+
         clauses = dnf_clauses.get(rxn_id, [])
         if not clauses:
             constraints_skipped += 1
             skip_reasons['no_clauses'] += 1
             return Constraint.Skip  # noqa: F405
+
+        # Get kcat values
+        k_list = kcat_dict.get(kcat_key, [])
+        if not k_list:
+            constraints_skipped += 1
+            skip_reasons['no_kcat'] += 1
+            return Constraint.Skip  # noqa: F405
+
         # single enzyme: max kcat
         if len(clauses) == 1 and len(clauses[0]) == 1:
             g = clauses[0][0]
@@ -279,14 +405,26 @@ def run_optimization(
                 constraints_skipped += 1
                 skip_reasons['gene_mismatch'] += 1
                 return Constraint.Skip  # noqa: F405
-            k_list = kcat_dict.get((rxn_id, g), [])
-            if not k_list:
-                constraints_skipped += 1
-                skip_reasons['no_kcat'] += 1
-                return Constraint.Skip  # noqa: F405
+
             k_val = max(k_list)
             constraints_added += 1
-            return mo.v[rxn_id] <= k_val * mo.E[g]
+
+            # Choose the appropriate flux variable based on reaction type and direction
+            if bidirectional_constraints and rxn_id in mo.R_rev:
+                # For reversible reactions with bidirectional constraints
+                if direction == 'forward':
+                    return mo.v_fwd[rxn_id] <= k_val * mo.E[g]
+                elif direction == 'reverse':
+                    return mo.v_rev[rxn_id] <= k_val * mo.E[g]
+                else:
+                    constraints_skipped += 1
+                    return Constraint.Skip  # noqa: F405
+            elif bidirectional_constraints and rxn_id in mo.R_irr:
+                # For irreversible reactions in bidirectional mode
+                return mo.v_irr[rxn_id] <= k_val * mo.E[g]
+            else:
+                # Standard mode
+                return mo.v[rxn_id] <= k_val * mo.E[g]
         # enzyme complex: avg kcat
         if len(clauses) == 1 and len(clauses[0]) > 1:
             clause = clauses[0]
@@ -299,16 +437,38 @@ def run_optimization(
                 constraints_skipped += 1
                 skip_reasons['no_kcat'] += 1  # Reuse this category
                 return Constraint.Skip  # noqa: F405
-            all_ks = []
-            for g in clause:
-                all_ks.extend(kcat_dict.get((rxn_id, g), []))
+
+            # For complexes in bidirectional mode, we need to handle each direction separately
+            if bidirectional_constraints:
+                # Get kcats for this specific direction and gene
+                all_ks = k_list  # Already filtered for this direction and gene
+            else:
+                # Standard mode: collect all kcats for all genes in complex
+                all_ks = []
+                for g in clause:
+                    all_ks.extend(kcat_dict.get((rxn_id, g), []))
+
             if not all_ks:
                 constraints_skipped += 1
                 skip_reasons['no_kcat'] += 1
                 return Constraint.Skip  # noqa: F405
+
             k_val = sum(all_ks) / len(all_ks)
             constraints_added += 1
-            return mo.v[rxn_id] <= k_val * mo.E[gene_id]
+
+            # Choose the appropriate flux variable
+            if bidirectional_constraints and rxn_id in mo.R_rev:
+                if direction == 'forward':
+                    return mo.v_fwd[rxn_id] <= k_val * mo.E[gene_id]
+                elif direction == 'reverse':
+                    return mo.v_rev[rxn_id] <= k_val * mo.E[gene_id]
+                else:
+                    constraints_skipped += 1
+                    return Constraint.Skip  # noqa: F405
+            elif bidirectional_constraints and rxn_id in mo.R_irr:
+                return mo.v_irr[rxn_id] <= k_val * mo.E[gene_id]
+            else:
+                return mo.v[rxn_id] <= k_val * mo.E[gene_id]
         # Multiple clauses - will be handled by ISO or MIXED constraints
         constraints_skipped += 1
         skip_reasons['multiple_clauses'] += 1
@@ -332,23 +492,101 @@ def run_optimization(
             iso_skipped += 1
             return Constraint.Skip  # noqa: F405
 
+        # For bidirectional constraints, we need to create separate constraints for forward and reverse
+        if bidirectional_constraints and rxn_id in mo.R_rev:
+            # Handle separately for forward and reverse directions
+            iso_skipped += 1
+            return Constraint.Skip  # noqa: F405  # Will be handled by bidirectional iso rules
+
         # Pure isoenzymes: g1 or g2 or g3 (all single genes)
         terms = []
         for clause in clauses:
             g = clause[0]  # Single gene in this clause
-            kl = kcat_dict.get((rxn_id, g), [])
+            if bidirectional_constraints:
+                # For irreversible reactions in bidirectional mode, use appropriate key format
+                # We need to check if we have direction-specific data or standard data
+                forward_key = (rxn_id, g, 'forward')
+                standard_key = (rxn_id, g)
+
+                if forward_key in kcat_dict:
+                    kl = kcat_dict[forward_key]
+                elif standard_key in kcat_dict:
+                    kl = kcat_dict[standard_key]
+                else:
+                    kl = []
+            else:
+                kl = kcat_dict.get((rxn_id, g), [])
+
             if kl:
                 kmin = min(kl)
-                terms.append(kmin * mo.E[g])
+                if bidirectional_constraints and rxn_id in mo.R_irr:
+                    terms.append(kmin * mo.E[g])
+                elif not bidirectional_constraints:
+                    terms.append(kmin * mo.E[g])
 
         if not terms:
             iso_skipped += 1
             return Constraint.Skip  # noqa: F405
+
         iso_added += 1
-        return mo.v[rxn_id] <= sum(terms)
+        if bidirectional_constraints and rxn_id in mo.R_irr:
+            return mo.v_irr[rxn_id] <= sum(terms)
+        else:
+            return mo.v[rxn_id] <= sum(terms)
 
     if not isoenzymes_off:
         m.kcat_iso = Constraint(m.R, rule=iso_rule)  # noqa: F405
+
+    # 6b2) Bidirectional isoenzyme constraints for reversible reactions
+    if bidirectional_constraints and not isoenzymes_off:
+        def iso_bidirectional_rule(mo, rxn_id, direction):
+            nonlocal iso_added, iso_skipped
+            clauses = dnf_clauses.get(rxn_id, [])
+            if len(clauses) <= 1:
+                iso_skipped += 1
+                return Constraint.Skip  # noqa: F405
+
+            # Check if this is pure isoenzymes
+            has_complex_clause = any(len(clause) > 1 for clause in clauses)
+            if has_complex_clause:
+                iso_skipped += 1
+                return Constraint.Skip  # noqa: F405
+
+            # Pure isoenzymes for specific direction
+            terms = []
+            for clause in clauses:
+                g = clause[0]  # Single gene
+                kl = kcat_dict.get((rxn_id, g, direction), [])
+                if kl:
+                    kmin = min(kl)
+                    terms.append(kmin * mo.E[g])
+
+            if not terms:
+                iso_skipped += 1
+                return Constraint.Skip  # noqa: F405
+
+            iso_added += 1
+            if direction == 'forward':
+                return mo.v_fwd[rxn_id] <= sum(terms)
+            else:  # reverse
+                return mo.v_rev[rxn_id] <= sum(terms)
+
+        # Create constraints for both directions of reversible reactions
+        bidirectional_iso_keys = []
+        for rxn_id in m.R_rev:
+            # Check if we have isoenzyme data for both directions
+            clauses = dnf_clauses.get(rxn_id, [])
+            if len(clauses) > 1 and all(len(clause) == 1 for clause in clauses):
+                has_forward = any((rxn_id, clause[0], 'forward') in kcat_dict for clause in clauses)
+                has_reverse = any((rxn_id, clause[0], 'reverse') in kcat_dict for clause in clauses)
+                if has_forward:
+                    bidirectional_iso_keys.append((rxn_id, 'forward'))
+                if has_reverse:
+                    bidirectional_iso_keys.append((rxn_id, 'reverse'))
+
+        if bidirectional_iso_keys:
+            m.BI = Set(initialize=bidirectional_iso_keys, dimen=2)  # noqa: F405
+            m.kcat_iso_bidirectional = Constraint(m.BI, rule=iso_bidirectional_rule)  # noqa: F405
 
     # 6c) MIXED OR+AND: Handle complex cases like (g1 and g2) or (g3 and g4) or g5
     def mixed_rule(mo, rxn_id):
@@ -417,8 +655,23 @@ def run_optimization(
             for clause in clauses:
                 if g_id not in clause:
                     continue
-                for k in kcat_dict.get((r_id, g_id), []):
-                    usage.append(mo.v[r_id] / k)
+
+                # Handle bidirectional vs standard constraints
+                if bidirectional_constraints:
+                    # For bidirectional constraints, need to handle different flux variables
+                    if r_id in mo.R_rev:
+                        # Reversible reaction: use net flux (v_fwd - v_rev)
+                        for k in kcat_dict.get((r_id, g_id), []):
+                            usage.append((mo.v_fwd[r_id] - mo.v_rev[r_id]) / k)
+                    elif r_id in mo.R_irr:
+                        # Irreversible reaction: use standard flux variable
+                        for k in kcat_dict.get((r_id, g_id), []):
+                            usage.append(mo.v_irr[r_id] / k)
+                else:
+                    # Standard constraints: use standard flux variable
+                    for k in kcat_dict.get((r_id, g_id), []):
+                        usage.append(mo.v[r_id] / k)
+
         if not usage:
             promis_skipped += 1
             return Constraint.Skip  # noqa: F405
@@ -428,7 +681,8 @@ def run_optimization(
     if not promiscuous_off:
         m.promiscuous = Constraint(m.G, rule=promis_rule)  # noqa: F405
 
-    # Print constraint summary (only if verbose)
+    # Note: Bidirectional constraints are now handled in the main and_rule and iso_bidirectional_rule functions
+    # This legacy bidirectional constraint code has been removed to avoid conflicts    # Print constraint summary (only if verbose)
     if verbose:
         print(f"\n{'='*60}")
         print("ENZYME CONSTRAINT SUMMARY")
@@ -452,6 +706,11 @@ def run_optimization(
             print("Promiscuous enzyme constraints: DISABLED")
         else:
             print(f"Promiscuous enzyme constraints:    {promis_added:4d} added, {promis_skipped:4d} skipped")
+
+        if bidirectional_constraints:
+            print("Bidirectional constraints: ENABLED (integrated with and_rule and iso constraints)")
+        else:
+            print("Bidirectional constraints: DISABLED")
 
         total_active = (
             (constraints_added if not multi_enzyme_off else 0) +
@@ -532,23 +791,73 @@ def run_optimization(
     # 9) Post-process - handle numerical precision issues
     # Clamp very small values to zero to avoid floating-point errors
     tolerance = 1e-10
-    for r in m.R:
-        val = m.v[r].value if m.v[r].value is not None else lb[r]
-        # Clamp tiny negative values to zero
-        if abs(val) < tolerance:
-            val = 0.0
-        m.v[r].value = max(min(val, ub[r]), lb[r])
+
+    if bidirectional_constraints:
+        # Handle forward and reverse flux variables
+        for r in m.R_rev:
+            # Forward flux
+            val_fwd = m.v_fwd[r].value if m.v_fwd[r].value is not None else 0.0
+            if abs(val_fwd) < tolerance:
+                val_fwd = 0.0
+            m.v_fwd[r].value = max(val_fwd, 0.0)
+
+            # Reverse flux
+            val_rev = m.v_rev[r].value if m.v_rev[r].value is not None else 0.0
+            if abs(val_rev) < tolerance:
+                val_rev = 0.0
+            m.v_rev[r].value = max(val_rev, 0.0)
+
+        # Handle irreversible flux variables
+        for r in m.R_irr:
+            val = m.v_irr[r].value if m.v_irr[r].value is not None else lb[r]
+            if abs(val) < tolerance:
+                val = 0.0
+            m.v_irr[r].value = max(min(val, ub[r]), lb[r])
+    else:
+        # Standard flux variables
+        for r in m.R:
+            val = m.v[r].value if m.v[r].value is not None else lb[r]
+            if abs(val) < tolerance:
+                val = 0.0
+            m.v[r].value = max(min(val, ub[r]), lb[r])
+
+    # Handle enzyme variables
     for g in m.G:
         val = m.E[g].value if m.E[g].value is not None else 0.0
-        # Clamp tiny negative values to zero
         if abs(val) < tolerance:
             val = 0.0
         m.E[g].value = max(val, 0.0)
 
     # 10) Collect results
     sol_val = value(m.obj)  # noqa: F405
-    records = [('flux', r, m.v[r].value) for r in m.R]
-    records += [('enzyme', g, m.E[g].value) for g in m.G]
+
+    # Collect flux results
+    records = []
+    if bidirectional_constraints:
+        # For reversible reactions, compute net flux and store both forward/reverse components
+        for r in m.R_rev:
+            v_fwd = m.v_fwd[r].value if m.v_fwd[r].value is not None else 0.0
+            v_rev = m.v_rev[r].value if m.v_rev[r].value is not None else 0.0
+            net_flux = v_fwd - v_rev
+            records.append(('flux', r, net_flux))
+            records.append(('flux_fwd', r, v_fwd))
+            records.append(('flux_rev', r, v_rev))
+
+        # For irreversible reactions, use standard flux
+        for r in m.R_irr:
+            flux_val = m.v_irr[r].value if m.v_irr[r].value is not None else 0.0
+            records.append(('flux', r, flux_val))
+    else:
+        # Standard flux collection
+        for r in m.R:
+            flux_val = m.v[r].value if m.v[r].value is not None else 0.0
+            records.append(('flux', r, flux_val))
+
+    # Collect enzyme results
+    for g in m.G:
+        enz_val = m.E[g].value if m.E[g].value is not None else 0.0
+        records.append(('enzyme', g, enz_val))
+
     df_FBA = pd.DataFrame(records, columns=['Variable','Index','Value'])
 
     # DIAGNOSTIC: Print exchange reaction fluxes if medium was provided
@@ -633,7 +942,8 @@ def run_optimization_with_dataframe(model, processed_df, objective_reaction,
                     multi_enzyme_off=False, isoenzymes_off=False,
                     promiscuous_off=False, complexes_off=False,
                     output_dir=None, save_results=True, print_reaction_conditions=True, verbose=True,
-                    solver_name='glpk', medium=None, medium_upper_bound=False):
+                    solver_name='glpk', medium=None, medium_upper_bound=False,
+                    bidirectional_constraints=True):
     """
     Run enzyme-constrained flux balance analysis using a processed dataframe.
 
@@ -642,7 +952,8 @@ def run_optimization_with_dataframe(model, processed_df, objective_reaction,
     model : cobra.Model or str
         COBRA model object or path to model file
     processed_df : pandas.DataFrame
-        DataFrame containing Reactions, Single_gene, SEQ, SMILES, and kcat_mean columns
+        DataFrame containing Reactions, Single_gene, SEQ, SMILES, and kcat_mean columns.
+        For bidirectional constraints, must also contain Direction column.
     objective_reaction : str
         Reaction ID to maximize/minimize
     enzyme_upper_bound : float, optional
@@ -669,6 +980,9 @@ def run_optimization_with_dataframe(model, processed_df, objective_reaction,
     medium_upper_bound : bool, optional
         If True, set both lower and upper bounds equal.
         If False, only set lower bound.
+    bidirectional_constraints : bool, optional
+        Whether to use substrate-specific bidirectional constraints for reversible reactions.
+        Requires 'Direction' column in processed_df.
 
     Returns
     -------
@@ -683,6 +997,11 @@ def run_optimization_with_dataframe(model, processed_df, objective_reaction,
     if missing_cols:
         raise ValueError(f"Missing required columns in processed_df: {missing_cols}")
 
+    # Check if bidirectional constraints are requested but Direction column is missing
+    if bidirectional_constraints and 'Direction' not in processed_df.columns:
+        print("WARNING: bidirectional_constraints=True but 'Direction' column not found. Falling back to standard constraints.")
+        bidirectional_constraints = False
+
     # Extract kcat dictionary and gene sequences from processed_df
     kcat_dict = {}
     gene_sequences_dict = {}
@@ -694,17 +1013,32 @@ def run_optimization_with_dataframe(model, processed_df, objective_reaction,
     # This is MUCH faster than iterrows() for large DataFrames (398K rows)
     valid_rows = processed_df[processed_df[kcat_col].notna() & processed_df['SEQ'].notna()].copy()
 
-    # Build kcat_dict using vectorized operations
-    # Group by (Reactions, Single_gene) and take the mean kcat if duplicates exist
-    grouped = valid_rows.groupby(['Reactions', 'Single_gene'])[kcat_col].mean()
-    kcat_dict = {key: [value] for key, value in grouped.items()}
+    if bidirectional_constraints:
+        # Build direction-aware kcat_dict using (Reactions, Single_gene, Direction) as keys
+        grouped = valid_rows.groupby(['Reactions', 'Single_gene', 'Direction'])[kcat_col].max()
+        kcat_dict = {key: [value] for key, value in grouped.items()}
+
+        if verbose:
+            forward_count = sum(1 for key in kcat_dict if key[2] == 'forward')
+            reverse_count = sum(1 for key in kcat_dict if key[2] == 'reverse')
+            print(f"Created bidirectional kcat dictionary with {len(kcat_dict)} entries:")
+            print(f"  Forward direction: {forward_count}")
+            print(f"  Reverse direction: {reverse_count}")
+    else:
+        # Build standard kcat_dict using (Reactions, Single_gene) as keys
+        # Group by (Reactions, Single_gene) and take the max kcat if duplicates exist
+        grouped = valid_rows.groupby(['Reactions', 'Single_gene'])[kcat_col].max()
+        kcat_dict = {key: [value] for key, value in grouped.items()}
 
     # Build gene_sequences_dict (take first sequence for each gene)
     gene_seq_grouped = valid_rows.groupby('Single_gene')['SEQ'].first()
     gene_sequences_dict = gene_seq_grouped.to_dict()
 
-    if len(kcat_dict) > 0:
-        pass  # kcat_dict has entries
+    if verbose:
+        if len(kcat_dict) > 0:
+            print(f"Created kcat dictionary with {len(kcat_dict)} entries")
+        else:
+            print("WARNING: No valid kcat data found")
 
     solution_value, df_FBA, gene_sequences_dict, m = run_optimization(
         model=model,
@@ -721,7 +1055,8 @@ def run_optimization_with_dataframe(model, processed_df, objective_reaction,
         tee=verbose,
         solver_name=solver_name,
         medium=medium,
-        medium_upper_bound=medium_upper_bound
+        medium_upper_bound=medium_upper_bound,
+        bidirectional_constraints=bidirectional_constraints
     )
 
     # Create descriptive filename and save results if requested
@@ -780,8 +1115,8 @@ def debug_enzyme_constraints_detailed(model, processed_data, objective_reaction)
 
     # Sample some entries
     print("\nSample kcat_dict entries:")
-    for i, (key, value) in enumerate(list(kcat_dict.items())[:3]):
-        print(f"  {key}: {value}")
+    for i, (key, kcat_value) in enumerate(list(kcat_dict.items())[:3]):
+        print(f"  {key}: {kcat_value}")
 
     # Check for problematic values
     print("\n2. Checking for problematic values...")

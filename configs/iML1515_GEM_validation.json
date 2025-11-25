@@ -7,7 +7,7 @@
   "enable_fva": false,
   "enable_biolog_validation": false,
   "medium": {
-      "EX_glc__D_e": -10,
+      "EX_glc__D_e": -12,
       "EX_ac_e": 0,
       "EX_acgam_e": 0,
       "EX_akg_e": 0,
@@ -34,14 +34,14 @@
   },
   "medium_upper_bound": true,
   "simulated_annealing": {
-    "temperature": 1.0,
-    "cooling_rate": 0.85,
-    "min_temperature": 0.001,
-    "max_iterations": 100,
-    "max_unchanged_iterations": 5,
-    "change_threshold": 0.003,
+    "temperature": 2.5,
+    "cooling_rate": 0.95,
+    "min_temperature": 0.0001,
+    "max_iterations": 300,
+    "max_unchanged_iterations": 15,
+    "change_threshold": 0.001,
     "biomass_goal": 0.71,
-    "n_top_enzymes": 45,
+    "n_top_enzymes": 85,
     "verbose": false
   }
 }
