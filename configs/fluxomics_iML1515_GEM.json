@@ -2,15 +2,15 @@
   "model_name": "iML1515_GEM",
   "organism": "E coli",
   "biomass_reaction": "BIOMASS_Ec_iML1515_core_75p37M",
-  "enzyme_upper_bound": 0.5,
+  "enzyme_upper_bound": 0.3,
   "solver": "glpk",
-  "enable_fva": true,
+  "enable_fva": false,
   "enable_biolog_validation": false,
   "medium": {
     "EX_glc__D_e": -9.99998,
     "EX_so4_e": -0.175297,
     "EX_o2_e": -14.2804,
-    "EX_nh4_e": -5.23859
+    "EX_nh4_e": -5.23859,
   },
   "medium_upper_bound": true,
   "simulated_annealing": {

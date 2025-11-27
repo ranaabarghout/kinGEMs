@@ -117,7 +117,7 @@ def create_fva_comparison_dataframe(
     print(f"Loaded {len(mfa_df)} MFA flux measurements")
     print(f"Merged dataframe has {len(result_df)} rows")
     print(f"Matched reactions: {result_df['mfa_lb'].notna().sum()}")
-    print(f"Unmatched reactions: {result_df['mfa_lb'].isna().sum()}")
+    print(f"Unmatched reactions: {result_df['mfa_lb'].isna().sum()}\n")
     
     return result_df
 
@@ -148,7 +148,7 @@ def calculate_consistency_score(
     consistent_mask = overlap_lower <= overlap_upper
     score = consistent_mask.mean()
     
-    print(f"--- Consistency Score Analysis ---")
+    print(f"\n--- Consistency Score Analysis ---")
     print(f"Evaluated {len(df)} reactions")
     print(f"Consistent reactions: {consistent_mask.sum()}")
     print(f"Consistency Score: {score:.4f}")
@@ -183,7 +183,7 @@ def calculate_range_precision_ratio(
     
     ratio = fva_width / mfa_width
     
-    print(f"--- Range Precision Analysis ---")
+    print(f"\n--- Range Precision Analysis ---")
     print(f"Evaluated {len(df)} reactions")
     print(f"Median FVA width: {fva_width.median():.4f}")
     print(f"Median MFA width: {mfa_width.median():.4f}")
@@ -228,7 +228,7 @@ def calculate_normalized_euclidean_dist(
     # Calculate Sum of Squared Errors
     ssd = (distance ** 2).sum()
     
-    print(f"--- Euclidean Distance Analysis ---")
+    print(f"\n--- Euclidean Distance Analysis ---")
     print(f"Evaluated {len(df)} reactions")
     print(f"Reactions with mean outside FVA range: {(distance > 0).sum()}")
     print(f"Sum of Squared Distances (SSD): {ssd:.4f}")
@@ -274,10 +274,11 @@ def calculate_jaccard_index(
     jaccard = intersection / union
     mean_jaccard = jaccard.mean()
     
-    print(f"--- Jaccard Index Analysis ---")
+    print(f"\n--- Jaccard Index Analysis ---")
     print(f"Evaluated {len(df)} reactions")
     print(f"Perfect overlaps (J=1.0): {(jaccard >= 0.99).sum()}")
     print(f"Zero overlaps (J=0.0): {(jaccard <= 0.01).sum()}")
+    print((jaccard <= 0.01))
     print(f"Mean Jaccard Index: {mean_jaccard:.4f}")
     
     return mean_jaccard
