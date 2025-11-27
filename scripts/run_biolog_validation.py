@@ -580,9 +580,13 @@ def main():
     if args.glucose_target:
         tuning_target = args.glucose_target
         print(f"  Using user-specified reference target: {tuning_target}")
+        experimental_target = tuning_target  # Store for reporting
     else:
-        tuning_target = list(reference_targets.values())[0] if reference_targets else 1.0
-        print(f"  Using experimental reference target: {tuning_target}")
+        experimental_target = list(reference_targets.values())[0] if reference_targets else 1.0
+        # Use a realistic metabolic model target (1.0) instead of experimental values
+        tuning_target = 1.0
+        print(f"  Experimental reference value: {experimental_target}")
+        print(f"  Using realistic model biomass target: {tuning_target}")
 
     # === Step 6: Run simulated annealing ===
     print(f"\n=== Step 7: Running simulated annealing ({reference_cpd} tuning) ===")
@@ -834,7 +838,8 @@ def main():
     tuning_summary = {
         'model_name': model_name,
         'reference_compound': reference_cpd,
-        'target_growth_rate': tuning_target,
+        'experimental_target': experimental_target,
+        'model_target_growth_rate': tuning_target,
         'initial_growth_rate': initial_growth_rate,
         'baseline_growth_rate': baseline_growth_rate,
         'final_growth_rate': biomasses[-1],
