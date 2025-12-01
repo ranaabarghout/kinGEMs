@@ -107,8 +107,8 @@ def simulated_annealing(
         """
         Generate a new kcat value within experimental uncertainty bounds.
 
-        Uses a more conservative approach that respects experimental std deviation
-        rather than arbitrary multiplication factors.
+        Uses a conservative approach that respects experimental std deviation.
+        Samples within ±2σ bounds with proper experimental constraints.
         """
         k_val_hr = kcat_value * 3600
         std_hr = std * 3600
@@ -117,22 +117,25 @@ def simulated_annealing(
         if std_hr == 0:
             std_hr = k_val_hr * 0.2
 
-        # Generate new value using normal distribution within reasonable bounds
-        # Limit to ±2σ to stay within 95% confidence interval
+        # Generate new value using normal distribution within ±2σ bounds
+        # This respects experimental uncertainty and stays within 95% confidence interval
         sigma_multiplier = random.uniform(-2.0, 2.0)
         new_kcat = k_val_hr + (sigma_multiplier * std_hr)
 
-        # Additional safety bounds to prevent unrealistic values
-        # Lower bound: at least 10% of original value
-        lb = max(k_val_hr * 0.1, k_val_hr - std_hr)
-        # Upper bound: at most 5x original value or mean + σ, whichever is smaller
-        ub = min(k_val_hr * 5.0, k_val_hr + std_hr)
+        # Ensure we stay within experimental bounds
+        # Lower bound: mean - 2σ (but never below zero)
+        lb = max(0, k_val_hr - 2*std_hr)
+        # Upper bound: mean + 2σ
+        ub = k_val_hr + 2*std_hr
 
-        # Also limit to max reported kcat (per hour) - but use more realistic max
-        max_hr = 1e6  # More realistic maximum kcat per hour
+        # Apply physical constraints
+        # Minimum: positive value
+        lb = max(lb, 1e-6)  # Ensure positive kcat
+        # Maximum: reasonable biological limit (per hour)
+        ub = min(ub, 1e6)  # Very high but plausible kcat/hour
 
-        # Apply all bounds
-        new_kcat = min(max(new_kcat, lb), min(ub, max_hr))
+        # Apply bounds
+        new_kcat = min(max(new_kcat, lb), ub)
 
         return new_kcat
 
@@ -289,6 +292,18 @@ def simulated_annealing(
             #     print(f"\n  [DEBUG] First target {first_rxn}_{first_gene}: old={old_val:.6f} s⁻¹, new={new_val:.6f} s⁻¹, changed={old_val != new_val}")
 
         # EVALUATE with updated kcats
+        if verbose:
+            print("\nEvaluating new kcat configuration...")
+            # Show a few sample kcat changes
+            for i in range(min(3, len(largest_rxn_id))):
+                rxn, gene = largest_rxn_id[i], largest_gene_id[i]
+                old_k = current_solution[i] * 3600  # Convert to hr⁻¹ for comparison
+                new_matches = updated_df[(updated_df['Reactions']==rxn) & (updated_df['Single_gene']==gene)]
+                if len(new_matches) > 0:
+                    new_k = new_matches['kcat_mean'].iloc[0] * 3600  # Convert to hr⁻¹
+                    fold_change = new_k / old_k if old_k > 0 else 1.0
+                    print(f"  Sample: {rxn}_{gene}: {old_k:.2e} → {new_k:.2e} hr⁻¹ ({fold_change:.2f}x)")
+                    
         new_biomass, temp_df_FBA, _, _ = run_optimization_with_dataframe(
             model=model,
             processed_df=updated_df,
@@ -302,6 +317,18 @@ def simulated_annealing(
             medium_upper_bound=medium_upper_bound
         )
 
+        if verbose:
+            print(f"Proposed biomass = {new_biomass:.6e}")
+            fold_biomass_change = new_biomass / current_biomass if current_biomass > 0 else 1.0
+            print(f"Biomass fold change: {fold_biomass_change:.2f}x")
+            
+            # Check if this looks like unconstrained FBA
+            cobra_sol = model.optimize()
+            cobra_biomass = cobra_sol.objective_value
+            if abs(new_biomass - cobra_biomass) < 0.01:
+                print(f"⚠️  WARNING: Proposed biomass ({new_biomass:.4f}) ≈ unconstrained FBA ({cobra_biomass:.4f})")
+                print("    This suggests enzyme constraints may have been effectively removed!")
+
         # Debug: Check if enzyme allocations changed even if biomass didn't
         if not verbose and iteration <= 3:
             # Compare enzyme allocation for first target
@@ -312,12 +339,20 @@ def simulated_annealing(
                 new_alloc = new_enzyme[new_enzyme['Variable']=='enzyme']['Value'].iloc[0] if len(new_enzyme[new_enzyme['Variable']=='enzyme']) > 0 else 0
                 # print(f"  [DEBUG] Enzyme allocation for {largest_gene_id[0]}: {old_alloc:.6e} → {new_alloc:.6e} mmol/gDW/h")
 
-        if verbose:
-            print(f"Proposed biomass = {new_biomass:.6e}")
-
         # ACCEPT or REJECT
         old_biomass = current_biomass  # Store for change calculation
-        prob = acceptance_probability(current_biomass, new_biomass, temperature)
+        
+        # Safety check: reject solutions that are too close to unconstrained FBA
+        # This suggests enzyme constraints have been effectively removed
+        cobra_sol = model.optimize()
+        cobra_biomass = cobra_sol.objective_value
+        if abs(new_biomass - cobra_biomass) < 0.05:  # Within 5% of unconstrained
+            if verbose:
+                print("⚠️  REJECTING: Proposed biomass too close to unconstrained FBA")
+                print(f"    Proposed: {new_biomass:.4f}, Unconstrained: {cobra_biomass:.4f}")
+            prob = 0.0  # Force rejection
+        else:
+            prob = acceptance_probability(current_biomass, new_biomass, temperature)
         random_val = random.random()
         accept = prob > random_val
 
