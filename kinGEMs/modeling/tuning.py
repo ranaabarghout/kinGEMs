@@ -49,7 +49,8 @@ def simulated_annealing(
     n_top_enzymes=65,
     verbose=False,
     medium=None,
-    medium_upper_bound=False
+    medium_upper_bound=False,
+    bidirectional_constraints=True
 ):
     """
     Use simulated annealing to tune kcat values for improved biomass production.
@@ -122,11 +123,18 @@ def simulated_annealing(
         sigma_multiplier = random.uniform(-2.0, 2.0)
         new_kcat = k_val_hr + (sigma_multiplier * std_hr)
 
+        # For debugging: make more aggressive changes to test if current changes are too small
+        # Temporarily increase the variation to 3x standard range for better exploration
+        if std_hr > 0:
+            # Use a wider range for better exploration of the parameter space
+            variation_factor = random.uniform(-3.0, 3.0)
+            new_kcat = k_val_hr + (variation_factor * std_hr)
+
         # Ensure we stay within experimental bounds
-        # Lower bound: mean - 2σ (but never below zero)
-        lb = max(0, k_val_hr - 2*std_hr)
-        # Upper bound: mean + 2σ
-        ub = k_val_hr + 2*std_hr
+        # Lower bound: mean - 3σ (but never below zero) - wider for exploration
+        lb = max(0, k_val_hr - 3*std_hr)
+        # Upper bound: mean + 3σ - wider for exploration
+        ub = k_val_hr + 3*std_hr
 
         # Apply physical constraints
         # Minimum: positive value
@@ -139,15 +147,47 @@ def simulated_annealing(
 
         return new_kcat
 
-    def update_kcat(df, reaction_id, gene_id, new_kcat_value):
+    def update_kcat(df, reaction_id, gene_id, direction, new_kcat_value):
+        """
+        Update kcat value for a specific reaction, gene, and direction.
+        
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            DataFrame with kcat data
+        reaction_id : str
+            Reaction ID
+        gene_id : str
+            Gene ID
+        direction : str
+            Direction ('forward' or 'reverse')
+        new_kcat_value : float
+            New kcat value in hr⁻¹
+        
+        Returns
+        -------
+        pandas.DataFrame
+            Updated DataFrame
+        """
         updated_df = df.copy()
-        cond = (
-            (updated_df['Reactions'] == reaction_id) &
-            (updated_df['Single_gene'] == gene_id)
-        )
-        # convert back to per-second
+        
+        # Check if Direction column exists (bidirectional mode)
+        if 'Direction' in updated_df.columns:
+            cond = (
+                (updated_df['Reactions'] == reaction_id) &
+                (updated_df['Single_gene'] == gene_id) &
+                (updated_df['Direction'] == direction)
+            )
+        else:
+            # Fallback for non-directional mode
+            cond = (
+                (updated_df['Reactions'] == reaction_id) &
+                (updated_df['Single_gene'] == gene_id)
+            )
+        
+        # Get old value for debugging
         old_value = updated_df.loc[cond, 'kcat_mean'].iloc[0] if cond.sum() > 0 else None
-        new_value_s = new_kcat_value / 3600
+        new_value_s = new_kcat_value / 3600  # convert back to per-second
 
         # Update both kcat_mean AND kcat columns (optimization uses 'kcat' if it exists)
         updated_df.loc[cond, 'kcat_mean'] = new_value_s
@@ -157,7 +197,8 @@ def simulated_annealing(
         # Debug: verify update happened
         if cond.sum() > 0 and verbose:
             actual_new = updated_df.loc[cond, 'kcat_mean'].iloc[0]
-            print(f"    [UPDATE] {reaction_id}_{gene_id}: {old_value:.6e} → {actual_new:.6e} s⁻¹")
+            direction_str = f"_{direction}" if 'Direction' in updated_df.columns else ""
+            print(f"    [UPDATE] {reaction_id}_{gene_id}{direction_str}: {old_value:.6e} → {actual_new:.6e} s⁻¹")
 
         return updated_df
 
@@ -194,23 +235,107 @@ def simulated_annealing(
         enzyme_ratio=True,
         output_dir=output_dir,
         save_results=False,
-        verbose=True,
+        verbose=verbose,
         medium=medium,
-        medium_upper_bound=medium_upper_bound
+        medium_upper_bound=medium_upper_bound,
+        bidirectional_constraints=bidirectional_constraints
     )
 
-    # Pick top N enzymes by mass
+    # Pick top N enzymes by mass - handle directionality
     enzyme_df = df_FBA[df_FBA['Variable']=='enzyme'].copy()
     enzyme_df['MW'] = enzyme_df['Index'].map(mw_dict).fillna(0)
     enzyme_df['enzyme_mass'] = enzyme_df['Value'] * enzyme_df['MW'] * 1e-3
     top_n = enzyme_df.nlargest(n_top_enzymes, 'enzyme_mass')
-    top_targets = (
-        top_n[['Index','enzyme_mass']]
-        .rename(columns={'Index':'Single_gene'})
-        .merge(processed_data, on='Single_gene')
-        [['Reactions','Single_gene','enzyme_mass','kcat_mean','kcat_std']]
-        .reset_index(drop=True)
-    )
+    
+    # Check if processed_data has Direction column for bidirectional constraints
+    has_direction = 'Direction' in processed_data.columns
+    
+    if has_direction:
+        # For bidirectional data, we need to select the appropriate direction
+        # based on actual flux direction from the optimization
+        flux_df = df_FBA[df_FBA['Variable']=='v'].copy()
+        top_targets_list = []
+        
+        for _, enzyme_row in top_n.iterrows():
+            gene_id = enzyme_row['Index']
+            enzyme_mass = enzyme_row['enzyme_mass']
+            
+            # Find all reactions for this gene in processed_data
+            gene_reactions = processed_data[processed_data['Single_gene'] == gene_id]
+            
+            for _, reaction_row in gene_reactions.iterrows():
+                rxn_id = reaction_row['Reactions']
+                direction = reaction_row['Direction']
+                
+                # Check flux direction to determine if this direction is active
+                flux_row = flux_df[flux_df['Index'] == rxn_id]
+                if len(flux_row) > 0:
+                    flux_value = flux_row['Value'].iloc[0]
+                    
+                    # Only include this direction if flux is significant and in the right direction
+                    if direction == 'forward' and flux_value > 1e-6:
+                        top_targets_list.append({
+                            'Reactions': rxn_id,
+                            'Single_gene': gene_id,
+                            'Direction': direction,
+                            'enzyme_mass': enzyme_mass,
+                            'kcat_mean': reaction_row['kcat_mean'],
+                            'kcat_std': reaction_row.get('kcat_std', 0.1)
+                        })
+                    elif direction == 'reverse' and flux_value < -1e-6:
+                        top_targets_list.append({
+                            'Reactions': rxn_id,
+                            'Single_gene': gene_id,
+                            'Direction': direction,
+                            'enzyme_mass': enzyme_mass,
+                            'kcat_mean': reaction_row['kcat_mean'],
+                            'kcat_std': reaction_row.get('kcat_std', 0.1)
+                        })
+        
+        top_targets = pd.DataFrame(top_targets_list)
+        
+        # If we don't have enough directional targets, fall back to all directions
+        if len(top_targets) < n_top_enzymes // 2:
+            print(f"[INFO] Only found {len(top_targets)} flux-directed targets, adding non-directional...")
+            # Add remaining targets regardless of flux direction
+            for _, enzyme_row in top_n.iterrows():
+                gene_id = enzyme_row['Index']
+                enzyme_mass = enzyme_row['enzyme_mass']
+                gene_reactions = processed_data[processed_data['Single_gene'] == gene_id]
+                
+                for _, reaction_row in gene_reactions.iterrows():
+                    rxn_dir_combo = (reaction_row['Reactions'], gene_id, reaction_row['Direction'])
+                    # Check if this combination already exists in top_targets (only if top_targets is not empty)
+                    already_exists = False
+                    if len(top_targets) > 0:
+                        already_exists = any((top_targets['Reactions'] == rxn_dir_combo[0]) & 
+                                           (top_targets['Single_gene'] == rxn_dir_combo[1]) & 
+                                           (top_targets['Direction'] == rxn_dir_combo[2]))
+                    
+                    if not already_exists:
+                        new_row = pd.DataFrame([{
+                            'Reactions': reaction_row['Reactions'],
+                            'Single_gene': gene_id,
+                            'Direction': reaction_row['Direction'],
+                            'enzyme_mass': enzyme_mass,
+                            'kcat_mean': reaction_row['kcat_mean'],
+                            'kcat_std': reaction_row.get('kcat_std', 0.1)
+                        }])
+                        top_targets = pd.concat([top_targets, new_row], ignore_index=True)
+                        
+                        if len(top_targets) >= n_top_enzymes:
+                            break
+                if len(top_targets) >= n_top_enzymes:
+                    break
+    else:
+        # Non-directional mode (backward compatibility)
+        top_targets = (
+            top_n[['Index','enzyme_mass']]
+            .rename(columns={'Index':'Single_gene'})
+            .merge(processed_data, on='Single_gene')
+            [['Reactions','Single_gene','enzyme_mass','kcat_mean','kcat_std']]
+            .reset_index(drop=True)
+        )
 
     # Check for duplicates BEFORE deduplication
     duplicates = top_targets.duplicated(subset=['Reactions', 'Single_gene'], keep=False)
@@ -227,11 +352,13 @@ def simulated_annealing(
     # Verify these reactions/genes exist in processed_data
     for idx, row in top_targets.head(3).iterrows():
         rxn, gene = row['Reactions'], row['Single_gene']
-        matches = processed_data[(processed_data['Reactions']==rxn) & (processed_data['Single_gene']==gene)]
-        # print(f"[DEBUG] {rxn}_{gene}: found {len(matches)} matches in processed_data, kcat_mean={matches['kcat_mean'].iloc[0] if len(matches)>0 else 'NOT FOUND'}")
+        # Skip detailed verification to avoid lint warnings
+        pass
 
+    # Extract target information with directionality support
     largest_rxn_id  = top_targets['Reactions'].tolist()
     largest_gene_id = top_targets['Single_gene'].tolist()
+    largest_directions = top_targets['Direction'].tolist() if has_direction else [None] * len(top_targets)
     current_solution = top_targets['kcat_mean'].tolist()
     stds             = top_targets['kcat_std'].fillna(0.1).tolist()
 
@@ -259,7 +386,7 @@ def simulated_annealing(
         # PROPOSE & print old vs new kcats
         updated_df = df_new.copy()
         actually_changed = 0
-        for i, (rxn, gene) in enumerate(zip(largest_rxn_id, largest_gene_id)):
+        for i, (rxn, gene, direction) in enumerate(zip(largest_rxn_id, largest_gene_id, largest_directions)):
             old_k = current_solution[i]  # in s⁻¹
             new_k_hr = get_neighbor(old_k, stds[i])  # returns hr⁻¹
             new_k_s = new_k_hr / 3600
@@ -270,30 +397,27 @@ def simulated_annealing(
 
             if verbose:
                 fold_change = new_k_s / old_k if old_k > 0 else 1.0
-                print(f"  {rxn}_{gene}: old kcat = {old_k:.3e} s⁻¹  →  new kcat = {new_k_s:.3e} s⁻¹ (Δ={(new_k_s-old_k)/old_k*100:+.1f}%, fold={fold_change:.2f}x)")
-            # update_kcat expects hr⁻¹ and will convert to s⁻¹ internally
-            updated_df = update_kcat(updated_df, rxn, gene, new_k_hr)
+                direction_str = f" ({direction})" if direction else ""
+                print(f"  {rxn}_{gene}{direction_str}: old kcat = {old_k:.3e} s⁻¹  →  new kcat = {new_k_s:.3e} s⁻¹ (Δ={(new_k_s-old_k)/old_k*100:+.1f}%, fold={fold_change:.2f}x)")
+            
+            # update_kcat now handles direction properly
+            updated_df = update_kcat(updated_df, rxn, gene, direction or 'forward', new_k_hr)
 
         if verbose:
             print(f"  Actually changed {actually_changed}/{len(largest_rxn_id)} kcats by >1%")
 
-        # Debug: Verify kcats actually changed in updated_df
+        # Debug: Verify kcats actually changed in updated_df  
         if not verbose and iteration <= 3:
-            first_rxn, first_gene = largest_rxn_id[0], largest_gene_id[0]
-            old_val = df_new.loc[(df_new['Reactions']==first_rxn) & (df_new['Single_gene']==first_gene), 'kcat_mean'].iloc[0]
-            new_val = updated_df.loc[(updated_df['Reactions']==first_rxn) & (updated_df['Single_gene']==first_gene), 'kcat_mean'].iloc[0]
-
-            # Check if there are multiple matches and what their values are
-            matches = updated_df.loc[(updated_df['Reactions']==first_rxn) & (updated_df['Single_gene']==first_gene), 'kcat_mean']
+            # Skip detailed verification for non-verbose mode
+            pass
             # if len(matches) > 1:
             #     print(f"\n  [DEBUG] {first_rxn}_{first_gene} has {len(matches)} rows with kcats: {matches.tolist()}")
             #     print(f"  [DEBUG] Average that will be used: {matches.mean():.6f} s⁻¹")
             # else:
             #     print(f"\n  [DEBUG] First target {first_rxn}_{first_gene}: old={old_val:.6f} s⁻¹, new={new_val:.6f} s⁻¹, changed={old_val != new_val}")
 
-        # EVALUATE with updated kcats
         if verbose:
-            print("\nEvaluating new kcat configuration...")
+            print("Evaluating new kcat configuration...")
             # Show a few sample kcat changes
             for i in range(min(3, len(largest_rxn_id))):
                 rxn, gene = largest_rxn_id[i], largest_gene_id[i]
@@ -303,7 +427,11 @@ def simulated_annealing(
                     new_k = new_matches['kcat_mean'].iloc[0] * 3600  # Convert to hr⁻¹
                     fold_change = new_k / old_k if old_k > 0 else 1.0
                     print(f"  Sample: {rxn}_{gene}: {old_k:.2e} → {new_k:.2e} hr⁻¹ ({fold_change:.2f}x)")
-                    
+
+        # Debug: Print optimization call
+        if verbose:
+            print(f"  Calling optimization with {len(updated_df)} data rows...")
+
         new_biomass, temp_df_FBA, _, _ = run_optimization_with_dataframe(
             model=model,
             processed_df=updated_df,
@@ -314,14 +442,16 @@ def simulated_annealing(
             save_results=False,
             verbose=False,
             medium=medium,
-            medium_upper_bound=medium_upper_bound
+            medium_upper_bound=medium_upper_bound,
+            bidirectional_constraints=bidirectional_constraints
         )
 
         if verbose:
+            print(f"  Optimization completed: new_biomass = {new_biomass:.6e}")
             print(f"Proposed biomass = {new_biomass:.6e}")
             fold_biomass_change = new_biomass / current_biomass if current_biomass > 0 else 1.0
             print(f"Biomass fold change: {fold_biomass_change:.2f}x")
-            
+
             # Check if this looks like unconstrained FBA
             cobra_sol = model.optimize()
             cobra_biomass = cobra_sol.objective_value
@@ -331,17 +461,13 @@ def simulated_annealing(
 
         # Debug: Check if enzyme allocations changed even if biomass didn't
         if not verbose and iteration <= 3:
-            # Compare enzyme allocation for first target
-            old_enzyme = df_FBA[df_FBA['Index']==largest_gene_id[0]]
-            new_enzyme = temp_df_FBA[temp_df_FBA['Index']==largest_gene_id[0]]
-            if len(old_enzyme) > 0 and len(new_enzyme) > 0:
-                old_alloc = old_enzyme[old_enzyme['Variable']=='enzyme']['Value'].iloc[0] if len(old_enzyme[old_enzyme['Variable']=='enzyme']) > 0 else 0
-                new_alloc = new_enzyme[new_enzyme['Variable']=='enzyme']['Value'].iloc[0] if len(new_enzyme[new_enzyme['Variable']=='enzyme']) > 0 else 0
+            # Skip enzyme allocation comparison for non-verbose mode
+            pass
                 # print(f"  [DEBUG] Enzyme allocation for {largest_gene_id[0]}: {old_alloc:.6e} → {new_alloc:.6e} mmol/gDW/h")
 
         # ACCEPT or REJECT
         old_biomass = current_biomass  # Store for change calculation
-        
+
         # Safety check: reject solutions that are too close to unconstrained FBA
         # This suggests enzyme constraints have been effectively removed
         cobra_sol = model.optimize()
@@ -411,11 +537,15 @@ def simulated_annealing(
     if not verbose:
         print()  # New line after progress indicator
 
-    # FINALIZE: build kcat_dict from best_solution
-    kcat_dict = {
-        f"{rxn}_{gene}": k
-        for (rxn, gene), k in zip(zip(largest_rxn_id, largest_gene_id), best_solution)
-    }
+    # FINALIZE: build kcat_dict from best_solution with proper directionality
+    kcat_dict = {}
+    for (rxn, gene, direction), k in zip(zip(largest_rxn_id, largest_gene_id, largest_directions), best_solution):
+        if direction:
+            # Bidirectional mode: use (rxn, gene, direction) format
+            kcat_dict[f"{rxn}_{gene}_{direction}"] = k
+        else:
+            # Non-directional mode: use (rxn, gene) format for backward compatibility
+            kcat_dict[f"{rxn}_{gene}"] = k
 
     if output_dir:
         save_annealing_results(

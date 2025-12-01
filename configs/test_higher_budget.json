@@ -1,0 +1,20 @@
+{
+    "model_name": "iML1515_GEM",
+    "organism": "Escherichia coli",
+    "enzyme_upper_bound": 0.30,
+    "enable_fva": false,
+    "enable_biolog_validation": false,
+    "solver": "glpk",
+    "bidirectional_constraints": true,
+    "simulated_annealing": {
+        "temperature": 15.0,
+        "cooling_rate": 0.9,
+        "min_temperature": 0.5,
+        "max_iterations": 25,
+        "max_unchanged_iterations": 5,
+        "change_threshold": 0.05,
+        "biomass_goal": 0.10,
+        "verbose": true,
+        "n_top_enzymes": 20
+    }
+}

@@ -535,7 +535,7 @@ def main():
         print("  ✓ Generated and saved merged data")
 
     print(f"  Merged data: {len(merged_data)} rows")
-    
+
     # Debug: Check gene distribution in merged data
     if 'Gene' in merged_data.columns:
         unique_genes_merged = merged_data['Gene'].nunique()
@@ -567,16 +567,16 @@ def main():
         print("  ✓ Generated and saved processed data")
 
     print(f"  Processed data: {len(processed_data)} rows")
-    
+
     # Debug: Check gene distribution in processed data
     gene_columns = [col for col in processed_data.columns if 'gene' in col.lower()]
     print(f"  [DEBUG] Gene-related columns in processed data: {gene_columns}")
-    
+
     for gene_col in gene_columns:
         unique_genes = processed_data[gene_col].nunique()
         print(f"  [DEBUG] Unique genes in {gene_col}: {unique_genes}")
         print(f"  [DEBUG] Top 5 genes in {gene_col}: {processed_data[gene_col].value_counts().head()}")
-        
+
     # Check for b0929 specifically
     if any('gene' in col.lower() for col in processed_data.columns):
         for gene_col in gene_columns:
@@ -593,7 +593,7 @@ def main():
     # Debug: Check model genes before annotation
     print(f"  [DEBUG] Model has {len(model.genes)} genes total")
     print(f"  [DEBUG] First 10 model gene IDs: {[g.id for g in list(model.genes)[:10]]}")
-    
+
     # Annotate model
     print("  Annotating model with kcat and GPR data...")
     model = annotate_model_with_kcat_and_gpr(model=model, df=processed_data)
@@ -602,7 +602,7 @@ def main():
                         if hasattr(rxn, 'annotation') and 'kcat' in rxn.annotation
                         and rxn.annotation['kcat'] not in [None, '', 0, '0'])
     print(f"  Reactions with kcat: {rxn_with_kcat}/{len(model.reactions)}")
-    
+
     # Debug: Check a few annotated reactions
     print("  [DEBUG] Sample annotated reactions:")
     annotated_count = 0
@@ -646,12 +646,12 @@ def main():
         output_dir=None,
         save_results=False,
         print_reaction_conditions=True,
-        verbose=True,  # Enable detailed timing output
+        verbose=False,  # Enable detailed timing output
         solver_name=solver_name,
         bidirectional_constraints=use_bidirectional  # Add performance option
     )
     print(f"    kinGEMs biomass: {solution_value:.4f}")
-    
+
     # Debug: Check gene_sequences_dict
     print(f"  [DEBUG] gene_sequences_dict has {len(gene_sequences_dict)} entries")
     if gene_sequences_dict:
@@ -719,7 +719,8 @@ def main():
         max_iterations=max_iterations,
         max_unchanged_iterations=max_unchanged_iterations,
         change_threshold=change_threshold,
-        verbose=verbose
+        verbose=verbose,
+        bidirectional_constraints=config.get('bidirectional_constraints', True)
     )
 
     improvement = (biomasses[-1] - biomasses[0]) / biomasses[0] * 100 if biomasses[0] > 0 else 0
@@ -750,7 +751,7 @@ def main():
     print("\n  [DEBUG] Gene distribution analysis:")
     print(f"  [DEBUG] df_new shape: {df_new.shape}")
     print(f"  [DEBUG] df_new columns: {list(df_new.columns)}")
-    
+
     if 'Single_gene' in df_new.columns:
         unique_genes_final = df_new['Single_gene'].nunique()
         total_entries = len(df_new)
@@ -759,7 +760,7 @@ def main():
         print(f"  [DEBUG] Final b0929 entries: {b0929_count_final}/{total_entries} ({b0929_count_final/total_entries*100:.1f}%)")
         print("  [DEBUG] Top 10 genes in final results:")
         print(df_new['Single_gene'].value_counts().head(10))
-        
+
     # Compare with original processed data
     print("\n  [DEBUG] Comparing processed_data vs df_new:")
     if 'Single_gene' in constraint_data.columns:

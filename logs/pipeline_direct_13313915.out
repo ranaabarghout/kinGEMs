@@ -91,4 +91,2115 @@ Warning: Model has 8 validation errors
     - Biomass goal: 0.5
   Starting optimization...
 
-  Iter 1/100: biomass=0.010621, temp=1.0000  Iter 2/100: biomass=0.019486, temp=0.9750  Iter 3/100: biomass=0.037620, temp=0.9506  Iter 4/100: biomass=0.062000, temp=0.9269  Iter 5/100: biomass=0.074514, temp=0.9037  Iter 6/100: biomass=0.093587, temp=0.8811  Iter 7/100: biomass=0.113227, temp=0.8591  Iter 8/100: biomass=0.132678, temp=0.8376  Iter 9/100: biomass=0.153174, temp=0.8167  Iter 10/100: biomass=0.174189, temp=0.7962  Iter 11/100: biomass=0.189962, temp=0.7763  Iter 12/100: biomass=0.207770, temp=0.7569  Iter 13/100: biomass=0.222875, temp=0.7380  Iter 14/100: biomass=0.236884, temp=0.7195  Iter 15/100: biomass=0.250984, temp=0.7016  Iter 16/100: biomass=0.265295, temp=0.6840  Iter 17/100: biomass=0.281054, temp=0.6669  Iter 18/100: biomass=0.292777, temp=0.6502  Iter 19/100: biomass=0.306603, temp=0.6340  Iter 20/100: biomass=0.316236, temp=0.6181  Iter 21/100: biomass=0.329604, temp=0.6027  Iter 22/100: biomass=0.340536, temp=0.5876  Iter 23/100: biomass=0.350664, temp=0.5729  Iter 24/100: biomass=0.359399, temp=0.5586  Iter 25/100: biomass=0.369512, temp=0.5446  Iter 26/100: biomass=0.378661, temp=0.5310  Iter 27/100: biomass=0.390868, temp=0.5177  Iter 28/100: biomass=0.399998, temp=0.5048  Iter 29/100: biomass=0.409099, temp=0.4922  Iter 30/100: biomass=0.419447, temp=0.4799  Iter 31/100: biomass=0.425407, temp=0.4679  Iter 32/100: biomass=0.435958, temp=0.4562  Iter 33/100: biomass=0.445201, temp=0.4448  Iter 34/100: biomass=0.456034, temp=0.4337  Iter 35/100: biomass=0.464037, temp=0.4228  Iter 36/100: biomass=0.472707, temp=0.4123  Iter 37/100: biomass=0.481435, temp=0.4019  Iter 38/100: biomass=0.489760, temp=0.3919  Iter 39/100: biomass=0.495980, temp=0.3821
+  Iter 1/100: biomass=0.010621, temp=1.0000  Iter 2/100: biomass=0.019486, temp=0.9750  Iter 3/100: biomass=0.037620, temp=0.9506  Iter 4/100: biomass=0.062000, temp=0.9269  Iter 5/100: biomass=0.074514, temp=0.9037  Iter 6/100: biomass=0.093587, temp=0.8811  Iter 7/100: biomass=0.113227, temp=0.8591  Iter 8/100: biomass=0.132678, temp=0.8376  Iter 9/100: biomass=0.153174, temp=0.8167  Iter 10/100: biomass=0.174189, temp=0.7962  Iter 11/100: biomass=0.189962, temp=0.7763  Iter 12/100: biomass=0.207770, temp=0.7569  Iter 13/100: biomass=0.222875, temp=0.7380  Iter 14/100: biomass=0.236884, temp=0.7195  Iter 15/100: biomass=0.250984, temp=0.7016  Iter 16/100: biomass=0.265295, temp=0.6840  Iter 17/100: biomass=0.281054, temp=0.6669  Iter 18/100: biomass=0.292777, temp=0.6502  Iter 19/100: biomass=0.306603, temp=0.6340  Iter 20/100: biomass=0.316236, temp=0.6181  Iter 21/100: biomass=0.329604, temp=0.6027  Iter 22/100: biomass=0.340536, temp=0.5876  Iter 23/100: biomass=0.350664, temp=0.5729  Iter 24/100: biomass=0.359399, temp=0.5586  Iter 25/100: biomass=0.369512, temp=0.5446  Iter 26/100: biomass=0.378661, temp=0.5310  Iter 27/100: biomass=0.390868, temp=0.5177  Iter 28/100: biomass=0.399998, temp=0.5048  Iter 29/100: biomass=0.409099, temp=0.4922  Iter 30/100: biomass=0.419447, temp=0.4799  Iter 31/100: biomass=0.425407, temp=0.4679  Iter 32/100: biomass=0.435958, temp=0.4562  Iter 33/100: biomass=0.445201, temp=0.4448  Iter 34/100: biomass=0.456034, temp=0.4337  Iter 35/100: biomass=0.464037, temp=0.4228  Iter 36/100: biomass=0.472707, temp=0.4123  Iter 37/100: biomass=0.481435, temp=0.4019  Iter 38/100: biomass=0.489760, temp=0.3919  Iter 39/100: biomass=0.495980, temp=0.3821  Iter 40/100: biomass=0.502610, temp=0.3725
+  Saved kcat comparison plot to: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/iML1515_GEM_20251130_8456/kcat_comparison.png
+
+  kcat Optimization Summary:
+    Total entries targeted: 1342
+    Entries with significant changes: 64070
+    Average fold change: 37.34
+    Median fold change: 22.91
+    Max fold increase: 279.95
+    Max fold decrease: 1.89
+
+    Top 5 most increased kcat values:
+      PHETA1_b4054: 279.95x
+      PHETA1_b4054: 279.95x
+      PHETA1_b4054: 279.95x
+      PHETA1_b4054: 279.95x
+      PHETA1_b4054: 279.95x
+
+    Top 5 most decreased kcat values:
+      ABTA_b2662: 1.89x
+      ABTA_b2662: 1.89x
+      ABTA_b2662: 1.89x
+      ABTA_b2662: 1.89x
+      ABTA_b2662: 1.89x
+
+  Annealing complete!
+  Initial biomass: 0.0089
+  Final biomass: 0.5026
+  Improvement: 5568.1%
+  Total iterations: 41
+
+  Biomass progression:
+    Iter   0: 0.008867
+    Iter   4: 0.062000 (+599.19%)
+    Iter   8: 0.132678 (+114.00%)
+    Iter  12: 0.207770 (+56.60%)
+    Iter  16: 0.265295 (+27.69%)
+    Iter  20: 0.316236 (+19.20%)
+    Iter  24: 0.359399 (+13.65%)
+    Iter  28: 0.399998 (+11.30%)
+    Iter  32: 0.435958 (+8.99%)
+    Iter  36: 0.472707 (+8.43%)
+    Iter  40: 0.502610 (+6.33%)
+
+  Top 10 enzymes by mass contribution:
+   Reactions Single_gene  enzyme_mass
+0     GLUtex       b0929       0.0174
+1     GLYtex       b0929       0.0174
+2  GLYALDtex       b0929       0.0174
+3    GLYBtex       b0929       0.0174
+4    GLYCtex       b0929       0.0174
+5  GLYC3Ptex       b0929       0.0174
+6  GLYCLTtex       b0929       0.0174
+7     GTPtex       b0929       0.0174
+8       Htex       b0929       0.0174
+9      H2tex       b0929       0.0174
+
+  Saved merged DataFrame to: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/iML1515_GEM_20251130_8456/final_model_info.csv
+
+=== Step 6: Running Flux Variability Analysis ===
+  Using parallel FVA with 10 workers...
+  Parallel FVA configuration:
+    Method: dask
+    Workers: 10
+    Reactions: 2712
+    Chunk size: 18
+    Number of chunks: 151
+    Estimated memory: ~2.2 GB
+
+  Running baseline optimization...
+  Optimal biomass: 0.502610
+  Biomass constraint: 0.452349 ≤ biomass ≤ 0.502610 (opt_ratio=0.9)
+
+  Starting parallel FVA with 151 chunks...
+  Progress will be shown by chunk completion...
+  [Chunk 129/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: MG2tpp
+  [Chunk 66/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: ARBTNR3
+  [Chunk 105/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: FLVRx
+  [Chunk 140/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: CH4tex
+  [Chunk 124/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: NADHPO
+  [Chunk 120/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: PGPP161pp
+  [Chunk 88/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: AICART
+  [Chunk  3/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: EX_arg__L_e
+  [Chunk 18/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: GOFUCR
+  [Chunk 114/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: EAR121x
+[FVA] Starting optimization for reaction: ARBTNexs
+[FVA] Starting optimization for reaction: TARTRDtex
+[FVA] Starting optimization for reaction: EX_asp__L_e
+[FVA] Starting optimization for reaction: FRUpts2pp
+[FVA] Starting optimization for reaction: NI2t3pp
+[FVA] Starting optimization for reaction: PE120abcpp
+[FVA] Starting optimization for reaction: PSD140
+[FVA] Starting optimization for reaction: ACOAD7f
+[FVA] Starting optimization for reaction: PYDXK
+[FVA] Starting optimization for reaction: THMtex
+[FVA] Starting optimization for reaction: FEOXAMexs
+[FVA] Starting optimization for reaction: 3OXCOAT
+[FVA] Starting optimization for reaction: GTPCII2
+[FVA] Starting optimization for reaction: ACOAD8f
+[FVA] Starting optimization for reaction: EX_cytd_e
+[FVA] Starting optimization for reaction: G6Pt6_2pp
+[FVA] Starting optimization for reaction: PE180abcpp
+[FVA] Starting optimization for reaction: MICITDr
+[FVA] Starting optimization for reaction: FEOXAMR1
+[FVA] Starting optimization for reaction: PPAtex
+[FVA] Starting optimization for reaction: XYLUtex
+[FVA] Starting optimization for reaction: BTNt2ipp
+    [Chunk 66]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: FEOXAMR2
+[FVA] Starting optimization for reaction: URIC
+[FVA] Starting optimization for reaction: EX_dcyt_e
+[FVA] Starting optimization for reaction: ACOAD5f
+[FVA] Starting optimization for reaction: PROtex
+[FVA] Starting optimization for reaction: PAPA140
+[FVA] Starting optimization for reaction: CDAPPA181
+[FVA] Starting optimization for reaction: GALCTNLt2pp
+[FVA] Starting optimization for reaction: EX_manglyc_e
+    [Chunk 140]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: BTNtex
+    [Chunk 18]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: SADT2
+    [Chunk  3]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: EX_fum_e
+[FVA] Starting optimization for reaction: FEOXAMR3
+    [Chunk 124]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: ACOAD3f
+    [Chunk 120]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: PAPA141
+    [Chunk 105]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: ALLtex
+    [Chunk 129]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: GALCTLO
+    [Chunk 114]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: PGSA140
+    [Chunk 88]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: SBTtex
+[FVA] Starting optimization for reaction: 2DGULRGx
+[FVA] Starting optimization for reaction: LCARS
+[FVA] Starting optimization for reaction: PTHRpp
+[FVA] Starting optimization for reaction: EX_glu__L_e
+[FVA] Starting optimization for reaction: ACOAD2f
+[FVA] Starting optimization for reaction: PFK
+[FVA] Starting optimization for reaction: PAPA161
+[FVA] Starting optimization for reaction: GGPTRCO
+[FVA] Starting optimization for reaction: THYMt3pp
+[FVA] Starting optimization for reaction: LPLIPAL1A141pp
+[FVA] Starting optimization for reaction: 2DGULRGy
+[FVA] Starting optimization for reaction: ARABDI
+[FVA] Starting optimization for reaction: EX_gua_e
+[FVA] Starting optimization for reaction: ALCD19
+[FVA] Starting optimization for reaction: PGM
+[FVA] Starting optimization for reaction: ACOAD4f
+[FVA] Starting optimization for reaction: GTHOXtex
+[FVA] Starting optimization for reaction: EX_metsox_R__L_e
+[FVA] Starting optimization for reaction: LPLIPAL1A180pp
+[FVA] Starting optimization for reaction: PSCLYStex
+[FVA] Starting optimization for reaction: TPI
+[FVA] Starting optimization for reaction: HCO3E
+[FVA] Starting optimization for reaction: AP4AS
+[FVA] Starting optimization for reaction: RMPA
+    [Chunk 66]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: AGt3
+[FVA] Starting optimization for reaction: ACOAD6f
+[FVA] Starting optimization for reaction: 34dhpactex
+[FVA] Starting optimization for reaction: LPLIPAL1E140pp
+[FVA] Starting optimization for reaction: DSBAO1
+[FVA] Starting optimization for reaction: THYMtex
+    [Chunk 88]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: RPI
+[FVA] Starting optimization for reaction: CD2t3pp
+    [Chunk  3]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: IMPC
+    [Chunk 124]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: NADH16pp
+    [Chunk 18]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: SBTPD
+    [Chunk 105]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: MALTHXtexi
+    [Chunk 140]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: ARBTptspp
+    [Chunk 114]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: LPLIPAL1E161pp
+    [Chunk 120]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: DSBAO2
+[FVA] Starting optimization for reaction: PERD
+    [Chunk 129]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: CU2tpp
+[FVA] Starting optimization for reaction: ZNabcpp
+[FVA] Starting optimization for reaction: 12PPDStpp
+[FVA] Starting optimization for reaction: IMPD
+[FVA] Starting optimization for reaction: NADH18pp
+[FVA] Starting optimization for reaction: PFK_2
+[FVA] Starting optimization for reaction: ARBTtex
+[FVA] Starting optimization for reaction: DSBDR
+[FVA] Starting optimization for reaction: LPLIPAL1G140pp
+[FVA] Starting optimization for reaction: SKMt2pp
+[FVA] Starting optimization for reaction: PYDAMK
+[FVA] Starting optimization for reaction: FE2t3pp
+[FVA] Starting optimization for reaction: GLTPD
+[FVA] Starting optimization for reaction: EX_tartr__D_e
+[FVA] Starting optimization for reaction: HYD1pp
+[FVA] Starting optimization for reaction: ECOAH4
+    [Chunk 66]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: FE2t2pp
+[FVA] Starting optimization for reaction: EX_arbt_e
+[FVA] Starting optimization for reaction: AKGtex
+[FVA] Starting optimization for reaction: TDSR1
+[FVA] Starting optimization for reaction: ACONTa
+[FVA] Starting optimization for reaction: MN2t3pp
+[FVA] Starting optimization for reaction: TGBPA
+[FVA] Starting optimization for reaction: GLYBt2pp
+[FVA] Starting optimization for reaction: GLUTRS
+    [Chunk 88]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: ALLTNtex
+[FVA] Starting optimization for reaction: EX_cl_e
+[FVA] Starting optimization for reaction: R5PPpp
+[FVA] Starting optimization for reaction: DMSOtpp
+[FVA] Starting optimization for reaction: MLDCP2App
+[FVA] Starting optimization for reaction: CGLYabcpp
+[FVA] Starting optimization for reaction: MG2t3_2pp
+    [Chunk 124]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: DSERt2pp
+[FVA] Starting optimization for reaction: PSP_Lpp
+    [Chunk 18]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: MANAO
+[FVA] Starting optimization for reaction: ASNtex
+    [Chunk  3]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: TMPPP
+    [Chunk 105]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: FE3DHBZStonex
+    [Chunk 140]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: PYDXtex
+    [Chunk 120]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: PLIPA2A120pp
+    [Chunk 114]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: 12DGR140tipp
+[FVA] Starting optimization for reaction: TYRPpp
+    [Chunk 129]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: CD2tpp
+[FVA] Starting optimization for reaction: ALAt4pp
+[FVA] Starting optimization for reaction: FE3HOXabcpp
+[FVA] Starting optimization for reaction: TAGURr
+[FVA] Starting optimization for reaction: AACTOOR
+[FVA] Starting optimization for reaction: URIK1
+[FVA] Starting optimization for reaction: 12DGR160tipp
+    [Chunk 66]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: GLYC2Ptex
+[FVA] Starting optimization for reaction: PYDXtpp
+[FVA] Starting optimization for reaction: PLIPA2A160pp
+[FVA] Starting optimization for reaction: FADRx2
+[FVA] Starting optimization for reaction: ETHAt2pp
+[FVA] Starting optimization for reaction: LYSt3pp
+[FVA] Starting optimization for reaction: PGLYCP
+[FVA] Starting optimization for reaction: H2tpp
+[FVA] Starting optimization for reaction: PSERtex
+[FVA] Starting optimization for reaction: URIK2
+[FVA] Starting optimization for reaction: 12DGR180tipp
+    [Chunk 88]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: EX_o2_e
+[FVA] Starting optimization for reaction: SUCASPtpp
+[FVA] Starting optimization for reaction: CLPNH180pp
+[FVA] Starting optimization for reaction: FE3abcpp
+[FVA] Starting optimization for reaction: EX_tungs_e
+[FVA] Starting optimization for reaction: GLXCL
+  [Chunk 66/151] ✓ Complete (18 reactions)
+  [Chunk 92/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: EX_dms_e
+[FVA] Starting optimization for reaction: 23DAPPAtex
+[FVA] Starting optimization for reaction: CYTDK1
+[FVA] Starting optimization for reaction: EX_gal_bD_e
+[FVA] Starting optimization for reaction: PGPP120pp
+[FVA] Starting optimization for reaction: SUCMALtpp
+[FVA] Starting optimization for reaction: LPLIPAL2E120
+[FVA] Starting optimization for reaction: THRA
+    [Chunk 124]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: CTBTCAL2
+    [Chunk 18]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: TARTD
+  [Chunk 88/151] ✓ Complete (18 reactions)
+  [Chunk 135/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: TYRL
+    [Chunk 105]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: ECAP3pp
+[FVA] Starting optimization for reaction: G3PItex
+    [Chunk  3]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: CYTDK2
+    [Chunk 114]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: PGPP181pp
+    [Chunk 120]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: EAR100x
+    [Chunk 140]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: PYDXNtex
+[FVA] Starting optimization for reaction: BGLA1
+    [Chunk 129]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: XYLK2
+[FVA] Starting optimization for reaction: THZPSN3
+[FVA] Starting optimization for reaction: GLCRAL
+[FVA] Starting optimization for reaction: FEOXAMtonex
+[FVA] Starting optimization for reaction: G3PGtex
+[FVA] Starting optimization for reaction: CLPNH120pp
+[FVA] Starting optimization for reaction: XPPT
+  [Chunk 124/151] ✓ Complete (18 reactions)
+  [Chunk 78/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: GLYCLTt4pp
+[FVA] Starting optimization for reaction: EAR120x
+[FVA] Starting optimization for reaction: PYDXNtpp
+[FVA] Starting optimization for reaction: GLDBRAN2
+[FVA] Starting optimization for reaction: APG3PAT120
+  [Chunk 18/151] ✓ Complete (18 reactions)
+  [Chunk  9/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: EX_ile__L_e
+[FVA] Starting optimization for reaction: G3PEtex
+  [Chunk 114/151] ✓ Complete (18 reactions)
+  [Chunk 70/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: R15BPK
+  [Chunk 105/151] ✓ Complete (18 reactions)
+  [Chunk 97/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: LPLIPAL2E181
+  [Chunk  3/151] ✓ Complete (18 reactions)
+  [Chunk 147/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: METNA
+[FVA] Starting optimization for reaction: GLYCtpp
+  [Chunk 140/151] ✓ Complete (18 reactions)
+  [Chunk 56/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: TSULtex
+  [Chunk 120/151] ✓ Complete (18 reactions)
+  [Chunk  4/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: HXPRT
+  [Chunk 129/151] ✓ Complete (18 reactions)
+  [Chunk 131/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: MPTAT
+[FVA] Starting optimization for reaction: APH120
+[FVA] Starting optimization for reaction: EX_lac__L_e
+    [Chunk 92]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: G3PCtex
+[FVA] Starting optimization for reaction: Kabcpp
+[FVA] Starting optimization for reaction: LPLIPAL2G180
+[FVA] Starting optimization for reaction: H2Otpp
+[FVA] Starting optimization for reaction: XYHDL
+    [Chunk 135]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: MOCDS
+[FVA] Starting optimization for reaction: TYRtex
+[FVA] Starting optimization for reaction: NDPK5
+[FVA] Starting optimization for reaction: MOADSUx
+[FVA] Starting optimization for reaction: EX_leu__L_e
+[FVA] Starting optimization for reaction: LPLIPAL2G141
+[FVA] Starting optimization for reaction: LEUabcpp
+[FVA] Starting optimization for reaction: MOAT3C
+[FVA] Starting optimization for reaction: 2DGLCtex
+[FVA] Starting optimization for reaction: FUSAtex
+[FVA] Starting optimization for reaction: HCINNMt2rpp
+[FVA] Starting optimization for reaction: URAtex
+[FVA] Starting optimization for reaction: DHORTS
+[FVA] Starting optimization for reaction: CMtpp
+[FVA] Starting optimization for reaction: EX_no3_e
+[FVA] Starting optimization for reaction: L_LACt2rpp
+[FVA] Starting optimization for reaction: RHAT1
+[FVA] Starting optimization for reaction: 2AGPA120tipp
+[FVA] Starting optimization for reaction: E4PP
+[FVA] Starting optimization for reaction: NOVBCNtex
+    [Chunk 78]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: HISabcpp
+[FVA] Starting optimization for reaction: UREAtex
+[FVA] Starting optimization for reaction: OMPDC
+[FVA] Starting optimization for reaction: FUSAtpp
+    [Chunk  9]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: EX_orn_e
+[FVA] Starting optimization for reaction: EX_rfamp_e
+[FVA] Starting optimization for reaction: GLCabcpp
+    [Chunk 70]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: MALt2_2pp
+    [Chunk 147]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: PUACGAMS
+    [Chunk 97]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: 2AGPG180tipp
+[FVA] Starting optimization for reaction: HISt2rpp
+    [Chunk 56]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: URItex
+    [Chunk  4]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: CS
+    [Chunk 131]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: RFAMPtex
+[FVA] Starting optimization for reaction: EX_pro__L_e
+    [Chunk 135]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: QUIN2tex
+[FVA] Starting optimization for reaction: RU5PP
+[FVA] Starting optimization for reaction: MALt2_3pp
+    [Chunk 92]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: GALT1
+[FVA] Starting optimization for reaction: IPDDI
+[FVA] Starting optimization for reaction: CBIAT
+[FVA] Starting optimization for reaction: VALtex
+[FVA] Starting optimization for reaction: ICDHyr
+[FVA] Starting optimization for reaction: MINCYCtex
+[FVA] Starting optimization for reaction: EX_pyr_e
+[FVA] Starting optimization for reaction: EX_quin_e
+[FVA] Starting optimization for reaction: 6D6SFK
+[FVA] Starting optimization for reaction: MALTabcpp
+[FVA] Starting optimization for reaction: GLCTR2
+[FVA] Starting optimization for reaction: LYSabcpp
+[FVA] Starting optimization for reaction: 2AGPGAT180
+[FVA] Starting optimization for reaction: XANtex
+[FVA] Starting optimization for reaction: MINCYCtpp
+[FVA] Starting optimization for reaction: ACALD
+[FVA] Starting optimization for reaction: EX_succ_e
+[FVA] Starting optimization for reaction: FORCT
+[FVA] Starting optimization for reaction: 3SLAR
+[FVA] Starting optimization for reaction: MALTHXabcpp
+[FVA] Starting optimization for reaction: UDPGPpp
+    [Chunk 78]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: COBALT2tex
+[FVA] Starting optimization for reaction: 2AGPGAT181
+[FVA] Starting optimization for reaction: XYLtex
+[FVA] Starting optimization for reaction: DHPTDCs2
+[FVA] Starting optimization for reaction: DOXRBCNtex
+[FVA] Starting optimization for reaction: ACS
+    [Chunk  9]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: EX_thymd_e
+    [Chunk 147]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: SQtex
+[FVA] Starting optimization for reaction: EX_acgal1p_e
+    [Chunk 70]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: MALTPTabcpp
+[FVA] Starting optimization for reaction: PPDOy
+    [Chunk 97]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: LPLIPAL2ATG120
+    [Chunk 56]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: ABUTtex
+    [Chunk 135]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: EX_3hpp_e
+    [Chunk  4]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: PPA
+[FVA] Starting optimization for reaction: EX_tyr__L_e
+    [Chunk 131]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: DOXRBCNtpp
+[FVA] Starting optimization for reaction: EX_dhps_e
+    [Chunk 92]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: EX_cyan_e
+[FVA] Starting optimization for reaction: MALTTRabcpp
+[FVA] Starting optimization for reaction: FALGTHLs
+[FVA] Starting optimization for reaction: PLIPA1E140pp
+[FVA] Starting optimization for reaction: FORtppi
+[FVA] Starting optimization for reaction: PACCOAE
+[FVA] Starting optimization for reaction: PPCK
+[FVA] Starting optimization for reaction: MOAT
+[FVA] Starting optimization for reaction: ETOHtrpp
+[FVA] Starting optimization for reaction: MOX
+[FVA] Starting optimization for reaction: OXDHCOAT
+[FVA] Starting optimization for reaction: EX_tyrp_e
+[FVA] Starting optimization for reaction: MALTTTRabcpp
+[FVA] Starting optimization for reaction: DATPHs
+[FVA] Starting optimization for reaction: PLIPA1E160pp
+[FVA] Starting optimization for reaction: NTD12pp
+[FVA] Starting optimization for reaction: ME1
+[FVA] Starting optimization for reaction: UDCPDPS
+[FVA] Starting optimization for reaction: REPHACCOAI
+[FVA] Starting optimization for reaction: URATEtex
+[FVA] Starting optimization for reaction: HADPCOADH3
+[FVA] Starting optimization for reaction: PLIPA1E161pp
+[FVA] Starting optimization for reaction: MAN6Pt6_2pp
+    [Chunk 78]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: PPA2
+[FVA] Starting optimization for reaction: GLCTR1
+[FVA] Starting optimization for reaction: EX_uacgam_e
+    [Chunk  9]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: USHD
+[FVA] Starting optimization for reaction: ALAR
+[FVA] Starting optimization for reaction: ACPPAT141
+    [Chunk 135]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: O16A4COLIPAabctex
+    [Chunk 147]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: EX_cs1_e
+    [Chunk 97]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: AACPS8
+    [Chunk 70]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: MANGLYCptspp
+[FVA] Starting optimization for reaction: DIMPtex
+    [Chunk 56]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: LIPAabcpp
+[FVA] Starting optimization for reaction: EX_udpacgal_e
+[FVA] Starting optimization for reaction: COLIPAabctex
+[FVA] Starting optimization for reaction: LPADSS
+    [Chunk 131]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: ACPPAT161
+[FVA] Starting optimization for reaction: CBL1tonex
+    [Chunk  4]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: ALATA_L
+[FVA] Starting optimization for reaction: AACPS9
+[FVA] Starting optimization for reaction: MELIBt2pp
+[FVA] Starting optimization for reaction: 3NTD7pp
+    [Chunk 92]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: EX_udpg_e
+[FVA] Starting optimization for reaction: LIPACabcpp
+  [Chunk 135/151] ✓ Complete (18 reactions)
+  [Chunk 23/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: G1PTT
+[FVA] Starting optimization for reaction: TDSK
+[FVA] Starting optimization for reaction: XYLK
+[FVA] Starting optimization for reaction: CBItonex
+[FVA] Starting optimization for reaction: ACPPAT180
+[FVA] Starting optimization for reaction: HXCT
+[FVA] Starting optimization for reaction: METabcpp
+[FVA] Starting optimization for reaction: TDPGDH
+[FVA] Starting optimization for reaction: 3NTD4pp
+[FVA] Starting optimization for reaction: EX_udpgal_e
+[FVA] Starting optimization for reaction: GGGABADr
+[FVA] Starting optimization for reaction: EX_btn_e
+[FVA] Starting optimization for reaction: RBK
+[FVA] Starting optimization for reaction: ARHGDx
+[FVA] Starting optimization for reaction: APG3PAT160
+[FVA] Starting optimization for reaction: 2AGPEAT160
+[FVA] Starting optimization for reaction: EX_fe3hox_un_e
+[FVA] Starting optimization for reaction: UDPGALM
+  [Chunk 92/151] ✓ Complete (18 reactions)
+  [Chunk 121/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: EAR160x
+    [Chunk 78]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: 3NTD2pp
+[FVA] Starting optimization for reaction: EX_mso3_e
+    [Chunk  9]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: EX_ptrc_e
+[FVA] Starting optimization for reaction: APG3PAT161
+    [Chunk 97]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: DURADx
+[FVA] Starting optimization for reaction: GLYK
+    [Chunk 147]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: CPL
+[FVA] Starting optimization for reaction: TDPDRE
+    [Chunk 70]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: GGPTRCS
+[FVA] Starting optimization for reaction: 3NTD9pp
+    [Chunk 56]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: EX_23camp_e
+[FVA] Starting optimization for reaction: EAR140y
+[FVA] Starting optimization for reaction: EX_spmd_e
+[FVA] Starting optimization for reaction: ECOAH7
+    [Chunk  4]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: PPM
+[FVA] Starting optimization for reaction: EX_mepn_e
+    [Chunk 131]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: APG3PAT180
+    [Chunk 23]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: TDPDRR
+[FVA] Starting optimization for reaction: EX_23dappa_e
+[FVA] Starting optimization for reaction: EX_23cgmp_e
+  [Chunk 78/151] ✓ Complete (18 reactions)
+  [Chunk 118/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: AGPAT181
+  [Chunk  9/151] ✓ Complete (18 reactions)
+  [Chunk 112/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: ACONTb
+[FVA] Starting optimization for reaction: 3OAS121
+  [Chunk 97/151] ✓ Complete (18 reactions)
+  [Chunk 101/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: 2AGPG160tipp
+[FVA] Starting optimization for reaction: G3PD6
+[FVA] Starting optimization for reaction: ASPTA
+  [Chunk 147/151] ✓ Complete (18 reactions)
+  [Chunk 30/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: ACCOAL
+[FVA] Starting optimization for reaction: ICYSDS
+  [Chunk 70/151] ✓ Complete (18 reactions)
+  [Chunk 37/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: ADNCYC
+  [Chunk 56/151] ✓ Complete (18 reactions)
+  [Chunk 95/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: EX_damp_e
+[FVA] Starting optimization for reaction: MDDEP3pp
+[FVA] Starting optimization for reaction: 3OAS80
+[FVA] Starting optimization for reaction: ALLTN
+[FVA] Starting optimization for reaction: GLCP2
+[FVA] Starting optimization for reaction: 2AGPG141tipp
+  [Chunk  4/151] ✓ Complete (18 reactions)
+  [Chunk 104/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: PAPA120pp
+[FVA] Starting optimization for reaction: GALUi
+  [Chunk 131/151] ✓ Complete (18 reactions)
+  [Chunk 87/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: EX_thrp_e
+[FVA] Starting optimization for reaction: MI1PP
+[FVA] Starting optimization for reaction: CYSSADS
+[FVA] Starting optimization for reaction: MDDEP4pp
+[FVA] Starting optimization for reaction: UAPGR
+[FVA] Starting optimization for reaction: F6Pt6_2pp
+[FVA] Starting optimization for reaction: 2AGPG161tipp
+    [Chunk 121]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: 3OAS100
+[FVA] Starting optimization for reaction: EX_pydxn_e
+[FVA] Starting optimization for reaction: PAPA140pp
+[FVA] Starting optimization for reaction: U23GAAT
+[FVA] Starting optimization for reaction: MCITS
+[FVA] Starting optimization for reaction: EX_dimp_e
+    [Chunk 23]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: NDPK7
+[FVA] Starting optimization for reaction: MLTGY1pp
+[FVA] Starting optimization for reaction: 3OAS120
+[FVA] Starting optimization for reaction: PPALtpp
+[FVA] Starting optimization for reaction: CD2abcpp
+[FVA] Starting optimization for reaction: 2AGPG181tipp
+[FVA] Starting optimization for reaction: PAPA141pp
+[FVA] Starting optimization for reaction: UAAGDS
+[FVA] Starting optimization for reaction: AOBUTDs
+[FVA] Starting optimization for reaction: CPPPGO2
+[FVA] Starting optimization for reaction: PPAKr
+[FVA] Starting optimization for reaction: G2PPpp
+[FVA] Starting optimization for reaction: 3OAR40
+    [Chunk 118]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: CGLYtex
+    [Chunk 112]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: PLIPA2E141pp
+    [Chunk 101]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: 2AGPEAT140
+[FVA] Starting optimization for reaction: PAPA160pp
+    [Chunk 30]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: UAMAS
+[FVA] Starting optimization for reaction: GLYAT
+    [Chunk 87]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: Kt3pp
+    [Chunk 95]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: EX_isetac_e
+    [Chunk 37]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: NTP3
+[FVA] Starting optimization for reaction: 3OAR100
+[FVA] Starting optimization for reaction: 3HAD40
+[FVA] Starting optimization for reaction: PLIPA2E181pp
+[FVA] Starting optimization for reaction: 2AGPEAT120
+[FVA] Starting optimization for reaction: ADNUC
+[FVA] Starting optimization for reaction: AGM3PApp
+    [Chunk 104]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: PAPA161pp
+[FVA] Starting optimization for reaction: UAMAGS
+[FVA] Starting optimization for reaction: PPM2
+[FVA] Starting optimization for reaction: AGM3PH
+    [Chunk 121]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: 3HAD60
+[FVA] Starting optimization for reaction: PLIPA1E141pp
+[FVA] Starting optimization for reaction: PLIPA2G140pp
+[FVA] Starting optimization for reaction: 2AGPEAT161
+[FVA] Starting optimization for reaction: SUCOAS
+    [Chunk 23]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: GMHEPPA
+[FVA] Starting optimization for reaction: PAPA180pp
+[FVA] Starting optimization for reaction: UGLYCH
+[FVA] Starting optimization for reaction: 3HAD100
+[FVA] Starting optimization for reaction: HOMt2pp
+[FVA] Starting optimization for reaction: MOAT2
+[FVA] Starting optimization for reaction: 2AGPEAT141
+[FVA] Starting optimization for reaction: S7PI
+[FVA] Starting optimization for reaction: 3HAD161
+[FVA] Starting optimization for reaction: 3OAS60
+[FVA] Starting optimization for reaction: NTP1
+[FVA] Starting optimization for reaction: HPYRI
+[FVA] Starting optimization for reaction: 3HAD140
+[FVA] Starting optimization for reaction: OP4ENH
+[FVA] Starting optimization for reaction: HOMtex
+[FVA] Starting optimization for reaction: EX_adn_e
+[FVA] Starting optimization for reaction: TRPS3
+    [Chunk 101]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: 2AGPGAT160
+    [Chunk 112]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: PLIPA2G160pp
+    [Chunk 118]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: 3OAS160
+    [Chunk 87]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: GALKr
+[FVA] Starting optimization for reaction: FE3HOXUtex
+[FVA] Starting optimization for reaction: 3HAD160
+    [Chunk 30]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: HOPNTAL
+    [Chunk 37]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: EX_ins_e
+    [Chunk 95]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: SO2tex
+[FVA] Starting optimization for reaction: CRNBTCT
+[FVA] Starting optimization for reaction: 3OAR60
+[FVA] Starting optimization for reaction: PLIPA2G181pp
+[FVA] Starting optimization for reaction: LPLIPAL2ATG140
+[FVA] Starting optimization for reaction: PANTS
+    [Chunk 104]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: TPRDCOAS
+[FVA] Starting optimization for reaction: SO2tpp
+    [Chunk 121]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: AGPAT180
+    [Chunk 23]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: CRNCBCT
+[FVA] Starting optimization for reaction: 3HPPPNH
+[FVA] Starting optimization for reaction: G6PDH2r
+[FVA] Starting optimization for reaction: LPLIPAL2ATG141
+[FVA] Starting optimization for reaction: 3OAR80
+[FVA] Starting optimization for reaction: YUMPS
+[FVA] Starting optimization for reaction: ASNS1
+[FVA] Starting optimization for reaction: ACGAM1PPpp
+[FVA] Starting optimization for reaction: AGPAT141
+[FVA] Starting optimization for reaction: LDH_D2
+[FVA] Starting optimization for reaction: CRNCDH
+[FVA] Starting optimization for reaction: AKGDH
+[FVA] Starting optimization for reaction: NADH5
+[FVA] Starting optimization for reaction: AGPAT161
+[FVA] Starting optimization for reaction: EX_dgmp_e
+[FVA] Starting optimization for reaction: LPLIPAL2ATG160
+[FVA] Starting optimization for reaction: MLDCP3App
+[FVA] Starting optimization for reaction: EAR80y
+[FVA] Starting optimization for reaction: DHQS
+  [Chunk 23/151] ✓ Complete (18 reactions)
+  [Chunk 148/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: CH4t2pp
+[FVA] Starting optimization for reaction: SHCHF
+[FVA] Starting optimization for reaction: HPYRRx
+[FVA] Starting optimization for reaction: MOHMT
+[FVA] Starting optimization for reaction: DASYN120
+[FVA] Starting optimization for reaction: GAMptspp
+    [Chunk 118]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: MLDCP1Bpp
+[FVA] Starting optimization for reaction: INOSTO
+    [Chunk 112]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: EAR120y
+    [Chunk 87]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: PGCD
+    [Chunk 95]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: SUCBZL
+    [Chunk 101]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: LPLIPAL2ATG180
+    [Chunk 37]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: EX_glyc3p_e
+    [Chunk 121]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: EAR40x
+    [Chunk 30]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: GLYCDx
+    [Chunk 104]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: GSNt2pp
+[FVA] Starting optimization for reaction: 2AGPE181tipp
+[FVA] Starting optimization for reaction: CYSDDS
+[FVA] Starting optimization for reaction: HPYRP
+[FVA] Starting optimization for reaction: 3OAR181
+[FVA] Starting optimization for reaction: EX_cys__L_e
+[FVA] Starting optimization for reaction: LPLIPAL2ATG161
+[FVA] Starting optimization for reaction: EAR60y
+[FVA] Starting optimization for reaction: EX_lcts_e
+[FVA] Starting optimization for reaction: EX_4hoxpacd_e
+[FVA] Starting optimization for reaction: ASP1DC
+[FVA] Starting optimization for reaction: 2AGPA140tipp
+[FVA] Starting optimization for reaction: CYStpp
+[FVA] Starting optimization for reaction: PSURIK
+[FVA] Starting optimization for reaction: 3HAD121
+[FVA] Starting optimization for reaction: LPLIPAL2ATG181
+[FVA] Starting optimization for reaction: EX_gsn_e
+  [Chunk 121/151] ✓ Complete (18 reactions)
+  [Chunk 68/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: PPGPPDP
+[FVA] Starting optimization for reaction: EX_nac_e
+[FVA] Starting optimization for reaction: GSNtex
+[FVA] Starting optimization for reaction: UGMDDS
+[FVA] Starting optimization for reaction: 2AGPA160tipp
+[FVA] Starting optimization for reaction: ACSERtpp
+    [Chunk 148]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: Ftex
+[FVA] Starting optimization for reaction: EAR121y
+[FVA] Starting optimization for reaction: CPGNabcpp
+[FVA] Starting optimization for reaction: EX_orot_e
+[FVA] Starting optimization for reaction: CLPNS180pp
+[FVA] Starting optimization for reaction: EX_ocdca_e
+[FVA] Starting optimization for reaction: FORtex
+    [Chunk 118]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: 2AGPA180tipp
+[FVA] Starting optimization for reaction: UHGADA
+    [Chunk 95]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: ACSERtex
+[FVA] Starting optimization for reaction: CPGNexs
+[FVA] Starting optimization for reaction: CYSItex
+    [Chunk 112]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: GTHRDHpp
+    [Chunk 87]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: ADSL1r
+    [Chunk 101]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: CLPNS181pp
+[FVA] Starting optimization for reaction: CITtex
+    [Chunk 37]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: GMPS
+    [Chunk 104]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: D_LACt2pp
+[FVA] Starting optimization for reaction: LALDO3
+    [Chunk 30]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: UAGAAT
+[FVA] Starting optimization for reaction: 2AGPA141tipp
+[FVA] Starting optimization for reaction: SERtpp
+[FVA] Starting optimization for reaction: SERD_D
+[FVA] Starting optimization for reaction: PROGLYtex
+[FVA] Starting optimization for reaction: PG161abcpp
+    [Chunk 68]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: ACGAtex
+  [Chunk 95/151] ✓ Complete (18 reactions)
+  [Chunk 72/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: PTRCabcpp
+[FVA] Starting optimization for reaction: RIBtex
+[FVA] Starting optimization for reaction: QUINDHyi
+[FVA] Starting optimization for reaction: FTHFLi
+  [Chunk 118/151] ✓ Complete (18 reactions)
+  [Chunk 16/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: ICHORT
+[FVA] Starting optimization for reaction: ATPPRT
+[FVA] Starting optimization for reaction: DDCAtexi
+  [Chunk 87/151] ✓ Complete (18 reactions)
+  [Chunk 110/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: PSSA180
+  [Chunk 112/151] ✓ Complete (18 reactions)
+  [Chunk 143/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: DHBSZ3FEabcpp
+  [Chunk 101/151] ✓ Complete (18 reactions)
+  [Chunk  2/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: MAN6PI
+    [Chunk 148]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: DHGLYH
+[FVA] Starting optimization for reaction: ASNNpp
+  [Chunk 37/151] ✓ Complete (18 reactions)
+  [Chunk 126/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: LPLIPAL2A140
+[FVA] Starting optimization for reaction: RBK_L1
+  [Chunk 104/151] ✓ Complete (18 reactions)
+  [Chunk 94/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: GMPtex
+  [Chunk 30/151] ✓ Complete (18 reactions)
+  [Chunk 79/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: 23PDE7pp
+[FVA] Starting optimization for reaction: TTDCAtexi
+[FVA] Starting optimization for reaction: FE3DHBZS3R
+[FVA] Starting optimization for reaction: APRAUR
+[FVA] Starting optimization for reaction: PSSA161
+[FVA] Starting optimization for reaction: PNSPA
+[FVA] Starting optimization for reaction: LPLIPAL2A160
+[FVA] Starting optimization for reaction: IMPtex
+[FVA] Starting optimization for reaction: HDCAtexi
+[FVA] Starting optimization for reaction: GALTptspp
+[FVA] Starting optimization for reaction: GLUNpp
+[FVA] Starting optimization for reaction: RBP4E
+[FVA] Starting optimization for reaction: 4HTHRK
+[FVA] Starting optimization for reaction: DXYLONtpp
+[FVA] Starting optimization for reaction: DB4PS
+[FVA] Starting optimization for reaction: PSSA141
+    [Chunk 68]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: GUACYC
+[FVA] Starting optimization for reaction: LPLIPAL2A161
+[FVA] Starting optimization for reaction: NTD2
+[FVA] Starting optimization for reaction: UMPtex
+[FVA] Starting optimization for reaction: NTD12
+[FVA] Starting optimization for reaction: GALURt2rpp
+[FVA] Starting optimization for reaction: EX_sq_e
+[FVA] Starting optimization for reaction: 23PDE2pp
+[FVA] Starting optimization for reaction: PSD160
+[FVA] Starting optimization for reaction: RBFK
+[FVA] Starting optimization for reaction: DXYLTD
+[FVA] Starting optimization for reaction: LPLIPAL2A180
+    [Chunk 16]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: NTD4
+[FVA] Starting optimization for reaction: G1Ptex
+[FVA] Starting optimization for reaction: 23PDE4pp
+    [Chunk 72]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: FECRMtonex
+[FVA] Starting optimization for reaction: GLCNt2rpp
+    [Chunk 148]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: URATEtpp
+    [Chunk 110]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: PSD161
+    [Chunk  2]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: ACP1_FMN
+    [Chunk 143]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: 2DDARAA
+    [Chunk 126]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: LPLIPAL2A181
+[FVA] Starting optimization for reaction: 23PDE9pp
+[FVA] Starting optimization for reaction: NTD5
+[FVA] Starting optimization for reaction: CS1tex
+    [Chunk 94]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: ADNK1
+[FVA] Starting optimization for reaction: ARBTNtonex
+    [Chunk 79]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: GLCptspp
+    [Chunk 68]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: ATPHs
+[FVA] Starting optimization for reaction: PSD180
+[FVA] Starting optimization for reaction: RBFSb
+[FVA] Starting optimization for reaction: DM_aacald_c
+[FVA] Starting optimization for reaction: ADOCBLtonex
+[FVA] Starting optimization for reaction: 2DGLCptspp
+[FVA] Starting optimization for reaction: NTD6
+[FVA] Starting optimization for reaction: CUt3
+[FVA] Starting optimization for reaction: SARCOX
+[FVA] Starting optimization for reaction: ADOCBLabcpp
+[FVA] Starting optimization for reaction: GLCRt2rpp
+[FVA] Starting optimization for reaction: COLIPAabcpp
+[FVA] Starting optimization for reaction: PETNT181pp
+[FVA] Starting optimization for reaction: EX_pi_e
+[FVA] Starting optimization for reaction: UM3PL
+[FVA] Starting optimization for reaction: GNP
+[FVA] Starting optimization for reaction: LGTHL
+[FVA] Starting optimization for reaction: GTPHs
+[FVA] Starting optimization for reaction: ZN2t3pp
+[FVA] Starting optimization for reaction: EX_enter_e
+[FVA] Starting optimization for reaction: GLCt2pp
+    [Chunk 148]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: ARMEPNS
+[FVA] Starting optimization for reaction: PLIPA2A140pp
+[FVA] Starting optimization for reaction: MN6PP
+[FVA] Starting optimization for reaction: UM4PL
+[FVA] Starting optimization for reaction: ALLTAMH2
+[FVA] Starting optimization for reaction: EX_h_e
+    [Chunk 16]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: PYDXPP
+[FVA] Starting optimization for reaction: SKMtex
+    [Chunk 68]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: 3KGK
+[FVA] Starting optimization for reaction: GLCURt2rpp
+    [Chunk 72]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: EX_fecrm_un_e
+[FVA] Starting optimization for reaction: RPNTPH
+    [Chunk 110]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: PLIPA2A141pp
+    [Chunk 126]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: 2MAHMP
+    [Chunk 143]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: UGCIAMH
+    [Chunk 94]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: MNt2pp
+    [Chunk  2]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: DMATT
+[FVA] Starting optimization for reaction: PDXPP
+[FVA] Starting optimization for reaction: EX_cd2_e
+  [Chunk 148/151] ✓ Complete (18 reactions)
+  [Chunk 90/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: EX_dopa_e
+[FVA] Starting optimization for reaction: EX_cgly_e
+    [Chunk 79]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: ACMUMptspp
+[FVA] Starting optimization for reaction: PLIPA2A180pp
+[FVA] Starting optimization for reaction: ZN2tpp
+[FVA] Starting optimization for reaction: METGLCUR
+  [Chunk 68/151] ✓ Complete (18 reactions)
+  [Chunk 34/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: NTPP4
+[FVA] Starting optimization for reaction: MNtex
+[FVA] Starting optimization for reaction: HACD6
+[FVA] Starting optimization for reaction: GRTT
+[FVA] Starting optimization for reaction: EX_hom__L_e
+[FVA] Starting optimization for reaction: EX_h2o_e
+[FVA] Starting optimization for reaction: EX_chtbs_e
+[FVA] Starting optimization for reaction: GAM6Pt6_2pp
+[FVA] Starting optimization for reaction: NI2tpp
+[FVA] Starting optimization for reaction: ACOAD1fr
+[FVA] Starting optimization for reaction: NTPP3
+[FVA] Starting optimization for reaction: GAL1Ptex
+[FVA] Starting optimization for reaction: ECOAH1
+[FVA] Starting optimization for reaction: OBTFL
+[FVA] Starting optimization for reaction: UPP3S
+[FVA] Starting optimization for reaction: EX_gmp_e
+[FVA] Starting optimization for reaction: COBALT2t3pp
+[FVA] Starting optimization for reaction: PPALtex
+[FVA] Starting optimization for reaction: EX_ala__D_e
+[FVA] Starting optimization for reaction: 23DOGULNt4pp
+[FVA] Starting optimization for reaction: THRt2pp
+[FVA] Starting optimization for reaction: O2Stex
+[FVA] Starting optimization for reaction: NTPP6
+[FVA] Starting optimization for reaction: UPPDC1
+    [Chunk 16]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: ECOAH2
+    [Chunk 110]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: CA2tex
+    [Chunk 72]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: EX_h2o2_e
+[FVA] Starting optimization for reaction: HSTPT
+    [Chunk 126]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: 23DAPPAt2pp
+    [Chunk 143]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: FE3DCITexs
+    [Chunk 90]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: EX_LalaDgluMdapDala_e
+    [Chunk 94]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: HEPK1
+[FVA] Starting optimization for reaction: NTPP7
+    [Chunk  2]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: TMDPP
+[FVA] Starting optimization for reaction: ECOAH3
+[FVA] Starting optimization for reaction: CUtex
+[FVA] Starting optimization for reaction: EX_ump_e
+[FVA] Starting optimization for reaction: PLIPA1A120pp
+    [Chunk 79]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: THDPS
+[FVA] Starting optimization for reaction: EX_LalaDgluMdap_e
+[FVA] Starting optimization for reaction: FEENTERES
+[FVA] Starting optimization for reaction: HEPT3
+    [Chunk 34]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: NTPP8
+[FVA] Starting optimization for reaction: EX_ade_e
+[FVA] Starting optimization for reaction: UGLT
+[FVA] Starting optimization for reaction: CU1Opp
+[FVA] Starting optimization for reaction: ACONMT
+[FVA] Starting optimization for reaction: EX_pydam_e
+[FVA] Starting optimization for reaction: PLIPA1A140pp
+[FVA] Starting optimization for reaction: EX_anhgm_e
+[FVA] Starting optimization for reaction: FEENTERR4
+[FVA] Starting optimization for reaction: EX_4abut_e
+[FVA] Starting optimization for reaction: P5CR
+[FVA] Starting optimization for reaction: HEPK2
+[FVA] Starting optimization for reaction: DXPS
+[FVA] Starting optimization for reaction: SUCDi
+[FVA] Starting optimization for reaction: XTSNtex
+[FVA] Starting optimization for reaction: EX_fald_e
+[FVA] Starting optimization for reaction: PLIPA1A141pp
+[FVA] Starting optimization for reaction: CRNabcpp
+[FVA] Starting optimization for reaction: DXYLONtex
+[FVA] Starting optimization for reaction: EX_ac_e
+[FVA] Starting optimization for reaction: ALDD3y
+    [Chunk 16]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: CDPMEK
+[FVA] Starting optimization for reaction: CYANST
+    [Chunk 90]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: G6PP
+[FVA] Starting optimization for reaction: EX_hdca_e
+    [Chunk 126]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: PLIPA1A160pp
+    [Chunk 110]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: LPLIPAL1E141pp
+    [Chunk 72]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: CRNDabcpp
+    [Chunk 143]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: PSURItex
+    [Chunk  2]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: EX_akg_e
+    [Chunk 94]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: R5PP
+[FVA] Starting optimization for reaction: MECDPS
+[FVA] Starting optimization for reaction: DHPPDA2
+[FVA] Starting optimization for reaction: MMCD
+    [Chunk 79]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: EX_glcr_e
+[FVA] Starting optimization for reaction: DNTPPA
+[FVA] Starting optimization for reaction: LALDO2x
+[FVA] Starting optimization for reaction: PLIPA1A161pp
+[FVA] Starting optimization for reaction: ALR2x
+[FVA] Starting optimization for reaction: EX_ala__L_e
+  [Chunk 16/151] ✓ Complete (18 reactions)
+  [Chunk 54/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: ASPO4
+[FVA] Starting optimization for reaction: EX_xmp_e
+  [Chunk 72/151] ✓ Complete (18 reactions)
+  [Chunk 65/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: UDPACGALtex
+    [Chunk 34]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: G5SADs
+[FVA] Starting optimization for reaction: GLNS
+[FVA] Starting optimization for reaction: GNK
+  [Chunk 110/151] ✓ Complete (18 reactions)
+  [Chunk 80/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: HMBS
+  [Chunk 126/151] ✓ Complete (18 reactions)
+  [Chunk 91/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: 3PEPTtex
+  [Chunk 143/151] ✓ Complete (18 reactions)
+  [Chunk 106/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: FMNRx
+  [Chunk  2/151] ✓ Complete (18 reactions)
+  [Chunk 71/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: RMNtpp
+  [Chunk 94/151] ✓ Complete (18 reactions)
+  [Chunk 81/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: ATPM
+[FVA] Starting optimization for reaction: ASPO6
+[FVA] Starting optimization for reaction: AM4PCP
+[FVA] Starting optimization for reaction: GMAND
+[FVA] Starting optimization for reaction: TYMtex
+[FVA] Starting optimization for reaction: EX_3hpppn_e
+  [Chunk 79/151] ✓ Complete (18 reactions)
+  [Chunk 21/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: EX_idon__L_e
+[FVA] Starting optimization for reaction: RMK
+[FVA] Starting optimization for reaction: ANHGMtex
+[FVA] Starting optimization for reaction: NADPPPS
+[FVA] Starting optimization for reaction: LCTStex
+[FVA] Starting optimization for reaction: SERt4pp
+[FVA] Starting optimization for reaction: AM3PA
+[FVA] Starting optimization for reaction: PPCSCT
+    [Chunk 90]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: GTHS
+[FVA] Starting optimization for reaction: EX_man6p_e
+[FVA] Starting optimization for reaction: EX_indole_e
+[FVA] Starting optimization for reaction: FHL
+[FVA] Starting optimization for reaction: UDPKAAT
+[FVA] Starting optimization for reaction: UM4PCP
+[FVA] Starting optimization for reaction: EX_mnl_e
+[FVA] Starting optimization for reaction: SUCCt2_3pp
+[FVA] Starting optimization for reaction: LEUtex
+[FVA] Starting optimization for reaction: EX_g3pe_e
+[FVA] Starting optimization for reaction: CYTD
+[FVA] Starting optimization for reaction: EX_tsul_e
+[FVA] Starting optimization for reaction: EX_3hcinnm_e
+[FVA] Starting optimization for reaction: ULA4NFT
+[FVA] Starting optimization for reaction: HYPOE
+    [Chunk 65]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: CBLAT
+[FVA] Starting optimization for reaction: EX_pacald_e
+    [Chunk 34]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: DCYTD
+    [Chunk 54]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: LYStex
+[FVA] Starting optimization for reaction: NTD3
+[FVA] Starting optimization for reaction: MNLptspp
+    [Chunk 106]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: PHEt2rpp
+[FVA] Starting optimization for reaction: EX_acmana_e
+[FVA] Starting optimization for reaction: CMPtex
+    [Chunk 80]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: MEPCT
+    [Chunk 91]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: UPLA4FNT
+[FVA] Starting optimization for reaction: MSO3abcpp
+[FVA] Starting optimization for reaction: DBTS
+[FVA] Starting optimization for reaction: LYXtex
+    [Chunk 21]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: EX_galur_e
+    [Chunk 81]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: GLYOX
+    [Chunk 71]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: NAt3_1p5pp
+[FVA] Starting optimization for reaction: DHBS
+    [Chunk 90]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: DUMPtex
+[FVA] Starting optimization for reaction: DCTPD
+[FVA] Starting optimization for reaction: GLUDy
+[FVA] Starting optimization for reaction: MSO3tex
+[FVA] Starting optimization for reaction: MANtex
+[FVA] Starting optimization for reaction: UPLA4FNF
+[FVA] Starting optimization for reaction: EX_but_e
+[FVA] Starting optimization for reaction: XMPtex
+[FVA] Starting optimization for reaction: EX_n2o_e
+[FVA] Starting optimization for reaction: DADNtex
+[FVA] Starting optimization for reaction: NAt3_2pp
+[FVA] Starting optimization for reaction: DHDPS
+[FVA] Starting optimization for reaction: MAN6Ptex
+[FVA] Starting optimization for reaction: FECRMR1
+[FVA] Starting optimization for reaction: EX_cbl1_e
+[FVA] Starting optimization for reaction: ZN2abcpp
+  [Chunk 90/151] ✓ Complete (18 reactions)
+  [Chunk 14/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: UAGCVT
+[FVA] Starting optimization for reaction: ULA4Ntppi
+[FVA] Starting optimization for reaction: DHAtex
+[FVA] Starting optimization for reaction: MDDCP1pp
+[FVA] Starting optimization for reaction: ACNML
+    [Chunk 65]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: FECRMR2
+[FVA] Starting optimization for reaction: NH4tpp
+    [Chunk 34]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: G1PACT
+[FVA] Starting optimization for reaction: GLUR
+    [Chunk 54]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: MELIBtex
+[FVA] Starting optimization for reaction: GLYCLTDy
+[FVA] Starting optimization for reaction: HEPT1
+[FVA] Starting optimization for reaction: ETOHtex
+    [Chunk 21]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: CAT
+    [Chunk 106]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: GUI2
+[FVA] Starting optimization for reaction: DMSOtex
+[FVA] Starting optimization for reaction: TDP
+    [Chunk 80]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: LYSDC
+[FVA] Starting optimization for reaction: NMNPtpp
+[FVA] Starting optimization for reaction: UAG2E
+[FVA] Starting optimization for reaction: GART
+    [Chunk 91]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: FALDtex
+    [Chunk 81]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: MTRPOX
+[FVA] Starting optimization for reaction: DAAD
+[FVA] Starting optimization for reaction: DURItex
+[FVA] Starting optimization for reaction: SERASr
+[FVA] Starting optimization for reaction: OMBZLM
+[FVA] Starting optimization for reaction: 3PEPTabcpp
+[FVA] Starting optimization for reaction: ALR2
+    [Chunk 71]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: NO2t2rpp
+[FVA] Starting optimization for reaction: EX_acald_e
+  [Chunk 34/151] ✓ Complete (18 reactions)
+  [Chunk 58/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: DHBSH
+[FVA] Starting optimization for reaction: AGM4PCPpp
+[FVA] Starting optimization for reaction: UREAtpp
+[FVA] Starting optimization for reaction: EX_mal__D_e
+[FVA] Starting optimization for reaction: DMSOR2
+    [Chunk 14]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: EX_melib_e
+[FVA] Starting optimization for reaction: EX_maltttr_e
+[FVA] Starting optimization for reaction: AMALT2
+[FVA] Starting optimization for reaction: 4PEPTabcpp
+[FVA] Starting optimization for reaction: ENTERES
+[FVA] Starting optimization for reaction: NO3t7pp
+[FVA] Starting optimization for reaction: XANt2pp
+[FVA] Starting optimization for reaction: GTPDPDP
+    [Chunk 54]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: FRUtex
+[FVA] Starting optimization for reaction: MACPD
+[FVA] Starting optimization for reaction: ACMAMUT
+[FVA] Starting optimization for reaction: MLTP1
+[FVA] Starting optimization for reaction: GLYCK
+[FVA] Starting optimization for reaction: FEOXAMUtex
+    [Chunk 65]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: AGM3Pt2pp
+    [Chunk 80]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: GLYC3Pabcpp
+[FVA] Starting optimization for reaction: DMQMT
+[FVA] Starting optimization for reaction: ORNabcpp
+[FVA] Starting optimization for reaction: FUCtex
+[FVA] Starting optimization for reaction: RNDR2
+    [Chunk 91]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: HEPT2
+    [Chunk 21]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: DDGALK
+[FVA] Starting optimization for reaction: ICHORS_copy1
+    [Chunk 106]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: MLTG5
+[FVA] Starting optimization for reaction: ARBTNtpp
+[FVA] Starting optimization for reaction: AGM4Pt2pp
+[FVA] Starting optimization for reaction: PPPNt2rpp
+    [Chunk 81]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: EX_asn__L_e
+[FVA] Starting optimization for reaction: PIuabcpp
+[FVA] Starting optimization for reaction: CYSDtex
+[FVA] Starting optimization for reaction: FUMtex
+    [Chunk 14]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: EX_sucr_e
+[FVA] Starting optimization for reaction: AB6PGH
+[FVA] Starting optimization for reaction: GPDDA3
+    [Chunk 58]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: ARBTNtex
+[FVA] Starting optimization for reaction: CYSDabcpp
+[FVA] Starting optimization for reaction: AGMt2pp
+[FVA] Starting optimization for reaction: EX_mal__L_e
+[FVA] Starting optimization for reaction: PTRCORNt7pp
+[FVA] Starting optimization for reaction: EX_tre_e
+[FVA] Starting optimization for reaction: ACACT5r
+    [Chunk 71]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: PNTOt4pp
+[FVA] Starting optimization for reaction: AMALT1
+[FVA] Starting optimization for reaction: 2DOXG6PP
+[FVA] Starting optimization for reaction: 23CAMPtex
+[FVA] Starting optimization for reaction: HXAND
+[FVA] Starting optimization for reaction: EX_zn2_e
+[FVA] Starting optimization for reaction: NMNN
+[FVA] Starting optimization for reaction: FECRMexs
+[FVA] Starting optimization for reaction: SPMDabcpp
+    [Chunk 54]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: MALDDH
+[FVA] Starting optimization for reaction: FRULYSDG
+[FVA] Starting optimization for reaction: MLTP2
+[FVA] Starting optimization for reaction: 23CCMPtex
+[FVA] Starting optimization for reaction: OXAMTC
+[FVA] Starting optimization for reaction: HACD5
+[FVA] Starting optimization for reaction: XAND
+    [Chunk 91]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: EX_acgal_e
+    [Chunk 65]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: ARBTNR1
+    [Chunk 80]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: HG2tex
+[FVA] Starting optimization for reaction: 23CUMPtex
+    [Chunk 21]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: PACCOAL
+[FVA] Starting optimization for reaction: FE2tex
+[FVA] Starting optimization for reaction: METDabcpp
+    [Chunk 14]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: DNMPPA
+    [Chunk 106]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: UDCPPtppi
+    [Chunk 81]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: EX_no2_e
+[FVA] Starting optimization for reaction: ARBTNR2
+[FVA] Starting optimization for reaction: EX_so2_e
+    [Chunk 58]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: 23CGMPtex
+[FVA] Starting optimization for reaction: NTPP5
+[FVA] Starting optimization for reaction: GP4GH
+[FVA] Starting optimization for reaction: HPPK2
+  [Chunk 54/151] ✓ Complete (18 reactions)
+  [Chunk 17/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: DDGLK
+[FVA] Starting optimization for reaction: PROabcpp
+[FVA] Starting optimization for reaction: HACD3
+[FVA] Starting optimization for reaction: AGMH
+  [Chunk 65/151] ✓ Complete (18 reactions)
+  [Chunk 83/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: EX_r5p_e
+[FVA] Starting optimization for reaction: 3AMPtex
+  [Chunk 91/151] ✓ Complete (18 reactions)
+  [Chunk 28/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: AGDC
+  [Chunk 21/151] ✓ Complete (18 reactions)
+  [Chunk 127/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: PLIPA1A180pp
+[FVA] Starting optimization for reaction: PTPATi
+  [Chunk 80/151] ✓ Complete (18 reactions)
+  [Chunk 22/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: ACGAMT
+[FVA] Starting optimization for reaction: XYLI2
+[FVA] Starting optimization for reaction: EX_glyc2p_e
+    [Chunk 71]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: PROt2rpp
+  [Chunk 81/151] ✓ Complete (18 reactions)
+  [Chunk  7/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: G6PDA
+  [Chunk 106/151] ✓ Complete (18 reactions)
+  [Chunk 98/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: G1PPpp
+[FVA] Starting optimization for reaction: 3CMPtex
+[FVA] Starting optimization for reaction: HEX7
+[FVA] Starting optimization for reaction: ASNN
+[FVA] Starting optimization for reaction: LPLIPAL2A120
+[FVA] Starting optimization for reaction: AADDGT
+[FVA] Starting optimization for reaction: MTAN
+[FVA] Starting optimization for reaction: PMANM
+[FVA] Starting optimization for reaction: PROt4pp
+[FVA] Starting optimization for reaction: GALCTND
+[FVA] Starting optimization for reaction: LADGMDH
+[FVA] Starting optimization for reaction: ALCD2x
+    [Chunk 14]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: DXPRIi
+[FVA] Starting optimization for reaction: CAt6pp
+[FVA] Starting optimization for reaction: ASNS2
+[FVA] Starting optimization for reaction: DPR
+[FVA] Starting optimization for reaction: EX_gbbtn_e
+    [Chunk 58]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: ALAGLUE
+  [Chunk 71/151] ✓ Complete (18 reactions)
+  [Chunk 123/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: MDDEP2pp
+[FVA] Starting optimization for reaction: ICL
+[FVA] Starting optimization for reaction: OPHBDC
+[FVA] Starting optimization for reaction: ALDD2y
+[FVA] Starting optimization for reaction: GCALDD
+[FVA] Starting optimization for reaction: 5DGLCNt2rpp
+    [Chunk 83]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: THRD_L
+[FVA] Starting optimization for reaction: ASPCT
+[FVA] Starting optimization for reaction: EX_tma_e
+[FVA] Starting optimization for reaction: FEENTERtpp
+  [Chunk 14/151] ✓ Complete (18 reactions)
+  [Chunk 93/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: EX_udpglcur_e
+[FVA] Starting optimization for reaction: PSD181
+    [Chunk 127]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: GALCTNt2pp
+[FVA] Starting optimization for reaction: RMI
+    [Chunk 17]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: GLYCL
+[FVA] Starting optimization for reaction: HISTP
+[FVA] Starting optimization for reaction: EX_malt_e
+    [Chunk 28]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: DMPPS
+[FVA] Starting optimization for reaction: FEENTERtex
+    [Chunk 22]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: GMHEPK
+[FVA] Starting optimization for reaction: EX_14glucan_e
+[FVA] Starting optimization for reaction: GALCTNLtex
+[FVA] Starting optimization for reaction: 4PEPTtex
+[FVA] Starting optimization for reaction: DAGK180
+[FVA] Starting optimization for reaction: CMPN
+    [Chunk  7]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: EX_ura_e
+    [Chunk 98]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: LDH_D
+[FVA] Starting optimization for reaction: FE3HOXUtpp
+[FVA] Starting optimization for reaction: EX_pser__L_e
+[FVA] Starting optimization for reaction: MCOATA
+[FVA] Starting optimization for reaction: EX_galctn__L_e
+[FVA] Starting optimization for reaction: EX_malttr_e
+[FVA] Starting optimization for reaction: NAMNPP
+[FVA] Starting optimization for reaction: AMALT4
+[FVA] Starting optimization for reaction: HCYSMT
+    [Chunk 58]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: FEOXAMUtpp
+[FVA] Starting optimization for reaction: DAGK181
+[FVA] Starting optimization for reaction: EX_val__L_e
+[FVA] Starting optimization for reaction: EX_aso3_e
+[FVA] Starting optimization for reaction: KDUI
+[FVA] Starting optimization for reaction: TRE6PS
+[FVA] Starting optimization for reaction: IPDPS
+    [Chunk 83]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: EX_pnto__R_e
+[FVA] Starting optimization for reaction: FECRMUtpp
+[FVA] Starting optimization for reaction: NTD11
+    [Chunk 93]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: EX_tcynt_e
+[FVA] Starting optimization for reaction: UDPG4E
+[FVA] Starting optimization for reaction: EX_xan_e
+    [Chunk 123]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: PLIPA2E120pp
+[FVA] Starting optimization for reaction: UDCPDP
+    [Chunk 127]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: CA2t3pp
+[FVA] Starting optimization for reaction: DAPE
+[FVA] Starting optimization for reaction: SELNPS
+  [Chunk 58/151] ✓ Complete (18 reactions)
+  [Chunk 122/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: MLDEP1pp
+[FVA] Starting optimization for reaction: EX_fe3dhbzs_e
+[FVA] Starting optimization for reaction: ORNDC
+    [Chunk 22]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: TREH
+[FVA] Starting optimization for reaction: NADH17pp
+    [Chunk 17]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: LACZ
+[FVA] Starting optimization for reaction: PLIPA2G141pp
+[FVA] Starting optimization for reaction: FMNAT
+[FVA] Starting optimization for reaction: MLDEP2pp
+[FVA] Starting optimization for reaction: PPPGO
+    [Chunk 28]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: DHDPRy
+[FVA] Starting optimization for reaction: CRNCAR
+[FVA] Starting optimization for reaction: CYTK1
+    [Chunk 98]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: UPP3MT
+[FVA] Starting optimization for reaction: FA161ACPHi
+[FVA] Starting optimization for reaction: TRE6PH
+[FVA] Starting optimization for reaction: PLIPA2G161pp
+    [Chunk  7]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: NADDP
+[FVA] Starting optimization for reaction: EX_feoxam_un_e
+[FVA] Starting optimization for reaction: MLTGY2pp
+[FVA] Starting optimization for reaction: CYTK2
+[FVA] Starting optimization for reaction: FA141ACPHi
+[FVA] Starting optimization for reaction: GALabcpp
+[FVA] Starting optimization for reaction: HSK
+[FVA] Starting optimization for reaction: KAS15
+[FVA] Starting optimization for reaction: XYLI1
+[FVA] Starting optimization for reaction: LPLIPAL1A120pp
+    [Chunk 93]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: EX_g3pc_e
+[FVA] Starting optimization for reaction: NMNAT
+[FVA] Starting optimization for reaction: MLTGY4pp
+[FVA] Starting optimization for reaction: GK1
+    [Chunk 127]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: ARGt3pp
+    [Chunk 83]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: GLYCLTt2rpp
+[FVA] Starting optimization for reaction: ALAALAtex
+[FVA] Starting optimization for reaction: SDPTA
+[FVA] Starting optimization for reaction: EX_g3pg_e
+[FVA] Starting optimization for reaction: PPC
+    [Chunk 123]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: LPLIPAL1A140pp
+    [Chunk 122]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: EAR60x
+[FVA] Starting optimization for reaction: HMPK1
+[FVA] Starting optimization for reaction: FA160ACPHi
+    [Chunk 22]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: HACD1
+[FVA] Starting optimization for reaction: GUAt2pp
+[FVA] Starting optimization for reaction: FACOAL181t2pp
+[FVA] Starting optimization for reaction: THRS
+[FVA] Starting optimization for reaction: EX_g3pi_e
+[FVA] Starting optimization for reaction: LPLIPAL1A181pp
+    [Chunk 17]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: ALDD4
+[FVA] Starting optimization for reaction: EAR80x
+[FVA] Starting optimization for reaction: NDPK6
+[FVA] Starting optimization for reaction: MALDtex
+[FVA] Starting optimization for reaction: HACD2
+[FVA] Starting optimization for reaction: HPPPNt2rpp
+    [Chunk 98]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: T2DECAI
+    [Chunk 28]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: HSST
+[FVA] Starting optimization for reaction: EX_g3ps_e
+[FVA] Starting optimization for reaction: LPLIPAL1E120pp
+[FVA] Starting optimization for reaction: PE181abcpp
+[FVA] Starting optimization for reaction: G3PT
+    [Chunk  7]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: NDPK8
+[FVA] Starting optimization for reaction: OROTtex
+[FVA] Starting optimization for reaction: EX_hdcea_e
+[FVA] Starting optimization for reaction: ANHMK
+[FVA] Starting optimization for reaction: 3OAS161
+    [Chunk 93]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: EX_peamn_e
+[FVA] Starting optimization for reaction: PPNDH
+[FVA] Starting optimization for reaction: PYNP2r
+[FVA] Starting optimization for reaction: 3OAR180
+[FVA] Starting optimization for reaction: CINNDO
+[FVA] Starting optimization for reaction: 12DGR161tipp
+    [Chunk 127]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: PPAt4pp
+[FVA] Starting optimization for reaction: ACACCT
+[FVA] Starting optimization for reaction: EX_34dhpac_e
+    [Chunk 83]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: DHFR
+[FVA] Starting optimization for reaction: EAR141y
+[FVA] Starting optimization for reaction: DDPA
+[FVA] Starting optimization for reaction: DURIPP
+    [Chunk 122]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: 12DGR181tipp
+[FVA] Starting optimization for reaction: DHPPD
+    [Chunk 123]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: G3PAT120
+    [Chunk 22]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: BUTCT
+[FVA] Starting optimization for reaction: OROTt2_2pp
+[FVA] Starting optimization for reaction: DAMPtex
+[FVA] Starting optimization for reaction: EX_cit_e
+[FVA] Starting optimization for reaction: EAR161x
+[FVA] Starting optimization for reaction: NMNDA
+[FVA] Starting optimization for reaction: NTP11
+[FVA] Starting optimization for reaction: PTRCTA
+    [Chunk 17]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: DHCIND
+[FVA] Starting optimization for reaction: PGSA120
+[FVA] Starting optimization for reaction: DCMPtex
+[FVA] Starting optimization for reaction: 2DGULRx
+  [Chunk 127/151] ✓ Complete (18 reactions)
+  [Chunk 115/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: CLPNH140pp
+  [Chunk 83/151] ✓ Complete (18 reactions)
+  [Chunk 67/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: R5Ptex
+    [Chunk 98]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: DASYN160
+[FVA] Starting optimization for reaction: 3OAS180
+    [Chunk 28]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: NNAM
+    [Chunk  7]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: CYSDS
+    [Chunk 93]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: DGMPtex
+[FVA] Starting optimization for reaction: CITL
+[FVA] Starting optimization for reaction: TDSR2
+  [Chunk 22/151] ✓ Complete (18 reactions)
+  [Chunk 40/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: GUAtex
+[FVA] Starting optimization for reaction: EX_12ppd__R_e
+[FVA] Starting optimization for reaction: THRPtex
+[FVA] Starting optimization for reaction: 3HAD180
+[FVA] Starting optimization for reaction: DTMPtex
+[FVA] Starting optimization for reaction: DASYN161
+[FVA] Starting optimization for reaction: P5CD
+[FVA] Starting optimization for reaction: TRPAS2
+[FVA] Starting optimization for reaction: GTHRDtex
+  [Chunk 17/151] ✓ Complete (18 reactions)
+  [Chunk 43/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: EX_lyx__L_e
+[FVA] Starting optimization for reaction: Htex
+[FVA] Starting optimization for reaction: TYRPtex
+[FVA] Starting optimization for reaction: PGSA181
+    [Chunk 122]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: CDAPPA120
+  [Chunk 93/151] ✓ Complete (18 reactions)
+  [Chunk 132/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: I4FE4SR
+  [Chunk 98/151] ✓ Complete (18 reactions)
+  [Chunk 73/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: CTBTabcpp
+[FVA] Starting optimization for reaction: H2tex
+  [Chunk 28/151] ✓ Complete (18 reactions)
+  [Chunk 99/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: DASYN181
+  [Chunk  7/151] ✓ Complete (18 reactions)
+  [Chunk 47/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: CYSabcpp
+    [Chunk 123]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: GTHRDabc2pp
+[FVA] Starting optimization for reaction: EX_acmum_e
+[FVA] Starting optimization for reaction: PAPSR2
+[FVA] Starting optimization for reaction: PSSA120
+[FVA] Starting optimization for reaction: S2FE2ST
+[FVA] Starting optimization for reaction: PGPP140
+[FVA] Starting optimization for reaction: NTPP9
+[FVA] Starting optimization for reaction: H2Otex
+    [Chunk 67]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: GRXR
+[FVA] Starting optimization for reaction: CDAPPA161
+[FVA] Starting optimization for reaction: SBTptspp
+[FVA] Starting optimization for reaction: PSD120
+[FVA] Starting optimization for reaction: EX_dca_e
+[FVA] Starting optimization for reaction: OMMBLHX3
+[FVA] Starting optimization for reaction: BMOCOS
+    [Chunk 115]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: PGPP141
+[FVA] Starting optimization for reaction: NTPP10
+    [Chunk 40]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: FACOAL160t2pp
+[FVA] Starting optimization for reaction: RNDR1b
+[FVA] Starting optimization for reaction: PAPA120
+[FVA] Starting optimization for reaction: BWCOS
+[FVA] Starting optimization for reaction: PGSA180
+[FVA] Starting optimization for reaction: EX_all__D_e
+  [Chunk 123/151] ✓ Complete (18 reactions)
+  [Chunk 136/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: ENLIPAabctex
+[FVA] Starting optimization for reaction: TREHpp
+[FVA] Starting optimization for reaction: FACOAL180t2pp
+[FVA] Starting optimization for reaction: MDDCP5pp
+    [Chunk 122]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: EX_cpgn_un_e
+[FVA] Starting optimization for reaction: NTPP11
+[FVA] Starting optimization for reaction: RNDR2b
+    [Chunk 132]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: BWCOGDS1
+[FVA] Starting optimization for reaction: PSSA140
+[FVA] Starting optimization for reaction: DM_mththf_c
+    [Chunk 43]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: EX_octa_e
+[FVA] Starting optimization for reaction: CYTBDpp
+[FVA] Starting optimization for reaction: SPODMpp
+[FVA] Starting optimization for reaction: MLTGY3pp
+[FVA] Starting optimization for reaction: MDDEP1pp
+[FVA] Starting optimization for reaction: FACOAE181
+    [Chunk 73]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: NTD10pp
+[FVA] Starting optimization for reaction: BWCOGDS2
+[FVA] Starting optimization for reaction: NO3R1bpp
+[FVA] Starting optimization for reaction: G3PAT180
+[FVA] Starting optimization for reaction: PYROX
+    [Chunk 47]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: CYTBD2pp
+[FVA] Starting optimization for reaction: EX_xylu__L_e
+    [Chunk 99]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: 2AGPGAT141
+  [Chunk 122/151] ✓ Complete (18 reactions)
+  [Chunk 96/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: NTP10
+    [Chunk 67]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: FACOAE160
+[FVA] Starting optimization for reaction: DHNPTE
+[FVA] Starting optimization for reaction: NTD1pp
+    [Chunk 40]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: O2tpp
+    [Chunk 115]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: AGPAT140
+[FVA] Starting optimization for reaction: PRAIS
+[FVA] Starting optimization for reaction: EX_gdp_e
+[FVA] Starting optimization for reaction: ACALDtpp
+[FVA] Starting optimization for reaction: FACOAE140
+[FVA] Starting optimization for reaction: BMOGDS1
+[FVA] Starting optimization for reaction: FACOAE180
+[FVA] Starting optimization for reaction: DHMPTR
+[FVA] Starting optimization for reaction: PHYTSpp
+[FVA] Starting optimization for reaction: NTD2pp
+[FVA] Starting optimization for reaction: PGSA160
+[FVA] Starting optimization for reaction: GDMANE
+[FVA] Starting optimization for reaction: CPGNR1
+[FVA] Starting optimization for reaction: EX_gtp_e
+[FVA] Starting optimization for reaction: FACOAE100
+    [Chunk 136]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: MPTS
+[FVA] Starting optimization for reaction: ACt2rpp
+    [Chunk 132]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: NOVBCNtpp
+[FVA] Starting optimization for reaction: PPTHpp
+[FVA] Starting optimization for reaction: GPDDA4
+[FVA] Starting optimization for reaction: NTD3pp
+[FVA] Starting optimization for reaction: MLDCP2Bpp
+[FVA] Starting optimization for reaction: CPGNR2
+    [Chunk 43]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: THMabcpp
+[FVA] Starting optimization for reaction: EX_fe3dcit_e
+[FVA] Starting optimization for reaction: FACOAE80
+[FVA] Starting optimization for reaction: CMtex
+[FVA] Starting optimization for reaction: MOCOS
+[FVA] Starting optimization for reaction: PYRt2rpp
+    [Chunk 96]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: LPLIPAL2E140
+    [Chunk 73]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: NTD4pp
+[FVA] Starting optimization for reaction: 3OAS140
+    [Chunk 67]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: CPGNR3
+[FVA] Starting optimization for reaction: LALALGLUtex
+[FVA] Starting optimization for reaction: THMDt2pp_copy2
+    [Chunk 47]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: EX_fe3hox_e
+    [Chunk 40]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: NO3R2pp
+    [Chunk 99]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: FACOAE60
+[FVA] Starting optimization for reaction: LPLIPAL2E180
+[FVA] Starting optimization for reaction: BMOGDS2
+    [Chunk 115]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: 3OAR140
+[FVA] Starting optimization for reaction: NTD5pp
+[FVA] Starting optimization for reaction: CPGNUtpp
+[FVA] Starting optimization for reaction: LALADGLUtpp
+[FVA] Starting optimization for reaction: NTP3pp
+[FVA] Starting optimization for reaction: THRabcpp
+[FVA] Starting optimization for reaction: EX_fecrm_e
+[FVA] Starting optimization for reaction: LPLIPAL2G161
+[FVA] Starting optimization for reaction: PLIPA1E120pp
+[FVA] Starting optimization for reaction: FESD2s
+[FVA] Starting optimization for reaction: 3OAR160
+    [Chunk 132]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: I2FE2SS
+[FVA] Starting optimization for reaction: NTD6pp
+[FVA] Starting optimization for reaction: NO3R2bpp
+[FVA] Starting optimization for reaction: CPGNUtex
+[FVA] Starting optimization for reaction: LPLIPAL2G181
+[FVA] Starting optimization for reaction: TREptspp
+[FVA] Starting optimization for reaction: EX_feenter_e
+[FVA] Starting optimization for reaction: PGSA161
+[FVA] Starting optimization for reaction: MALtex
+    [Chunk 136]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: S2FE2SR
+[FVA] Starting optimization for reaction: I2FE2ST
+[FVA] Starting optimization for reaction: THD2pp
+    [Chunk 96]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: 2AGPE120tipp
+[FVA] Starting optimization for reaction: NTD7pp
+[FVA] Starting optimization for reaction: AAMYL
+    [Chunk 43]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: TRPt2rpp
+[FVA] Starting optimization for reaction: 3HAD181
+[FVA] Starting optimization for reaction: EX_feoxam_e
+[FVA] Starting optimization for reaction: I2FE2SS2
+[FVA] Starting optimization for reaction: ACACT8r
+[FVA] Starting optimization for reaction: NO3tex
+    [Chunk 40]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: TMAOR1pp
+[FVA] Starting optimization for reaction: AACPS6
+    [Chunk 73]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: NTD9pp
+    [Chunk 115]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: PGPP160
+[FVA] Starting optimization for reaction: I4FE4ST
+    [Chunk 67]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: AAMYLpp
+[FVA] Starting optimization for reaction: TYRt2rpp
+    [Chunk 47]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: EX_cbi_e
+[FVA] Starting optimization for reaction: AACPS7
+[FVA] Starting optimization for reaction: TMAOR2pp
+    [Chunk 99]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: 3OAS141
+[FVA] Starting optimization for reaction: CTECOAI7
+[FVA] Starting optimization for reaction: PGPP180
+    [Chunk 132]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: S4FE4ST
+[FVA] Starting optimization for reaction: PEAMNOpp
+[FVA] Starting optimization for reaction: FACOAL80t2pp
+[FVA] Starting optimization for reaction: URIt2pp_copy1
+[FVA] Starting optimization for reaction: EX_arbtn_fe3_e
+  [Chunk 40/151] ✓ Complete (18 reactions)
+  [Chunk 128/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: MALDt2_2pp
+[FVA] Starting optimization for reaction: G3PGabcpp
+[FVA] Starting optimization for reaction: S2FE2SS2
+[FVA] Starting optimization for reaction: 3OAR121
+  [Chunk 115/151] ✓ Complete (18 reactions)
+  [Chunk 125/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: EX_crn__D_e
+[FVA] Starting optimization for reaction: CLIPAabctex
+[FVA] Starting optimization for reaction: GAL1PPpp
+  [Chunk 67/151] ✓ Complete (18 reactions)
+  [Chunk 31/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: HISTD
+[FVA] Starting optimization for reaction: EX_cpgn_e
+[FVA] Starting optimization for reaction: 5DGLCNtex
+    [Chunk 96]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: G3PIabcpp
+  [Chunk 132/151] ✓ Complete (18 reactions)
+  [Chunk 119/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: EX_urate_e
+[FVA] Starting optimization for reaction: URIt2pp_copy2
+[FVA] Starting optimization for reaction: GDPMNP
+[FVA] Starting optimization for reaction: CFAS160G
+    [Chunk 136]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: K2L4Aabctex
+[FVA] Starting optimization for reaction: H2O2tex
+[FVA] Starting optimization for reaction: PLIPA1G160pp
+[FVA] Starting optimization for reaction: G3PSabcpp
+[FVA] Starting optimization for reaction: EX_5dglcn_e
+[FVA] Starting optimization for reaction: IGPDH
+    [Chunk 43]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: VALabcpp
+[FVA] Starting optimization for reaction: EX_adocbl_e
+[FVA] Starting optimization for reaction: OPHHX3
+[FVA] Starting optimization for reaction: PLIPA1G141pp
+[FVA] Starting optimization for reaction: URAt2pp
+[FVA] Starting optimization for reaction: QMO2
+[FVA] Starting optimization for reaction: FDH4pp
+    [Chunk 73]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: ARGDCpp
+[FVA] Starting optimization for reaction: DTARTD
+[FVA] Starting optimization for reaction: PRPPS
+    [Chunk 47]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: ATPS4rpp
+[FVA] Starting optimization for reaction: LPLIPAL2E160
+[FVA] Starting optimization for reaction: XTSNt2rpp
+[FVA] Starting optimization for reaction: AMMQLT8
+[FVA] Starting optimization for reaction: QMO3
+    [Chunk 99]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: FACOAE141
+    [Chunk 128]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: PLIPA2E161pp
+[FVA] Starting optimization for reaction: FDH5pp
+[FVA] Starting optimization for reaction: ALLPI
+    [Chunk 119]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: LPLIPAL2G140
+[FVA] Starting optimization for reaction: INDOLEtex
+[FVA] Starting optimization for reaction: PRATPP
+  [Chunk 43/151] ✓ Complete (18 reactions)
+  [Chunk 137/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: APG3PAT181
+    [Chunk 96]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: LPLIPAL2E141
+    [Chunk 125]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: FA120ACPHi
+[FVA] Starting optimization for reaction: LPLIPAL2G160
+[FVA] Starting optimization for reaction: FACOAE161
+[FVA] Starting optimization for reaction: PLIPA2E180pp
+  [Chunk 73/151] ✓ Complete (18 reactions)
+  [Chunk 27/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: NTD7
+[FVA] Starting optimization for reaction: ACPPAT140
+  [Chunk 47/151] ✓ Complete (18 reactions)
+  [Chunk 146/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: METt3pp
+    [Chunk 31]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: PRMICI
+[FVA] Starting optimization for reaction: LPLIPAL2E161
+[FVA] Starting optimization for reaction: 2AGPE140tipp
+[FVA] Starting optimization for reaction: APH140
+[FVA] Starting optimization for reaction: FA80ACPHi
+  [Chunk 99/151] ✓ Complete (18 reactions)
+  [Chunk 64/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: RNDR4b
+    [Chunk 136]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: APG3PAT140
+[FVA] Starting optimization for reaction: PLIPA2G120pp
+[FVA] Starting optimization for reaction: PAPPT3
+[FVA] Starting optimization for reaction: 2AGPE160tipp
+[FVA] Starting optimization for reaction: GSNt3pp
+[FVA] Starting optimization for reaction: SERAT
+  [Chunk 96/151] ✓ Complete (18 reactions)
+  [Chunk 107/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: MPTG
+[FVA] Starting optimization for reaction: FA140ACPHi
+[FVA] Starting optimization for reaction: APH160
+    [Chunk 119]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: 2AGPE180tipp
+[FVA] Starting optimization for reaction: ACGAL1Ptex
+[FVA] Starting optimization for reaction: MPTG2
+[FVA] Starting optimization for reaction: APG3PAT141
+[FVA] Starting optimization for reaction: CLtipp
+[FVA] Starting optimization for reaction: PLIPA2G180pp
+[FVA] Starting optimization for reaction: UAGPT3
+[FVA] Starting optimization for reaction: CYSS
+[FVA] Starting optimization for reaction: 2AGPE141tipp
+[FVA] Starting optimization for reaction: FA100ACPHi
+[FVA] Starting optimization for reaction: OPMEACPD
+[FVA] Starting optimization for reaction: MCTP1App
+[FVA] Starting optimization for reaction: ACGALtex
+[FVA] Starting optimization for reaction: 5DKGR
+[FVA] Starting optimization for reaction: BPNT
+  [Chunk 136/151] ✓ Complete (18 reactions)
+  [Chunk 117/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: MDDCP4pp
+[FVA] Starting optimization for reaction: EX_ttdcea_e
+[FVA] Starting optimization for reaction: 2AGPE161tipp
+    [Chunk 128]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: LPLIPAL1A161pp
+[FVA] Starting optimization for reaction: MCTP2App
+    [Chunk 146]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: PItpp
+    [Chunk 137]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: EPMEACPR
+    [Chunk 125]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: CRNDCAL2
+[FVA] Starting optimization for reaction: 2AGPA161tipp
+[FVA] Starting optimization for reaction: GLCUR1Ptex
+    [Chunk 31]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: PAPSR
+[FVA] Starting optimization for reaction: CLPNS140pp
+    [Chunk 27]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: F6PA
+    [Chunk 107]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: MCTP1Bpp
+[FVA] Starting optimization for reaction: LPLIPAL1A160pp
+    [Chunk 119]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: 2AGPA181tipp
+[FVA] Starting optimization for reaction: LEUt3pp
+[FVA] Starting optimization for reaction: CRNCAL2
+[FVA] Starting optimization for reaction: ASPK
+    [Chunk 64]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: UDPGLCURtex
+[FVA] Starting optimization for reaction: AOXSr2
+[FVA] Starting optimization for reaction: MELIBt3ipp
+[FVA] Starting optimization for reaction: CLPNS141pp
+[FVA] Starting optimization for reaction: 2AGPG120tipp
+[FVA] Starting optimization for reaction: AGMHE
+[FVA] Starting optimization for reaction: PSCLYSt2pp
+[FVA] Starting optimization for reaction: INSt3pp
+[FVA] Starting optimization for reaction: ASAD
+[FVA] Starting optimization for reaction: EX_lipoate_e
+[FVA] Starting optimization for reaction: CHLt2pp
+[FVA] Starting optimization for reaction: UDPGALPpp
+[FVA] Starting optimization for reaction: MEOHtrpp
+[FVA] Starting optimization for reaction: LPLIPAL2G120
+[FVA] Starting optimization for reaction: PG120abcpp
+[FVA] Starting optimization for reaction: GMHEPAT
+[FVA] Starting optimization for reaction: LYSt2pp
+[FVA] Starting optimization for reaction: EX_pydx_e
+[FVA] Starting optimization for reaction: PA141abcpp
+[FVA] Starting optimization for reaction: DAPDC
+[FVA] Starting optimization for reaction: INDOLEt2rpp
+[FVA] Starting optimization for reaction: GLYt4pp
+[FVA] Starting optimization for reaction: UACGAMPpp
+    [Chunk 117]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: PE140abcpp
+[FVA] Starting optimization for reaction: SCYSDS
+[FVA] Starting optimization for reaction: EX_h2s_e
+    [Chunk 119]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: PA161abcpp
+    [Chunk 107]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: EX_g1p_e
+    [Chunk 128]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: GLYt2pp
+    [Chunk 31]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: EX_mmet_e
+[FVA] Starting optimization for reaction: CFAS160E
+    [Chunk 146]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: ILEt2rpp
+    [Chunk 125]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: FRULYSE
+[FVA] Starting optimization for reaction: UACGALPpp
+[FVA] Starting optimization for reaction: PA180abcpp
+    [Chunk 137]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: S2FE2SS
+[FVA] Starting optimization for reaction: GLCtex_copy2
+    [Chunk 27]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: EX_gthrd_e
+[FVA] Starting optimization for reaction: METAT
+[FVA] Starting optimization for reaction: ALAt2pp
+[FVA] Starting optimization for reaction: CFAS180E
+[FVA] Starting optimization for reaction: GLYtpp
+  [Chunk 119/151] ✓ Complete (18 reactions)
+  [Chunk 15/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: OHPHM
+[FVA] Starting optimization for reaction: NAt3pp
+[FVA] Starting optimization for reaction: FRULYSt2pp
+    [Chunk 64]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: UGLCURPpp
+[FVA] Starting optimization for reaction: S4FE4SR
+[FVA] Starting optimization for reaction: ASCBPL
+[FVA] Starting optimization for reaction: IDOND
+[FVA] Starting optimization for reaction: GHMT2r
+[FVA] Starting optimization for reaction: SFGTHi
+[FVA] Starting optimization for reaction: BALAt2pp
+[FVA] Starting optimization for reaction: PYK6
+[FVA] Starting optimization for reaction: CFAS180G
+[FVA] Starting optimization for reaction: EX_psclys_e
+[FVA] Starting optimization for reaction: FEROpp
+[FVA] Starting optimization for reaction: ACBIPGT
+[FVA] Starting optimization for reaction: DHORD2
+[FVA] Starting optimization for reaction: SELtex
+    [Chunk 107]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: DHORDfum
+[FVA] Starting optimization for reaction: IDOND2
+[FVA] Starting optimization for reaction: FADt
+    [Chunk 117]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: PAPA160
+[FVA] Starting optimization for reaction: DALAt2pp
+[FVA] Starting optimization for reaction: ADK4
+[FVA] Starting optimization for reaction: TUNGStex
+    [Chunk 31]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: ADOCBLS
+[FVA] Starting optimization for reaction: ISETACabcpp
+[FVA] Starting optimization for reaction: SELR
+[FVA] Starting optimization for reaction: K2L4Aabcpp
+[FVA] Starting optimization for reaction: GLYCLTDx
+    [Chunk 146]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: FADtex
+    [Chunk 15]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: INSK
+[FVA] Starting optimization for reaction: PAPA180
+    [Chunk 128]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: FE2tpp
+[FVA] Starting optimization for reaction: ADOCBIK
+    [Chunk 125]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: COBALT2tpp
+[FVA] Starting optimization for reaction: ISETACtex
+    [Chunk 137]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: OGMEACPD
+[FVA] Starting optimization for reaction: DSBCGT
+[FVA] Starting optimization for reaction: AI2abcpp
+    [Chunk 27]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: HPYRRy
+[FVA] Starting optimization for reaction: ABTA
+[FVA] Starting optimization for reaction: PAPA181
+[FVA] Starting optimization for reaction: MN2tpp
+  [Chunk 31/151] ✓ Complete (18 reactions)
+  [Chunk 35/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: CSND
+[FVA] Starting optimization for reaction: EGMEACPR
+[FVA] Starting optimization for reaction: OXCDC
+[FVA] Starting optimization for reaction: SSALx
+[FVA] Starting optimization for reaction: PAI2I
+    [Chunk 64]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: GUR1PPpp
+[FVA] Starting optimization for reaction: DSBGGT
+[FVA] Starting optimization for reaction: ACODA
+  [Chunk 128/151] ✓ Complete (18 reactions)
+  [Chunk 53/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: INSH
+[FVA] Starting optimization for reaction: PETNT161pp
+[FVA] Starting optimization for reaction: GF6PTA
+[FVA] Starting optimization for reaction: ASPT
+[FVA] Starting optimization for reaction: OPMEACPR
+  [Chunk 125/151] ✓ Complete (18 reactions)
+  [Chunk 48/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: L_LACtex
+[FVA] Starting optimization for reaction: 4HBZt3pp
+[FVA] Starting optimization for reaction: UDPGtex
+    [Chunk 107]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: DHNAOT4
+[FVA] Starting optimization for reaction: ADA
+    [Chunk 15]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: SERD_L
+[FVA] Starting optimization for reaction: H2SO
+[FVA] Starting optimization for reaction: BUTtex
+[FVA] Starting optimization for reaction: PMEACPE
+    [Chunk 117]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: PSSA160
+[FVA] Starting optimization for reaction: ACt4pp
+    [Chunk 146]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: CURR
+[FVA] Starting optimization for reaction: ACGAL1PPpp
+[FVA] Starting optimization for reaction: AMPMS2
+[FVA] Starting optimization for reaction: DADA
+[FVA] Starting optimization for reaction: GLUCYS
+[FVA] Starting optimization for reaction: THRD
+    [Chunk 137]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: MEOHtex
+[FVA] Starting optimization for reaction: CHLtex
+[FVA] Starting optimization for reaction: LKDRA
+[FVA] Starting optimization for reaction: PSSA181
+[FVA] Starting optimization for reaction: ADEt2rpp
+[FVA] Starting optimization for reaction: UDPGALtex
+    [Chunk 35]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: GLUN
+  [Chunk 107/151] ✓ Complete (18 reactions)
+  [Chunk 133/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: BTS5
+[FVA] Starting optimization for reaction: HEX4
+    [Chunk 27]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: ADD
+[FVA] Starting optimization for reaction: EX_5mtr_e
+[FVA] Starting optimization for reaction: CO2tex
+  [Chunk 146/151] ✓ Complete (18 reactions)
+  [Chunk 12/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: PYAM5PO
+[FVA] Starting optimization for reaction: DAGK140
+[FVA] Starting optimization for reaction: ADNt2pp_copy1
+    [Chunk 64]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: ACGAM1Ptex
+[FVA] Starting optimization for reaction: 5MTRtex
+[FVA] Starting optimization for reaction: GLUPRT
+[FVA] Starting optimization for reaction: KARA1
+[FVA] Starting optimization for reaction: ADSS
+[FVA] Starting optimization for reaction: OHPBAT
+  [Chunk 137/151] ✓ Complete (18 reactions)
+  [Chunk 59/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: FE3HOXR2
+    [Chunk 53]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: CRNtex
+    [Chunk 48]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: ADNt2pp_copy2
+[FVA] Starting optimization for reaction: DAGK160
+[FVA] Starting optimization for reaction: LALADGLUtex
+    [Chunk 15]  66.7% complete (12/18 reactions)
+[FVA] Starting optimization for reaction: KARA2
+[FVA] Starting optimization for reaction: GMPR
+[FVA] Starting optimization for reaction: UACGAMtex
+  [Chunk 27/151] ✓ Complete (18 reactions)
+  [Chunk 63/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: DOPAtex
+[FVA] Starting optimization for reaction: EX_dgsn_e
+[FVA] Starting optimization for reaction: PTRCt2pp
+[FVA] Starting optimization for reaction: LALALGLUtpp
+[FVA] Starting optimization for reaction: ACCOAC
+[FVA] Starting optimization for reaction: PPK2
+[FVA] Starting optimization for reaction: ALAabcpp
+    [Chunk 117]  88.9% complete (16/18 reactions)
+[FVA] Starting optimization for reaction: DAGK141
+[FVA] Starting optimization for reaction: NADS1
+  [Chunk 64/151] ✓ Complete (18 reactions)
+  [Chunk 24/151] Processing 18 reactions...
+[FVA] Starting optimization for reaction: FADRx
+[FVA] Starting optimization for reaction: EX_arab__L_e
+[FVA] Starting optimization for reaction: 4HOXPACDtex
+[FVA] Starting optimization for reaction: NADK
+    [Chunk 133]  22.2% complete (4/18 reactions)
+[FVA] Starting optimization for reaction: 3AMACHYD
+[FVA] Starting optimization for reaction: GGGABAH
+    [Chunk 35]  44.4% complete (8/18 reactions)
+[FVA] Starting optimization for reaction: NTRIR2x
+[FVA] Starting optimization for reaction: DINStex
+[FVA] Starting optimization for reaction: ALLabcpp
+[FVA] Starting optimization for reaction: DAGK161

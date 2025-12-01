@@ -1,0 +1,22 @@
+{
+  "model_name": "iML1515_GEM",
+  "organism": "E coli",
+  "biomass_reaction": null,
+  "enzyme_upper_bound": 0.2,
+  "solver": "glpk",
+  "enable_fva": false,
+  "enable_biolog_validation": false,
+  "bidirectional_constraints": true,
+
+  "simulated_annealing": {
+    "temperature": 1.0,
+    "cooling_rate": 0.975,
+    "min_temperature": 0.001,
+    "max_iterations": 5,
+    "max_unchanged_iterations": 3,
+    "change_threshold": 0.0001,
+    "biomass_goal": 0.5,
+    "n_top_enzymes": 10,
+    "verbose": true
+  }
+}
