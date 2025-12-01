@@ -104,16 +104,37 @@ def simulated_annealing(
         return math.exp((new_biomass - old_biomass) / temperature)
 
     def get_neighbor(kcat_value, std):
+        """
+        Generate a new kcat value within experimental uncertainty bounds.
+
+        Uses a more conservative approach that respects experimental std deviation
+        rather than arbitrary multiplication factors.
+        """
         k_val_hr = kcat_value * 3600
         std_hr = std * 3600
-        new_kcat = k_val_hr * (1.5 + random.uniform(-1, 3.5))
+
+        # If no std provided, use 20% of the mean as uncertainty
         if std_hr == 0:
-            std_hr = k_val_hr * 0.1
-        ub = k_val_hr + std_hr
-        lb = k_val_hr - std_hr
-        # Also limit to max reported kcat (per hour)
-        max_hr = 4.6e9  # carbonic anhydrase per hour
-        return min(max(new_kcat, lb), min(ub, max_hr))
+            std_hr = k_val_hr * 0.2
+
+        # Generate new value using normal distribution within reasonable bounds
+        # Limit to ±2σ to stay within 95% confidence interval
+        sigma_multiplier = random.uniform(-2.0, 2.0)
+        new_kcat = k_val_hr + (sigma_multiplier * std_hr)
+
+        # Additional safety bounds to prevent unrealistic values
+        # Lower bound: at least 10% of original value
+        lb = max(k_val_hr * 0.1, k_val_hr - std_hr)
+        # Upper bound: at most 5x original value or mean + σ, whichever is smaller
+        ub = min(k_val_hr * 5.0, k_val_hr + std_hr)
+
+        # Also limit to max reported kcat (per hour) - but use more realistic max
+        max_hr = 1e6  # More realistic maximum kcat per hour
+
+        # Apply all bounds
+        new_kcat = min(max(new_kcat, lb), min(ub, max_hr))
+
+        return new_kcat
 
     def update_kcat(df, reaction_id, gene_id, new_kcat_value):
         updated_df = df.copy()
@@ -167,9 +188,10 @@ def simulated_annealing(
         processed_df=processed_data,
         objective_reaction=biomass_reaction,
         enzyme_upper_bound=enzyme_fraction,
+        enzyme_ratio=True,
         output_dir=output_dir,
         save_results=False,
-        verbose=False,
+        verbose=True,
         medium=medium,
         medium_upper_bound=medium_upper_bound
     )
@@ -244,7 +266,8 @@ def simulated_annealing(
                 actually_changed += 1
 
             if verbose:
-                print(f"  {rxn}_{gene}: old kcat = {old_k:.3e} s⁻¹  →  new kcat = {new_k_s:.3e} s⁻¹ (Δ={(new_k_s-old_k)/old_k*100:+.1f}%)")
+                fold_change = new_k_s / old_k if old_k > 0 else 1.0
+                print(f"  {rxn}_{gene}: old kcat = {old_k:.3e} s⁻¹  →  new kcat = {new_k_s:.3e} s⁻¹ (Δ={(new_k_s-old_k)/old_k*100:+.1f}%, fold={fold_change:.2f}x)")
             # update_kcat expects hr⁻¹ and will convert to s⁻¹ internally
             updated_df = update_kcat(updated_df, rxn, gene, new_k_hr)
 
@@ -271,6 +294,7 @@ def simulated_annealing(
             processed_df=updated_df,
             objective_reaction=biomass_reaction,
             enzyme_upper_bound=enzyme_fraction,
+            enzyme_ratio=True,
             output_dir=None,
             save_results=False,
             verbose=False,

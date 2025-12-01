@@ -535,6 +535,16 @@ def main():
         print("  ✓ Generated and saved merged data")
 
     print(f"  Merged data: {len(merged_data)} rows")
+    
+    # Debug: Check gene distribution in merged data
+    if 'Gene' in merged_data.columns:
+        unique_genes_merged = merged_data['Gene'].nunique()
+        print(f"  [DEBUG] Unique genes in merged data: {unique_genes_merged}")
+        print(f"  [DEBUG] Top 5 genes in merged data: {merged_data['Gene'].value_counts().head()}")
+    elif 'gene_id' in merged_data.columns:
+        unique_genes_merged = merged_data['gene_id'].nunique()
+        print(f"  [DEBUG] Unique genes in merged data (gene_id): {unique_genes_merged}")
+        print(f"  [DEBUG] Top 5 genes in merged data: {merged_data['gene_id'].value_counts().head()}")
 
     # === Step 3: Process kcat predictions ===
     # Find predictions file with flexible naming
@@ -557,6 +567,22 @@ def main():
         print("  ✓ Generated and saved processed data")
 
     print(f"  Processed data: {len(processed_data)} rows")
+    
+    # Debug: Check gene distribution in processed data
+    gene_columns = [col for col in processed_data.columns if 'gene' in col.lower()]
+    print(f"  [DEBUG] Gene-related columns in processed data: {gene_columns}")
+    
+    for gene_col in gene_columns:
+        unique_genes = processed_data[gene_col].nunique()
+        print(f"  [DEBUG] Unique genes in {gene_col}: {unique_genes}")
+        print(f"  [DEBUG] Top 5 genes in {gene_col}: {processed_data[gene_col].value_counts().head()}")
+        
+    # Check for b0929 specifically
+    if any('gene' in col.lower() for col in processed_data.columns):
+        for gene_col in gene_columns:
+            b0929_count = (processed_data[gene_col] == 'b0929').sum()
+            total_count = len(processed_data)
+            print(f"  [DEBUG] {gene_col}: {b0929_count}/{total_count} entries are b0929 ({b0929_count/total_count*100:.1f}%)")
 
     # Ensure kcat column exists
     if 'kcat_mean' in processed_data.columns and 'kcat' not in processed_data.columns:
@@ -564,13 +590,29 @@ def main():
     elif 'kcat_y' in processed_data.columns and 'kcat' not in processed_data.columns:
         processed_data['kcat'] = processed_data['kcat_y']
 
+    # Debug: Check model genes before annotation
+    print(f"  [DEBUG] Model has {len(model.genes)} genes total")
+    print(f"  [DEBUG] First 10 model gene IDs: {[g.id for g in list(model.genes)[:10]]}")
+    
     # Annotate model
+    print("  Annotating model with kcat and GPR data...")
     model = annotate_model_with_kcat_and_gpr(model=model, df=processed_data)
 
     rxn_with_kcat = sum(1 for rxn in model.reactions
                         if hasattr(rxn, 'annotation') and 'kcat' in rxn.annotation
                         and rxn.annotation['kcat'] not in [None, '', 0, '0'])
     print(f"  Reactions with kcat: {rxn_with_kcat}/{len(model.reactions)}")
+    
+    # Debug: Check a few annotated reactions
+    print("  [DEBUG] Sample annotated reactions:")
+    annotated_count = 0
+    for rxn in model.reactions:
+        if hasattr(rxn, 'annotation') and 'kcat' in rxn.annotation and rxn.annotation['kcat'] not in [None, '', 0, '0']:
+            if 'gpr' in rxn.annotation:
+                print(f"    {rxn.id}: kcat={rxn.annotation['kcat']}, gpr={rxn.annotation.get('gpr', 'None')}")
+                annotated_count += 1
+                if annotated_count >= 5:  # Show first 5 annotated reactions
+                    break
 
     # === Step 4: Optimization ===
     print("\n=== Step 4: Running optimization ===")
@@ -604,11 +646,21 @@ def main():
         output_dir=None,
         save_results=False,
         print_reaction_conditions=True,
-        verbose=False,  # Enable detailed timing output
+        verbose=True,  # Enable detailed timing output
         solver_name=solver_name,
         bidirectional_constraints=use_bidirectional  # Add performance option
     )
     print(f"    kinGEMs biomass: {solution_value:.4f}")
+    
+    # Debug: Check gene_sequences_dict
+    print(f"  [DEBUG] gene_sequences_dict has {len(gene_sequences_dict)} entries")
+    if gene_sequences_dict:
+        sample_genes = list(gene_sequences_dict.keys())[:5]
+        print(f"  [DEBUG] Sample genes in gene_sequences_dict: {sample_genes}")
+        for gene in sample_genes:
+            print(f"    {gene}: {len(gene_sequences_dict[gene])} characters")
+    else:
+        print("  [DEBUG] WARNING: gene_sequences_dict is empty!")
 
     # Show comparison
     reduction = (1 - solution_value / cobra_biomass) * 100 if cobra_biomass > 0 else 0
@@ -693,6 +745,28 @@ def main():
             print(f"    Iter {iterations[idx]:3d}: {biomasses[idx]:.6f} ({change_pct:+.2f}%)")
     print("\n  Top 10 enzymes by mass contribution:")
     print(top_targets[['Reactions', 'Single_gene', 'enzyme_mass']].head(10))
+
+    # Debug: Investigate gene mapping issue
+    print("\n  [DEBUG] Gene distribution analysis:")
+    print(f"  [DEBUG] df_new shape: {df_new.shape}")
+    print(f"  [DEBUG] df_new columns: {list(df_new.columns)}")
+    
+    if 'Single_gene' in df_new.columns:
+        unique_genes_final = df_new['Single_gene'].nunique()
+        total_entries = len(df_new)
+        b0929_count_final = (df_new['Single_gene'] == 'b0929').sum()
+        print(f"  [DEBUG] Final unique genes: {unique_genes_final}")
+        print(f"  [DEBUG] Final b0929 entries: {b0929_count_final}/{total_entries} ({b0929_count_final/total_entries*100:.1f}%)")
+        print("  [DEBUG] Top 10 genes in final results:")
+        print(df_new['Single_gene'].value_counts().head(10))
+        
+    # Compare with original processed data
+    print("\n  [DEBUG] Comparing processed_data vs df_new:")
+    if 'Single_gene' in constraint_data.columns:
+        orig_unique = constraint_data['Single_gene'].nunique()
+        orig_b0929 = (constraint_data['Single_gene'] == 'b0929').sum()
+        print(f"  [DEBUG] Original processed_data unique genes: {orig_unique}")
+        print(f"  [DEBUG] Original processed_data b0929 entries: {orig_b0929}/{len(constraint_data)} ({orig_b0929/len(constraint_data)*100:.1f}%)")
 
     # Merge kcat_dict into df_new
     df_new_path = os.path.join(tuning_results_dir, "df_new.csv")
