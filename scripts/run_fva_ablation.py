@@ -555,6 +555,7 @@ def main():
             gene_sequences_dict=gene_sequences_dict,
             output_dir=results_dir,
             enzyme_fraction=enzyme_upper_bound,
+            n_top_enzymes=sa_config.get('n_top_enzymes', 65),
             temperature=sa_config.get('temperature', 1.0),
             cooling_rate=sa_config.get('cooling_rate', 0.95),
             min_temperature=sa_config.get('min_temperature', 0.01),

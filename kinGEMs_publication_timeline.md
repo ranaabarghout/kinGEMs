@@ -1,104 +1,116 @@
 # kinGEMs Publication Timeline (Updated – Nov 2025)
 
-Target journal: **Nature Biotechnology**  or **PNAS**
-Target submission: **December 2025**
+Target journal: **Nature Biotechnology** or **PNAS**  
+Target submission: **December 10, 2025**
+
+Draft manuscript ready by: **December 1, 2025**
 
 ---
 
 ## Major Updates (since Aug 2025)
-- **E. coli validation complete.** Currently converting outputs to **regression/correlation** style summaries (e.g., correlation vs. reference signals, precision deltas).
-- **Emphasis shift:** prioritize **precision improvement** (e.g., flux variability/uncertainty reduction, consistency across media) over raw accuracy metrics.
-- **Noor’s Biolog phenotype data:** remains **classification only** (growth vs. no growth). Exploring whether any **correlation-style** signals can be derived or aligned with our metrics (TBD).
-- **Flux validation (Lya):** analyzing ~**26 fluxes**; results are **provisional** (not yet final).
-  Add **enzyme constraint ablation** (hard → scaled/soft → off) to attribute precision gains specifically to enzyme constraints.
-- Writing and validation continue in parallel.
+- **E. coli validation complete.** Converting outputs into **regression/correlation** metrics (Pearson/Spearman to reference fluxes, precision deltas, CI shrinkage).
+- **Shift to precision-first framing:** Focus on **uncertainty reduction**, **cross-media stability**, and **variance contraction** rather than point accuracy.
+- **Noor’s Biolog phenotype data:** Still **binary classification** (growth/no growth). Will check if **correlation-style** signals exist; otherwise keep classification-only.
+- **Flux validation (Lya):** ~**26 fluxes** in analysis; treat as **provisional** until QC finalized.
+- **Add enzyme-constraint ablation** (hard → soft/scaled → off) to attribute precision gains to enzyme constraints.
+- **Shlomi et al. (2012) validation experiment:** preparing model-tuning for **higher-growth prediction ranges** to enable direct replication.
+- Writing, figure design, and validation are running in parallel.
 
 ---
 
 ## Timeline & To-Do (Nov–Dec 2025)
 
 ### Nov 7–14 (This Week)
-- [x] Lock **E. coli validation** status and summary bullets.
-- [x] Implement **regression/correlation conversions** for E. coli (e.g., Pearson/Spearman vs. references; precision deltas vs. baseline).
-- [x] Sync with **Noor** on whether any correlation-adjacent signals can be surfaced from Biolog; if not, keep strictly **binary classification** in paper.
-- [x] Coordinate with **Lya** on the 26-flux set: data schema, units, comparators, and QC gates.
-- [x] **Design enzyme ablation protocol** (levels, metrics, datasets) and prepare run scripts.
+- [x] Finalize **E. coli validation** bullet summaries.
+- [x] Implement **regression/correlation conversions** for E. coli.
+- [x] Sync with **Noor** re: Biolog correlation signals; default to binary classification if none.
+- [x] Coordinate with **Lya** on 26-flux schema, units, QC.
+- [x] Design **enzyme ablation protocol** (hard/soft/off).
+
 
 ### Nov 15–24
-- Writing:
-  - [ ] Draft **Results (Part 1)** focusing on **precision improvement**: FVA precision, variance/CI shrinkage, replicate stability, media consistency.
-  - [ ] Update **Methods** with precise definitions: precision metrics, correlation computation, bootstrapping, and uncertainty reporting.
-- Figures:
-  - [ ] Add **precision-centric** plots (variance/CI bars, delta-precision vs. baseline), plus **correlation** panels for E. coli.
-  - [ ] Keep Biolog to **ROC/PR** and **confusion matrices** (classification only).
-- Validation:
-  - [ ] Finalize E. coli regression/correlation tables; document caveats.
-  - [ ] **Run enzyme ablation levels** (hard → scaled/soft → off) on E. coli across ≥3 media and record metrics.
+**Writing:**
+- [ ] Draft **Results (Part 1)** — precision improvement:
+  - FVA width/nFVAW
+  - CI/variance shrinkage
+  - replicate stability
+  - media consistency
+- [ ] Update **Methods** for: precision metrics, bootstrap CIs, correlation computations, uncertainty reporting.
+
+**Figures:**
+- [ ] Add precision-centric plots (variance bars, Δprecision vs. baseline).
+- [ ] Add E. coli correlation panels.
+- [ ] Keep Biolog to classification-only (ROC/PR, confusion matrices).
+- [ ] Integrate Shlomi-style growth validation figures if ready.
+
+**Validation:**
+- [ ] **Process Noor’s dataset** fully for manuscript-ready outputs.
+- [ ] **Process Shlomi et al. validation data** (2012 PLoS Comp Bio): extract fluxes, growth phenotypes, and validation schema.
+- [ ] **Tune the kinGEMs model for higher growth regimes** (adjust bounds/objective if needed) to reproduce the Shlomi validation setup.
+- [ ] **Consolidate figure styles** (fonts, color palette, CI styles, axis formats) and migrate templates to the **Overleaf file**.
+- [ ] Finalize E. coli correlation tables w/ caveats.
+- [x] Run first-pass **enzyme ablation** experiments.
 
 ### Nov 25 – Dec 5
-- Validation:
-  - [ ] Integrate **Lya’s provisional 26-flux** results; mark clearly as preliminary.
-  - [ ] Sensitivity analyses (media, bounds, objective variants) focused on **precision changes** rather than point accuracy.
-  - [ ] **Analyze ablation results**: compute paired deltas vs. GEM baseline, aggregate effect sizes and CIs.
-- Writing:
-  - [ ] Draft **Results (Part 2)** (flux validation, cross-species precision signals, **ablation study**).
-  - [ ] Begin **Discussion** emphasizing why precision metrics are the right yardstick for kinGEMs.
+**Validation:**
+- [ ] Integrate **Lya’s provisional 26-flux** results.
+- [ ] Run **sensitivity analyses** (media, bounds, objectives) focused on precision.
+- [ ] Analyze and summarize **enzyme ablation** deltas vs. GEM baseline.
+- [ ] Complete **Shlomi et al. (2012) validation replication**.
+
+**Writing:**
+- [ ] Draft **Results (Part 2)** (flux validation, cross-species signals, ablation study).
+- [ ] Draft **Shlomi validation subsection** describing growth-tuning and replication steps.
+- [ ] Begin **Discussion** focusing on precision as the main performance indicator.
 
 ### Dec 6–8
-- [ ] Internal review with co-authors (precision framing, statistic choices, figure readability).
-- [ ] Revise text, polish captions, ensure **precision-first narrative** is consistent.
-- [ ] Prepare **Supplementary** (pipelines, tables, ablations, exact metric formulas).
+- [ ] Internal review with co-authors (precision framing, statistics choices, figure clarity).
+- [ ] Revise text and figure captions.
+- [ ] Prepare **Supplementary** (pipelines, ablations, metrics, extended tables).
 
-### Dec 8-11
-- [ ] Final checks: references, cover letter, journal formatting, data/code deposit.
-- [ ] **Submit to Nature Biotechnology** (buffer: slipping into late Dec acceptable).
+### Dec 8–10
+- [ ] Final checks: references, formatting, figures, data/code repository.
+- [ ] **Submit manuscript by Dec 10.**
 
 ---
 
 ## Notes on Data and Scope
-- **Biolog (Noor):** remains **binary growth**; correlation exploration is **ongoing/TBD**. If no robust correlation signal emerges, keep it strictly classification and avoid overclaiming.
-- **Flux validation (Lya):** ~26 fluxes under active analysis; treat as **provisional** until QC passes and comparators are locked.
-- **E. coli:** complete; headline is **precision improvement**, with supporting **regression/correlation** summaries now being added.
+- **Biolog (Noor):** still strictly **binary** unless a robust correlation-adjacent signal is validated.
+- **Flux validation (Lya):** ~26 fluxes, **provisional**.
+- **Shlomi et al. 2012:** incorporate as additional **growth prediction + flux-pattern validation**; model tuning underway.
+- **E. coli:** complete; strength is **precision improvement** supported by correlation summaries.
 
 ---
 
-## Enzyme Constraint Ablation Plan (NEW)
-**Goal:** Attribute precision gains to enzyme constraints and quantify their contribution.
+## Enzyme Constraint Ablation Plan
+**Goal:** Attribute precision gains directly to the presence and magnitude of enzyme constraints.
 
-**Ablation levels**
-1. **Hard kinGEMs (full constraints):** standard enzyme-constrained model.
-2. **Scaled/Soft constraints:** multiply enzyme caps by factors {1.5×, 2×, 4×}.
-3. **Off (GEM):** remove enzyme constraints entirely.
+**Ablation levels:**
+1. **Hard constraints:** standard kinGEMs setting.
+2. **Soft constraints:** scale caps by {1.5×, 2×, 4×}.
+3. **Off:** revert to standard GEM.
 
-**Datasets/conditions**
-- Organisms: E. coli (primary), plus P. putida and S. elongatus if time permits.
-- Media: ≥3 (rich, minimal, alternative carbon).
-- Objectives: biomass v1, biomass v2 (and/or blended).
-- Flux panel: sentinel set (central carbon + exchanges) and **Lya’s ~26 fluxes** when available.
+**Datasets/conditions:**
+- Organisms: primarily **E. coli**; optional P. putida, S. elongatus.
+- Media: ≥3 conditions (rich/minimal/alt carbon).
+- Objectives: biomass v1/v2; blended if useful.
+- Flux panel: core carbon + exchanges + Lya's ~26 fluxes.
 
-**Primary metrics (precision-first)**
-- **Normalized FVA Width (nFVAW)** and **Relative Variance Reduction (RVR)** vs. GEM.
-- **Interval Score@95%** (if reference fluxes available).
-- **Media Stability Index (MSI)** and **Objective Robustness** (mean |Δflux| normalized).
-- **KO Locality Index** (concentration of |Δflux| in mechanistically relevant pathways).
+**Primary precision metrics:**
+- **nFVAW** (normalized FVA width).
+- **Relative Variance Reduction (RVR)**.
+- **Interval Score@95%.**
+- **Media Stability Index (MSI)**.
+- **KO Locality Index.**
 
-**Statistical plan**
-- Paired comparisons across matched fluxes/conditions; **bootstrap 95% CIs** and **Wilcoxon signed-rank** for medians.
-- Report effect sizes: median ΔnFVAW, ΔInterval Score, ΔMSI, ΔKO Locality.
+**Statistical plan:**
+- Paired comparisons, **bootstrap 95% CIs**, **Wilcoxon signed-rank**.
+- Report median ΔnFVAW, ΔInterval Score, ΔMSI, ΔKO Locality.
 
-**Figures**
-- Paired raincloud/violin of nFVAW (lines: hard → soft → off).
-- Coverage–width frontier (Interval Score vs. width) by ablation level.
-- MSI bar chart across media/objective variants.
-- Sankey: flux-coupling class transitions (hard → soft → off).
-
-**Reporting sentence (template)**
-> Progressive relaxation of enzyme constraints increased median flux uncertainty by **X%** (nFVAW), worsened **Interval Score@95%** by **ΔS** (95% CI [a, b]), and reduced cross-media stability (ΔMSI = **c**), demonstrating that precision gains are driven by enzyme constraints rather than solver or modeling idiosyncrasies.
+**Figures:**
+- nFVAW progression (hard → soft → off).
+- Coverage–width frontier.
+- MSI across media/objectives.
+- Sankey: flux-coupling transitions.
 
 ---
-
-## Principles
-- **Debug/validate daily** (AM).
-- **Write daily** (PM).
-- Keep figures and results **modular** so swaps don’t disrupt the manuscript flow.
-- When in doubt, opt for **precision/uncertainty reporting** over single-number accuracy.
