@@ -48,12 +48,55 @@ def simulated_annealing(
     max_iterations=250,
     max_unchanged_iterations=3,
     change_threshold=0.001,
+    n_top_enzymes=65,
     verbose=False,
     medium=None,
     medium_upper_bound=False
 ):
     """
     Use simulated annealing to tune kcat values for improved biomass production.
+    
+    Parameters
+    ----------
+    model : cobra.Model
+        The metabolic model to optimize
+    processed_data : pandas.DataFrame
+        DataFrame with enzyme kinetic data
+    biomass_reaction : str
+        ID of the biomass reaction to optimize
+    objective_value : float
+        Target biomass value
+    gene_sequences_dict : dict
+        Dictionary mapping gene IDs to protein sequences
+    output_dir : str, optional
+        Directory to save results
+    enzyme_fraction : float, optional
+        Maximum enzyme mass fraction (default: 0.15)
+    temperature : float, optional
+        Initial temperature for simulated annealing (default: 1.0)
+    cooling_rate : float, optional
+        Rate at which temperature decreases (default: 0.98)
+    min_temperature : float, optional
+        Minimum temperature before stopping (default: 0.01)
+    max_iterations : int, optional
+        Maximum number of iterations (default: 250)
+    max_unchanged_iterations : int, optional
+        Stop after this many iterations without improvement (default: 3)
+    change_threshold : float, optional
+        Minimum relative change to count as improvement (default: 0.001)
+    n_top_enzymes : int, optional
+        Number of top enzymes by mass to tune (default: 65)
+    verbose : bool, optional
+        Print detailed progress information (default: False)
+    medium : dict, optional
+        Growth medium composition
+    medium_upper_bound : bool or float, optional
+        Upper bound for medium exchanges (default: False)
+        
+    Returns
+    -------
+    tuple
+        (kcat_dict, top_targets, best_df, iterations, biomasses, df_FBA)
     """
 
     def acceptance_probability(old_biomass, new_biomass, temperature):
@@ -133,13 +176,13 @@ def simulated_annealing(
         medium_upper_bound=medium_upper_bound
     )
 
-    # pick top 65
+    # Pick top N enzymes by mass
     enzyme_df = df_FBA[df_FBA['Variable']=='enzyme'].copy()
     enzyme_df['MW'] = enzyme_df['Index'].map(mw_dict).fillna(0)
     enzyme_df['enzyme_mass'] = enzyme_df['Value'] * enzyme_df['MW'] * 1e-3
-    top65 = enzyme_df.nlargest(65, 'enzyme_mass')
+    top_n = enzyme_df.nlargest(n_top_enzymes, 'enzyme_mass')
     top_targets = (
-        top65[['Index','enzyme_mass']]
+        top_n[['Index','enzyme_mass']]
         .rename(columns={'Index':'Single_gene'})
         .merge(processed_data, on='Single_gene')
         [['Reactions','Single_gene','enzyme_mass','kcat_mean','kcat_std']]

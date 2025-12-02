@@ -19,8 +19,6 @@ import cobra as cb
 from cobra.util.array import create_stoichiometric_matrix
 import numpy as np  # noqa: F401
 
-# Troubleshooting infeasible optimization
-# Add this code before running your optimization to diagnose the issue
 import pandas as pd
 import pyomo.environ as pyo
 from pyomo.environ import *  # noqa: F403
@@ -145,6 +143,22 @@ def run_optimization(
             except KeyError:
                 print(f"  Warning: Reaction provided '{rxn_id}' was not found in model")
 
+    # 1a) Apply medium conditions if provided
+    if medium is not None:
+        for rxn_id, flux_value in medium.items():
+            try:
+                rxn = mod.reactions.get_by_id(rxn_id)
+                rxn.lower_bound = flux_value
+                if medium_upper_bound:
+                    rxn.upper_bound = flux_value
+                if verbose:
+                    if medium_upper_bound:
+                        print(f"  Fixed {rxn_id}: lower={flux_value}, upper={flux_value}")
+                    else:
+                        print(f"  Set {rxn_id}: lower={flux_value}, upper={rxn.upper_bound}")
+            except KeyError:
+                print(f"  Warning: Reaction provided '{rxn_id}' was not found in model")
+
     # 2) Initial flux guess
     # print("Step 2: Getting initial flux guess...")
     mod.objective = objective_reaction
@@ -175,18 +189,18 @@ def run_optimization(
     genes = [g.id for g in mod.genes]
     lb = {r.id: r.lower_bound for r in mod.reactions}
     ub = {r.id: r.upper_bound for r in mod.reactions}
-    
+
     # DIAGNOSTIC: Print the bounds that will be used in optimization
-    if medium is not None:
-        print("\n=== DIAGNOSTIC: Checking captured bounds ===")
-        for rxn_id in medium.keys():
-            if rxn_id in lb:
-                print(f"  {rxn_id} lower bound in lb dict: {lb[rxn_id]:.4f}")
-            if rxn_id in ub:
-                print(f"  {rxn_id} upper bound in ub dict: {ub[rxn_id]:.4f}")
-            else:
-                print(f"  {rxn_id} NOT FOUND in lb or ub dict!")
-        print("=== END DIAGNOSTIC ===\n")
+    # if medium is not None:
+    #     print("\n=== DIAGNOSTIC: Checking captured bounds ===")
+    #     for rxn_id in medium.keys():
+    #         if rxn_id in lb:
+    #             print(f"  {rxn_id} lower bound in lb dict: {lb[rxn_id]:.4f}")
+    #         if rxn_id in ub:
+    #             print(f"  {rxn_id} upper bound in ub dict: {ub[rxn_id]:.4f}")
+    #         else:
+    #             print(f"  {rxn_id} NOT FOUND in lb or ub dict!")
+    #     print("=== END DIAGNOSTIC ===\n")
     obj_coef = {r.id: (1.0 if r.id == objective_reaction else 0.0) for r in mod.reactions} #obj_coef = {r.id: r.objective_coefficient for r in mod.reactions}
     met_index = {m: i for i, m in enumerate(mets)}
     rxn_index = {r: j for j, r in enumerate(rxns)}
@@ -512,9 +526,9 @@ def run_optimization(
     elif solver_name.lower() == 'gurobi':
         solver.options['FeasibilityTol'] = 1e-9
         solver.options['OptimalityTol'] = 1e-9
-    elif solver_name.lower() == 'cplex':
+    # elif solver_name.lower() == 'cplex':
         # CPLEX options for better performance
-        solver.options['timelimit'] = 300  # time limit in seconds
+        # solver.options['timelimit'] = 300  # time limit in seconds
 
     #solver.options['threads'] = 4
     # print("Solver:", solver)
@@ -564,6 +578,18 @@ def run_optimization(
                 print(f"  {rxn_id}: NOT FOUND in optimization results")
         print(f"Objective value: {sol_val:.6f}")
         print("=== END DIAGNOSTIC ===\n")
+
+    # DIAGNOSTIC: Print exchange reaction fluxes if medium was provided
+    # if medium is not None:
+    #     print("\n=== DIAGNOSTIC: Exchange reaction fluxes after optimization ===")
+    #     for rxn_id in medium.keys():
+    #         flux_val = m.v[rxn_id].value if rxn_id in m.R else None
+    #         if flux_val is not None:
+    #             print(f"  {rxn_id}: flux = {flux_val:.4f} (bound was {medium[rxn_id]:.4f})")
+    #         else:
+    #             print(f"  {rxn_id}: NOT FOUND in optimization results")
+    #     print(f"Objective value: {sol_val:.6f}")
+    #     print("=== END DIAGNOSTIC ===\n")
 
     return sol_val, df_FBA, gene_sequences_dict, m
 

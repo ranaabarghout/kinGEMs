@@ -20,6 +20,7 @@
     "max_iterations": 10,
     "max_unchanged_iterations": 3,
     "change_threshold": 0.009,
-    "biomass_goal": 0.5
+    "biomass_goal": 0.5,
+    "n_top_enzymes": 65
   }
 }

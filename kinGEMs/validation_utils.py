@@ -495,9 +495,14 @@ def _simulate_gene_carbon(model, processed_df, gene, carbon_idx, carbon_name,
     Returns
     -------
     tuple
-        (gene, carbon_idx, growth_value)
+        (gene, carbon_idx, growth_value, improvement_info)
+        where improvement_info is a dict with growth improvement details or None
     """
     from kinGEMs.modeling.optimize import run_optimization_with_dataframe
+    
+    improvement_info = None  # Will store growth improvement details if detected
+
+    print(f"  🚀 Starting {mode} simulation: Gene {gene} × Carbon {carbon_name} (idx {carbon_idx})")
 
     # Set up medium
     for e in medium_ex_inds:
@@ -507,26 +512,124 @@ def _simulate_gene_carbon(model, processed_df, gene, carbon_idx, carbon_name,
     # Set carbon source
     if carbon_ex_inds[carbon_idx] != -1:
         model.exchanges[carbon_ex_inds[carbon_idx]].lower_bound = -10
+        print(f"    - Carbon source '{carbon_name}' set to lower bound -10")
 
     # Knockout gene
     try:
         gene_obj = model.genes.get_by_id(gene)
+        print(f"    - Knocking out gene: {gene}")
+
+        # Check wild-type growth before knockout
+        if mode == 'baseline':
+            try:
+                wild_type_growth = model.slim_optimize()
+                if np.isnan(wild_type_growth):
+                    wild_type_growth = 0.0
+                print(f"    - Wild-type growth (before knockout): {wild_type_growth:.6f}")
+            except Exception:
+                wild_type_growth = 0.0
+                print(f"    - Wild-type growth (before knockout): {wild_type_growth:.6f} (failed)")
+        else:  # enzyme-constrained
+            try:
+                wt_solution_value, _, _, _ = run_optimization_with_dataframe(
+                    model=model,
+                    processed_df=processed_df,
+                    objective_reaction=objective_reaction,
+                    enzyme_upper_bound=enzyme_upper_bound,
+                    enzyme_ratio=True,
+                    maximization=True,
+                    multi_enzyme_off=False,
+                    isoenzymes_off=False,
+                    promiscuous_off=False,
+                    complexes_off=False,
+                    output_dir=None,
+                    save_results=False,
+                    print_reaction_conditions=False,
+                    verbose=False,
+                    solver_name=solver_name
+                )
+                if wt_solution_value is None or np.isnan(wt_solution_value):
+                    wt_solution_value = 0.0
+                print(f"    - Wild-type growth (before knockout): {wt_solution_value:.6f}")
+            except Exception:
+                wt_solution_value = 0.0
+                print(f"    - Wild-type growth (before knockout): {wt_solution_value:.6f} (failed)")
+
+        # Check gene status before knockout
+        reactions_before = [r for r in gene_obj.reactions if r.id != objective_reaction]
+        active_reactions_before = [r for r in reactions_before if r.bounds != (0, 0)]
+        print(f"    - Gene {gene} is associated with {len(reactions_before)} reactions (excluding objective)")
+        print(f"    - Before knockout: {len(active_reactions_before)} reactions are active")
+
         gene_obj.knock_out()
-    except Exception:
+
+        # Check gene status after knockout
+        active_reactions_after = [r for r in reactions_before if r.bounds != (0, 0)]
+        knocked_out_reactions = [r for r in reactions_before if r.bounds == (0, 0)]
+
+        print(f"    - After knockout: {len(active_reactions_after)} reactions still active")
+        print(f"    ✅ Knockout verified: {len(knocked_out_reactions)} reactions set to bounds (0,0)")
+
+        # Additional verification: check if knockout had any effect
+        if len(knocked_out_reactions) == 0 and len(reactions_before) > 0:
+            print("    ⚠️  Warning: Gene knockout may not have affected any reactions!")
+        elif len(knocked_out_reactions) > 0:
+            print(f"    ✓ Gene knockout successfully affected {len(knocked_out_reactions)} reaction(s)")
+
+    except Exception as ex:
+        print(f"    ❌ Gene knockout failed for {gene}: {ex}")
         return (gene, carbon_idx, 0.0)
 
     # Simulate growth
     if mode == 'baseline':
+        print(f"    - Running baseline GEM simulation for gene {gene}, carbon {carbon_idx}")
         try:
             solution = model.slim_optimize()
             if np.isnan(solution):
                 solution = 0.0
-            return (gene, carbon_idx, solution)
+            print(f"    - Baseline result: {solution:.6f}")
+
+            # Calculate growth reduction/improvement if we have wild-type growth
+            try:
+                if 'wild_type_growth' in locals() and wild_type_growth > 0:
+                    change = ((solution - wild_type_growth) / wild_type_growth) * 100
+                    
+                    # Check for growth IMPROVEMENT (>1% increase)
+                    if change > 1.0:
+                        print(f"    🌟 GROWTH IMPROVEMENT DETECTED: {change:.2f}% increase!")
+                        print(f"       Wild-type: {wild_type_growth:.6f} → Knockout: {solution:.6f}")
+                        
+                        # Get associated reactions for this gene
+                        gene_obj = model.genes.get_by_id(gene)
+                        associated_reactions = [r.id for r in gene_obj.reactions if r.id != objective_reaction]
+                        
+                        improvement_info = {
+                            'gene': gene,
+                            'carbon_source': carbon_name,
+                            'carbon_idx': carbon_idx,
+                            'wild_type_growth': wild_type_growth,
+                            'knockout_growth': solution,
+                            'percent_increase': change,
+                            'associated_reactions': associated_reactions,
+                            'mode': mode
+                        }
+                    elif change < 0:
+                        print(f"    - Growth reduction: {-change:.1f}% (from {wild_type_growth:.6f} to {solution:.6f})")
+                    else:
+                        print(f"    - Growth change: {change:.1f}% (from {wild_type_growth:.6f} to {solution:.6f})")
+            except Exception as e:
+                print(f"    - Error calculating growth change: {e}")
+
+            print(f"  ✅ Completed {mode} simulation: Gene {gene} × Carbon {carbon_name} → {solution:.6f}")
+            return (gene, carbon_idx, solution, improvement_info)
         except Exception:
-            return (gene, carbon_idx, 0.0)
+            print("    ❌ Baseline simulation failed")
+            return (gene, carbon_idx, 0.0, None)
 
     else:  # enzyme-constrained
+        print(f"    🔬 Running enzyme-constrained GEM simulation for gene {gene}, carbon {carbon_idx}")
         try:
+            # Try with the provided solver first
             solution_value, _, _, _ = run_optimization_with_dataframe(
                 model=model,
                 processed_df=processed_df,
@@ -546,9 +649,107 @@ def _simulate_gene_carbon(model, processed_df, gene, carbon_idx, carbon_name,
             )
             if solution_value is None or np.isnan(solution_value):
                 solution_value = 0.0
-            return (gene, carbon_idx, solution_value)
-        except Exception:
-            return (gene, carbon_idx, 0.0)
+            print(f"    - Enzyme-constrained result: {solution_value:.6f}")
+
+            # Calculate growth reduction/improvement if we have wild-type growth
+            try:
+                if 'wt_solution_value' in locals() and wt_solution_value > 0:
+                    change = ((solution_value - wt_solution_value) / wt_solution_value) * 100
+                    
+                    # Check for growth IMPROVEMENT (>1% increase)
+                    if change > 1.0:
+                        print(f"    🌟 GROWTH IMPROVEMENT DETECTED: {change:.2f}% increase!")
+                        print(f"       Wild-type: {wt_solution_value:.6f} → Knockout: {solution_value:.6f}")
+                        
+                        # Get associated reactions for this gene
+                        gene_obj = model.genes.get_by_id(gene)
+                        associated_reactions = [r.id for r in gene_obj.reactions if r.id != objective_reaction]
+                        
+                        improvement_info = {
+                            'gene': gene,
+                            'carbon_source': carbon_name,
+                            'carbon_idx': carbon_idx,
+                            'wild_type_growth': wt_solution_value,
+                            'knockout_growth': solution_value,
+                            'percent_increase': change,
+                            'associated_reactions': associated_reactions,
+                            'mode': mode
+                        }
+                    elif change < 0:
+                        print(f"    - Growth reduction: {-change:.1f}% (from {wt_solution_value:.6f} to {solution_value:.6f})")
+                    else:
+                        print(f"    - Growth change: {change:.1f}% (from {wt_solution_value:.6f} to {solution_value:.6f})")
+            except Exception as e:
+                print(f"    - Error calculating growth change: {e}")
+
+            print(f"  ✅ Completed {mode} simulation: Gene {gene} × Carbon {carbon_name} → {solution_value:.6f}")
+            return (gene, carbon_idx, solution_value, improvement_info)
+        except Exception as e:
+            print(f"    ❌ Enzyme-constrained simulation failed with {solver_name}: {str(e)[:100]}...")
+
+            # Try with a different solver if GLPK fails
+            if solver_name.lower() == 'glpk':
+                print("    🔄 Retrying with CPLEX solver...")
+                try:
+                    solution_value, _, _, _ = run_optimization_with_dataframe(
+                        model=model,
+                        processed_df=processed_df,
+                        objective_reaction=objective_reaction,
+                        enzyme_upper_bound=enzyme_upper_bound,
+                        enzyme_ratio=True,
+                        maximization=True,
+                        multi_enzyme_off=False,
+                        isoenzymes_off=False,
+                        promiscuous_off=False,
+                        complexes_off=False,
+                        output_dir=None,
+                        save_results=False,
+                        print_reaction_conditions=False,
+                        verbose=False,
+                        solver_name='cplex'
+                    )
+                    if solution_value is None or np.isnan(solution_value):
+                        solution_value = 0.0
+                    print(f"    - Enzyme-constrained result (CPLEX): {solution_value:.6f}")
+
+                    # Calculate growth reduction/improvement if we have wild-type growth
+                    try:
+                        if 'wt_solution_value' in locals() and wt_solution_value > 0:
+                            change = ((solution_value - wt_solution_value) / wt_solution_value) * 100
+                            
+                            # Check for growth IMPROVEMENT (>1% increase)
+                            if change > 1.0:
+                                print(f"    🌟 GROWTH IMPROVEMENT DETECTED: {change:.2f}% increase!")
+                                print(f"       Wild-type: {wt_solution_value:.6f} → Knockout: {solution_value:.6f}")
+                                
+                                # Get associated reactions for this gene
+                                gene_obj = model.genes.get_by_id(gene)
+                                associated_reactions = [r.id for r in gene_obj.reactions if r.id != objective_reaction]
+                                
+                                improvement_info = {
+                                    'gene': gene,
+                                    'carbon_source': carbon_name,
+                                    'carbon_idx': carbon_idx,
+                                    'wild_type_growth': wt_solution_value,
+                                    'knockout_growth': solution_value,
+                                    'percent_increase': change,
+                                    'associated_reactions': associated_reactions,
+                                    'mode': mode
+                                }
+                            elif change < 0:
+                                print(f"    - Growth reduction: {-change:.1f}% (from {wt_solution_value:.6f} to {solution_value:.6f})")
+                            else:
+                                print(f"    - Growth change: {change:.1f}% (from {wt_solution_value:.6f} to {solution_value:.6f})")
+                    except Exception as e:
+                        print(f"    - Error calculating growth change: {e}")
+
+                    print(f"  ✅ Completed {mode} simulation: Gene {gene} × Carbon {carbon_name} → {solution_value:.6f}")
+                    return (gene, carbon_idx, solution_value, improvement_info)
+                except Exception as e2:
+                    print(f"    ❌ CPLEX also failed: {str(e2)[:100]}...")
+
+            print("    ⚠️ Returning 0.0 for failed simulation")
+            return (gene, carbon_idx, 0.0, None)
 
 
 def _simulate_gene_carbon_chunk(model, processed_df, tasks, medium_ex_inds,
@@ -580,12 +781,16 @@ def _simulate_gene_carbon_chunk(model, processed_df, tasks, medium_ex_inds,
 
     Returns
     -------
-    list of tuples
-        Results as (gene, carbon_idx, growth_value)
+    tuple
+        (results, improvements) where:
+        - results: list of tuples (gene, carbon_idx, growth_value)
+        - improvements: list of improvement_info dicts (or empty list if none)
     """
     results = []
+    improvements = []
+    
     for gene, carbon_idx, carbon_name in tasks:
-        result = _simulate_gene_carbon(
+        gene_result, carbon_idx_result, growth_value, improvement_info = _simulate_gene_carbon(
             model=model.copy(),
             processed_df=processed_df,
             gene=gene,
@@ -598,8 +803,12 @@ def _simulate_gene_carbon_chunk(model, processed_df, tasks, medium_ex_inds,
             mode=mode,
             solver_name=solver_name
         )
-        results.append(result)
-    return results
+        results.append((gene_result, carbon_idx_result, growth_value))
+        
+        if improvement_info is not None:
+            improvements.append(improvement_info)
+    
+    return (results, improvements)
 
 
 def simulate_phenotype_parallel(
@@ -724,11 +933,12 @@ def simulate_phenotype_parallel(
     if skip_baseline:
         print("\n  ⏭️  Skipping baseline GEM simulation (already completed)")
         baseline_GEM = np.zeros((n_genes, n_carbons), dtype=float)
+        baseline_improvements = []  # No improvements to track when skipping
     else:
         print("\n  Starting parallel baseline GEM simulation...")
 
         if method.lower() == 'multiprocessing':
-            baseline_results = _run_validation_multiprocessing(
+            baseline_results, baseline_improvements = _run_validation_multiprocessing(
                 model_run, processed_df, chunks, medium_ex_inds, carbon_ex_inds,
                 objective_reaction, enzyme_upper_bound, n_workers, mode='baseline', solver_name=solver_name
             )
@@ -738,9 +948,10 @@ def simulate_phenotype_parallel(
                     model_run, processed_df, chunks, medium_ex_inds, carbon_ex_inds,
                     objective_reaction, enzyme_upper_bound, n_workers, mode='baseline', solver_name=solver_name
                 )
+                baseline_improvements = []  # Dask doesn't return improvements yet
             except Exception:
                 print("    ⚠️  Dask failed, switching to multiprocessing")
-                baseline_results = _run_validation_multiprocessing(
+                baseline_results, baseline_improvements = _run_validation_multiprocessing(
                     model_run, processed_df, chunks, medium_ex_inds, carbon_ex_inds,
                     objective_reaction, enzyme_upper_bound, n_workers, mode='baseline', solver_name=solver_name
                 )
@@ -777,7 +988,7 @@ def simulate_phenotype_parallel(
     genes_list = list(name_genes_matched_adj) if isinstance(name_genes_matched_adj, np.ndarray) else name_genes_matched_adj
 
     if method.lower() == 'multiprocessing':
-        enzyme_results = _run_validation_multiprocessing(
+        enzyme_results, enzyme_improvements = _run_validation_multiprocessing(
             model_run, processed_df, chunks, medium_ex_inds, carbon_ex_inds,
             objective_reaction, enzyme_upper_bound, n_workers, mode='enzyme', solver_name=solver_name
         )
@@ -787,9 +998,10 @@ def simulate_phenotype_parallel(
                 model_run, processed_df, chunks, medium_ex_inds, carbon_ex_inds,
                 objective_reaction, enzyme_upper_bound, n_workers, mode='enzyme', solver_name=solver_name
             )
+            enzyme_improvements = []  # Dask doesn't return improvements yet
         except Exception:
             print("    ⚠️  Dask failed, switching to multiprocessing")
-            enzyme_results = _run_validation_multiprocessing(
+            enzyme_results, enzyme_improvements = _run_validation_multiprocessing(
                 model_run, processed_df, chunks, medium_ex_inds, carbon_ex_inds,
                 objective_reaction, enzyme_upper_bound, n_workers, mode='enzyme', solver_name=solver_name
             )
@@ -811,6 +1023,49 @@ def simulate_phenotype_parallel(
         enzyme_constrained_GEM[:, cached_idx] = enzyme_constrained_GEM[:, original_idx]
 
     print("  Enzyme-constrained GEM simulation complete.")
+    
+    # ===== Save and Report Growth Improvements =====
+    all_improvements = []
+    if not skip_baseline:
+        all_improvements.extend(baseline_improvements)
+    all_improvements.extend(enzyme_improvements)
+    
+    if all_improvements:
+        print(f"\n  {'='*80}")
+        print(f"  🌟 GROWTH IMPROVEMENTS DETECTED: {len(all_improvements)} cases")
+        print(f"  {'='*80}")
+        
+        # Save improvements to CSV
+        import pandas as pd
+        improvements_df = pd.DataFrame(all_improvements)
+        
+        # Sort by percent increase (descending)
+        improvements_df = improvements_df.sort_values('percent_increase', ascending=False)
+        
+        # Create output filename with timestamp
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_file = f"growth_improvements_{timestamp}.csv"
+        improvements_df.to_csv(output_file, index=False)
+        
+        print(f"  ✅ Saved growth improvements to: {output_file}")
+        print(f"\n  Top 10 growth improvements:")
+        print(f"  {'-'*80}")
+        
+        # Display top 10
+        for idx, row in improvements_df.head(10).iterrows():
+            print(f"  {idx+1}. Gene: {row['gene']}, Carbon: {row['carbon_source']}")
+            print(f"     WT: {row['wild_type_growth']:.6f} → KO: {row['knockout_growth']:.6f} (+{row['percent_increase']:.2f}%)")
+            print(f"     Reactions: {', '.join(row['associated_reactions'][:5])}{' ...' if len(row['associated_reactions']) > 5 else ''}")
+            print(f"     Mode: {row['mode']}")
+            print()
+        
+        print(f"  {'-'*80}")
+        print(f"  See full list in: {output_file}")
+        print(f"  {'='*80}\n")
+    else:
+        print("\n  ℹ️  No growth improvements detected (>1% increase)")
+
     print("\n  Parallel validation simulations finished!")
 
     return baseline_GEM, enzyme_constrained_GEM
@@ -883,7 +1138,7 @@ def _run_validation_dask(model, processed_df, chunks, medium_ex_inds, carbon_ex_
         print(f"    Dask cluster created with {n_workers} workers")
         try:
             print(f"    Dask dashboard: {client.dashboard_link}")
-        except Exception as e:
+        except Exception:
             print("    Dask dashboard: (not available - install bokeh>=3.1.0)")
 
         # Execute tasks with progress tracking
@@ -949,27 +1204,35 @@ def _run_validation_multiprocessing(model, processed_df, chunks, medium_ex_inds,
     total_chunks = len(chunks)
     total_tasks = sum(len(chunk) for chunk in chunks)
     results = []
-    
+    all_improvements = []
+
     start_time = time.time()
     chunk_times = []
-    
+
     with Pool(processes=n_workers) as pool:
         # Use imap_unordered for progress tracking
-        for i, result in enumerate(pool.imap_unordered(worker_func, chunks), 1):
-            results.append(result)
+        for i, chunk_result in enumerate(pool.imap_unordered(worker_func, chunks), 1):
+            # Unpack chunk results and improvements
+            chunk_data, chunk_improvements = chunk_result
+            results.append(chunk_data)
             
+            # Collect any growth improvements from this chunk
+            if chunk_improvements:
+                all_improvements.extend(chunk_improvements)
+                print(f"    🌟 Found {len(chunk_improvements)} growth improvement(s) in this chunk!")
+
             # Track timing
             current_time = time.time()
             elapsed_time = current_time - start_time
             chunk_times.append(elapsed_time / i)  # Average time per chunk
-            
+
             # Calculate completed tasks (approximate)
             completed_tasks = sum(len(chunks[j]) for j in range(min(i, len(chunks))))
-            
+
             # Progress message
             percent = (i / total_chunks) * 100
             avg_chunk_time = sum(chunk_times[-10:]) / min(len(chunk_times), 10)  # Moving average
-            
+
             # Format time
             if elapsed_time < 60:
                 time_str = f"{elapsed_time:.1f}s"
@@ -977,8 +1240,8 @@ def _run_validation_multiprocessing(model, processed_df, chunks, medium_ex_inds,
                 mins = int(elapsed_time / 60)
                 secs = elapsed_time % 60
                 time_str = f"{mins}m {secs:.0f}s"
-            
+
             print(f"    Progress: {i}/{total_chunks} chunks ({completed_tasks}/{total_tasks} simulations, {percent:.1f}%)")
             print(f"    Chunk time: {avg_chunk_time:.1f}s, Total time: {time_str}")
 
-    return results
+    return (results, all_improvements)
