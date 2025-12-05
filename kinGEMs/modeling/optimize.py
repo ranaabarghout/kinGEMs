@@ -306,7 +306,7 @@ def run_optimization(
                 constraints_skipped += 1
                 skip_reasons['no_kcat'] += 1
                 return Constraint.Skip  # noqa: F405
-            k_val = sum(all_ks) / len(all_ks)
+            k_val = max(all_ks) #/ len(all_ks) # Taking the max out of all substrates for a gene, reaction combo
             constraints_added += 1
             return mo.v[rxn_id] <= k_val * mo.E[gene_id]
         # Multiple clauses - will be handled by ISO or MIXED constraints
