@@ -238,7 +238,7 @@ def calculate_normalized_euclidean_dist(
 
 def calculate_jaccard_index(
     comparison_df: pd.DataFrame
-) -> float:
+) -> tuple[float, pd.DataFrame]:
     """
     Calculate the mean Jaccard Index (Intersection over Union).
     1.0 = Perfect overlap, 0.0 = No overlap.
@@ -248,7 +248,9 @@ def calculate_jaccard_index(
             DataFrame with columns: 'rxn_id', 'fva_lb', 'fva_ub', 'mfa_lb', 'mfa_ub'
             
     Returns:
-        float: The average Jaccard Index across all evaluated reactions.
+        tuple[float, pd.DataFrame]: 
+            - float: The average Jaccard Index across all evaluated reactions.
+            - pd.DataFrame: DataFrame with columns 'rxn_id' and 'jaccard' for each reaction.
     """
     
     df = comparison_df.dropna(subset=['mfa_lb', 'mfa_ub']).copy()
@@ -274,14 +276,19 @@ def calculate_jaccard_index(
     jaccard = intersection / union
     mean_jaccard = jaccard.mean()
     
+    # Create DataFrame with rxn_id and jaccard values
+    jaccard_df = pd.DataFrame({
+        'rxn_id': df['rxn_id'],
+        'jaccard': jaccard.values
+    }).reset_index(drop=True)
+    
     print(f"\n--- Jaccard Index Analysis ---")
     print(f"Evaluated {len(df)} reactions")
     print(f"Perfect overlaps (J=1.0): {(jaccard >= 0.99).sum()}")
     print(f"Zero overlaps (J=0.0): {(jaccard <= 0.01).sum()}")
-    print((jaccard <= 0.01))
     print(f"Mean Jaccard Index: {mean_jaccard:.4f}")
     
-    return mean_jaccard
+    return mean_jaccard, jaccard_df
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -385,7 +392,7 @@ def plot_fva_mfa_comparison(
         ax.set_yticklabels(rxn_chunk, fontsize=10, fontfamily='monospace')
         ax.invert_yaxis()  # Top-down list
         ax.set_xlabel('Flux (mmol/gDW/h)')
-        ax.set_title(f'MFA vs FVA Range Comparison (Part {chunk_idx + 1})')
+        ax.set_title(f'MFA vs FVA Range Comparison')
         ax.grid(axis='x', linestyle='--', alpha=0.5)
         
         # Create a custom legend to avoid duplicates
