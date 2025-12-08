@@ -4,7 +4,7 @@
   "biomass_reaction": null,
   "enzyme_upper_bound": 0.20,
   "solver": "glpk",
-  "enable_fva": true,
+  "enable_fva": false,
   "enable_biolog_validation": false,
 
   "fva": {
@@ -20,14 +20,29 @@
   },
 
   "simulated_annealing": {
-    "temperature": 1.0,
-    "cooling_rate": 0.975,
-    "min_temperature": 0.001,
-    "max_iterations": 100,
-    "max_unchanged_iterations": 5,
-    "change_threshold": 0.009,
-    "biomass_goal": 0.5,
-    "n_top_enzymes": 65,
-    "verbose": false
+    "temperature": 5,
+    "cooling_rate": 0.95,
+    "min_temperature": 0.01,
+    "max_iterations": 150,
+    "max_unchanged_iterations": 25,
+    "change_threshold": 0.0001,
+    "biomass_goal": 0.2,
+    "n_top_enzymes": 20,
+    "verbose": false,
+    "adaptive_strategies": {
+      "enable_restart": false,
+      "restart_threshold": 0.0001,
+      "restart_frequency": 50,
+      "enable_dynamic_step_size": false,
+      "step_size_reduction": 0.8,
+      "enable_multi_objective": false
+    },
+    "_comment_conservative": "CONSERVATIVE SETTINGS - smaller perturbations to avoid optimization failures",
+    "_comment_temperature": "Lower starting temp (0.5) for smaller initial perturbations",
+    "_comment_cooling_rate": "Slower cooling (0.95) to allow more gradual convergence",
+    "_comment_change_threshold": "Very small threshold (0.01%) to detect tiny improvements",
+    "_comment_biomass_goal": "Lower, more achievable target (0.2) to avoid unrealistic expectations",
+    "_comment_n_top_enzymes": "Fewer enzymes (50) to reduce complexity and avoid conflicts",
+    "_comment_adaptive": "Disabled adaptive features until basic algorithm works reliably"
   }
 }

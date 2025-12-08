@@ -720,11 +720,17 @@ def main():
             if i == 0:
                 print(f"    Iter {iterations[i]:3d}: {biomasses[i]:.6f}")
             else:
-                change_pct = (biomasses[i] - biomasses[i-step]) / biomasses[i-step] * 100 if i >= step else 0
+                if biomasses[i-step] != 0:
+                    change_pct = (biomasses[i] - biomasses[i-step]) / biomasses[i-step] * 100 if i >= step else 0
+                else:
+                    change_pct = 0.0  # Avoid division by zero
                 print(f"    Iter {iterations[i]:3d}: {biomasses[i]:.6f} ({change_pct:+.2f}%)")
         if len(biomasses) - 1 not in range(0, len(biomasses), step):
             idx = len(biomasses) - 1
-            change_pct = (biomasses[idx] - biomasses[idx-1]) / biomasses[idx-1] * 100
+            if biomasses[idx-1] != 0:
+                change_pct = (biomasses[idx] - biomasses[idx-1]) / biomasses[idx-1] * 100
+            else:
+                change_pct = 0.0  # Avoid division by zero
             print(f"    Iter {iterations[idx]:3d}: {biomasses[idx]:.6f} ({change_pct:+.2f}%)")
     print("\n  Top 10 enzymes by mass contribution:")
     print(top_targets[['Reactions', 'Single_gene', 'enzyme_mass']].head(10))

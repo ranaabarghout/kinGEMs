@@ -112,14 +112,26 @@ def simulated_annealing(
     def get_neighbor(kcat_value, std):
         k_val_hr = kcat_value * 3600
         std_hr = std * 3600
-        new_kcat = k_val_hr * (1.5 + random.uniform(-1, 3.5))
-        if std_hr == 0:
-            std_hr = k_val_hr * 0.1
-        ub = k_val_hr + std_hr
-        lb = k_val_hr - std_hr
-        # Also limit to max reported kcat (per hour)
-        max_hr = 4.6e9  # carbonic anhydrase per hour
-        return min(max(new_kcat, lb), min(ub, max_hr))
+        
+        # If no standard deviation, use a conservative default
+        if std_hr == 0 or pd.isna(std_hr):
+            std_hr = k_val_hr * 0.1  # 10% of original value
+            
+        # Generate perturbation within ±1 standard deviation (68% confidence interval)
+        # This is more conservative than the original ±3.5 range
+        perturbation = random.gauss(0, std_hr * 0.5)  # Half std for more conservative changes
+        new_kcat = k_val_hr + perturbation
+        
+        # Apply bounds based on standard deviation (±2 std is 95% confidence)
+        ub = k_val_hr + 2 * std_hr
+        lb = k_val_hr - 2 * std_hr
+        
+        # Ensure positive and within reasonable biological limits
+        lb = max(lb, 0.1)  # At least 0.1 hr⁻¹
+        ub = min(ub, 4.6e9)  # At most carbonic anhydrase max
+        
+        # Clamp to bounds
+        return max(lb, min(new_kcat, ub))
 
     def update_kcat(df, reaction_id, gene_id, new_kcat_value):
         updated_df = df.copy()
@@ -144,7 +156,8 @@ def simulated_annealing(
         # Debug: verify update happened
         if cond.sum() > 0 and verbose:
             actual_new = updated_df.loc[cond, 'kcat_updated'].iloc[0]
-            print(f"    [UPDATE] {reaction_id}_{gene_id}: {old_value:.6e} → {actual_new:.6e} s⁻¹")
+            if verbose:
+                print(f"    [UPDATE] {reaction_id}_{gene_id}: {old_value:.6e} → {actual_new:.6e} s⁻¹")
 
         return updated_df
 
@@ -275,8 +288,9 @@ def simulated_annealing(
             if abs(new_k_s - current_k) / max(current_k, 1e-12) > 0.01:  # >1% change
                 actually_changed += 1
 
-            if verbose:
-                print(f"  {rxn}_{gene}: current kcat = {current_k:.3e} s⁻¹  →  new kcat = {new_k_s:.3e} s⁻¹ (Δ={(new_k_s-current_k)/current_k*100:+.1f}%)")
+            if iteration <= 3:  # Debug first 3 iterations
+                print(f"  [DEBUG] {rxn}_{gene}: {original_k:.3e} → {new_k_s:.3e} s⁻¹ (change: {(new_k_s-original_k)/original_k*100:+.1f}%)")
+            
             # update_kcat expects hr⁻¹ and will convert to s⁻¹ internally
             updated_df = update_kcat(updated_df, rxn, gene, new_k_hr)
 
@@ -288,13 +302,7 @@ def simulated_annealing(
             first_rxn, first_gene = largest_rxn_id[0], largest_gene_id[0]
             old_val = df_new.loc[(df_new['Reactions']==first_rxn) & (df_new['Single_gene']==first_gene), 'kcat_mean'].iloc[0]
             new_val = updated_df.loc[(updated_df['Reactions']==first_rxn) & (updated_df['Single_gene']==first_gene), 'kcat_mean'].iloc[0]
-
-            # Check if there are multiple matches and what their values are
-            matches = updated_df.loc[(updated_df['Reactions']==first_rxn) & (updated_df['Single_gene']==first_gene), 'kcat_mean']
-            # if len(matches) > 1:
-            #     print(f"\n  [DEBUG] {first_rxn}_{first_gene} has {len(matches)} rows with kcats: {matches.tolist()}")
-            #     print(f"  [DEBUG] Average that will be used: {matches.mean():.6f} s⁻¹")
-            # else:
+            print(f"DEBUG Iter {iteration}: First kcat change: {first_rxn}:{first_gene} {old_val:.3e} -> {new_val:.3e} ({((new_val/old_val-1)*100):.1f}%)")
             #     print(f"\n  [DEBUG] First target {first_rxn}_{first_gene}: old={old_val:.6f} s⁻¹, new={new_val:.6f} s⁻¹, changed={old_val != new_val}")
 
         # EVALUATE with updated kcats
@@ -305,7 +313,7 @@ def simulated_annealing(
             enzyme_upper_bound=enzyme_fraction,
             output_dir=None,
             save_results=False,
-            verbose=False,
+            verbose=True if iteration <= 3 else False,  # Enable verbose for first 3 iterations to debug
             medium=medium,
             medium_upper_bound=medium_upper_bound
         )
@@ -314,19 +322,23 @@ def simulated_annealing(
         if new_biomass is None or new_biomass <= 0:
             if verbose:
                 print(f"  Optimization failed or returned invalid biomass: {new_biomass}")
+            elif iteration <= 5:  # Debug first few iterations
+                print(f"  [DEBUG] Iter {iteration}: Optimization failed (biomass={new_biomass})")
             # Skip this iteration - don't accept failed optimizations
-            new_biomass = 0.0  # Set to 0 to ensure it gets rejected
+            # Keep using the current biomass instead of setting to 0.0
+            new_biomass = current_biomass  # No change - keep current solution
             temp_df_FBA = df_FBA.copy()  # Use previous valid results
 
         # Debug: Check if enzyme allocations changed even if biomass didn't
-        if not verbose and iteration <= 3:
-            # Compare enzyme allocation for first target
-            old_enzyme = df_FBA[df_FBA['Index']==largest_gene_id[0]]
-            new_enzyme = temp_df_FBA[temp_df_FBA['Index']==largest_gene_id[0]]
-            if len(old_enzyme) > 0 and len(new_enzyme) > 0:
-                old_alloc = old_enzyme[old_enzyme['Variable']=='enzyme']['Value'].iloc[0] if len(old_enzyme[old_enzyme['Variable']=='enzyme']) > 0 else 0
-                new_alloc = new_enzyme[new_enzyme['Variable']=='enzyme']['Value'].iloc[0] if len(new_enzyme[new_enzyme['Variable']=='enzyme']) > 0 else 0
-                # print(f"  [DEBUG] Enzyme allocation for {largest_gene_id[0]}: {old_alloc:.6e} → {new_alloc:.6e} mmol/gDW/h")
+        # (Currently disabled to avoid unused variables)
+        # if not verbose and iteration <= 3:
+        #     # Compare enzyme allocation for first target
+        #     old_enzyme = df_FBA[df_FBA['Index']==largest_gene_id[0]]
+        #     new_enzyme = temp_df_FBA[temp_df_FBA['Index']==largest_gene_id[0]]
+        #     if len(old_enzyme) > 0 and len(new_enzyme) > 0:
+        #         old_alloc = old_enzyme[old_enzyme['Variable']=='enzyme']['Value'].iloc[0] if len(old_enzyme[old_enzyme['Variable']=='enzyme']) > 0 else 0
+        #         new_alloc = new_enzyme[new_enzyme['Variable']=='enzyme']['Value'].iloc[0] if len(new_enzyme[new_enzyme['Variable']=='enzyme']) > 0 else 0
+        #         print(f"  [DEBUG] Enzyme allocation for {largest_gene_id[0]}: {old_alloc:.6e} → {new_alloc:.6e} mmol/gDW/h")
 
         if verbose:
             print(f"Proposed biomass = {new_biomass:.6e}")
