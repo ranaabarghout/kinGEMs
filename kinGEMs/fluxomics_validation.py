@@ -248,9 +248,10 @@ def calculate_jaccard_index(
             DataFrame with columns: 'rxn_id', 'fva_lb', 'fva_ub', 'mfa_lb', 'mfa_ub'
             
     Returns:
-        tuple[float, pd.DataFrame]: 
+        tuple[float, pd.DataFrame, int]: 
             - float: The average Jaccard Index across all evaluated reactions.
             - pd.DataFrame: DataFrame with columns 'rxn_id' and 'jaccard' for each reaction.
+            - int: Number of reactions with zero overlap.
     """
     
     df = comparison_df.dropna(subset=['mfa_lb', 'mfa_ub']).copy()
@@ -282,17 +283,16 @@ def calculate_jaccard_index(
         'jaccard': jaccard.values
     }).reset_index(drop=True)
     
+    zero_overlaps = jaccard[jaccard == 0].count()
+    
     print(f"\n--- Jaccard Index Analysis ---")
     print(f"Evaluated {len(df)} reactions")
     print(f"Perfect overlaps (J=1.0): {(jaccard >= 0.99).sum()}")
-    print(f"Zero overlaps (J=0.0): {(jaccard <= 0.01).sum()}")
+    print(f"Zero overlaps (J=0.0): {zero_overlaps}")
     print(f"Mean Jaccard Index: {mean_jaccard:.4f}")
     
-    return mean_jaccard, jaccard_df
+    return mean_jaccard, jaccard_df, zero_overlaps
 
-import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.lines as mlines
 
 def plot_fva_mfa_comparison(
     models_data: dict[str, pd.DataFrame],
@@ -325,13 +325,15 @@ def plot_fva_mfa_comparison(
     colors = ['#1f77b4', '#2ca02c', '#d62728', '#9467bd']
     bar_height = 0.6
     
-    # Calculate offsets to 'dodge' the bars if multiple models exist
+    # Calculate offsets to 'dodge' the bars
+    # MFA gets the top position, then models are stacked below
     num_models = len(models_data)
-    # If 1 model, offset is 0. If 3, offsets might be [-0.2, 0, 0.2]
-    offsets = [i - (num_models - 1) / 2 for i in range(num_models)]
-    # Scale offsets to fit within a row height of 1.0
-    step_size = 0.6 / max(num_models, 1)
-    offsets = [o * step_size for o in offsets]
+    total_bars = num_models + 1  # +1 for MFA
+    
+    # Create offsets: MFA at top, then models below
+    step_size = 0.7 / total_bars  # Spread across 0.7 units
+    mfa_offset = -0.35 + step_size / 2  # Top position
+    model_offsets = [mfa_offset + (i + 1) * step_size for i in range(num_models)]
     
     # 3. Chunking Logic (to handle large lists of reactions)
     chunks = [all_reactions]
@@ -351,16 +353,16 @@ def plot_fva_mfa_comparison(
         for i, rxn in enumerate(rxn_chunk):
             y_pos = i  # Base Y position for this reaction
             
-            # A. Plot MFA Reference (Black Error Bar)
+            # A. Plot MFA Reference (Black Range Bar)
             # We get MFA data from the master_df
             row = master_df[master_df['rxn_id'] == rxn].iloc[0]
-            mfa_center = (row['mfa_lb'] + row['mfa_ub']) / 2
-            mfa_err = (row['mfa_ub'] - row['mfa_lb']) / 2
+            mfa_lb = row['mfa_lb']
+            mfa_ub = row['mfa_ub']
             
-            # Plot the "Target" zone
-            ax.errorbar(
-                x=mfa_center, y=y_pos, xerr=mfa_err, 
-                color='black', capsize=5, elinewidth=2, markeredgewidth=2,
+            # Plot the "Target" zone as a horizontal range bar (independent position)
+            ax.hlines(
+                y=y_pos + mfa_offset, xmin=mfa_lb, xmax=mfa_ub,
+                color='black', linewidth=4, alpha=0.8,
                 zorder=10, label='MFA Experiment' if i == 0 else ""
             )
             
@@ -373,8 +375,8 @@ def plot_fva_mfa_comparison(
                     fva_lb = model_row.iloc[0]['fva_lb']
                     fva_ub = model_row.iloc[0]['fva_ub']
                     
-                    # Calculate dodged Y position
-                    y_offset = y_pos + offsets[model_idx]
+                    # Calculate dodged Y position (independent from MFA)
+                    y_offset = y_pos + model_offsets[model_idx]
                     
                     # Draw the Range Bar
                     ax.hlines(
@@ -383,9 +385,9 @@ def plot_fva_mfa_comparison(
                         linewidth=4, alpha=0.8,
                         label=name if i == 0 else ""
                     )
-                    
-                    # Draw faint guideline across the plot for readability
-                    ax.axhline(y=y_pos, color='gray', linestyle=':', alpha=0.1, linewidth=0.5)
+            
+            # Guideline across the plot for readability
+            ax.axhline(y=y_pos, color='gray', linestyle=':', alpha=0.1, linewidth=0.5)
 
         # 5. Formatting
         ax.set_yticks(range(len(rxn_chunk)))
@@ -397,8 +399,7 @@ def plot_fva_mfa_comparison(
         
         # Create a custom legend to avoid duplicates
         handles = [
-            mlines.Line2D([], [], color='black', marker='|', markersize=10, 
-                          linestyle='-', linewidth=2, label='MFA Range')
+            mlines.Line2D([], [], color='black', linewidth=4, label='MFA')
         ]
         for idx, name in enumerate(models_data.keys()):
             handles.append(mlines.Line2D([], [], color=colors[idx], linewidth=4, label=name))
@@ -407,3 +408,216 @@ def plot_fva_mfa_comparison(
         
         plt.tight_layout()
         plt.show()
+        
+        
+def plot_fva_mfa_comparison_normalized(
+    models_data: dict[str, pd.DataFrame],
+    split_charts: bool = True,
+    reactions_per_plot: int = 25
+) -> None:
+    """
+    Generates a normalized bar plot comparing MFA experimental ranges against 
+    FVA prediction ranges for multiple models. Each reaction is normalized by
+    the MFA range width to make visual comparison easier across different flux magnitudes.
+    
+    Parameters:
+        models_data : dict[str, pd.DataFrame]
+            A dictionary where keys are model names and values are the DataFrames 
+            obtained with create_fva_comparison_dataframe()
+        split_charts : bool
+            If True, splits the plot into multiple figures if reaction count 
+            exceeds reactions_per_plot.
+        reactions_per_plot : int
+            Number of reactions to show per figure chunk.
+    """
+    
+    # 1. Consolidate Data
+    primary_name = list(models_data.keys())[0]
+    master_df = models_data[primary_name].copy()
+    
+    # Filter for reactions that have MFA data
+    master_df = master_df.dropna(subset=['mfa_lb', 'mfa_ub'])
+    all_reactions = master_df['rxn_id'].unique()
+    
+    # 2. Calculate normalization factors for each reaction (normalize by MFA range width)
+    normalization_factors = {}
+    for rxn in all_reactions:
+        row = master_df[master_df['rxn_id'] == rxn].iloc[0]
+        mfa_lb = row['mfa_lb']
+        mfa_ub = row['mfa_ub']
+        mfa_midpoint = (mfa_lb + mfa_ub) / 2
+        mfa_range = mfa_ub - mfa_lb
+        
+        # Normalize by the width of the MFA range
+        # Avoid division by zero for very tight ranges
+        norm_factor = mfa_range if abs(mfa_range) > 1e-6 else 1.0
+        
+        normalization_factors[rxn] = {
+            'factor': norm_factor,
+            'offset': mfa_midpoint
+        }
+    
+    # 3. Setup Visualization Constants
+    colors = ['#1f77b4', '#2ca02c', '#d62728', '#9467bd']
+    bar_height = 0.6
+    
+    # Calculate offsets to 'dodge' the bars
+    num_models = len(models_data)
+    total_bars = num_models + 1  # +1 for MFA
+    
+    step_size = 0.7 / total_bars
+    mfa_offset = -0.35 + step_size / 2
+    model_offsets = [mfa_offset + (i + 1) * step_size for i in range(num_models)]
+    
+    # 4. Chunking Logic
+    chunks = [all_reactions]
+    if split_charts and len(all_reactions) > reactions_per_plot:
+        chunks = [all_reactions[i:i + reactions_per_plot] 
+                  for i in range(0, len(all_reactions), reactions_per_plot)]
+        print(f"Splitting visualization into {len(chunks)} plots for readability.")
+
+    # 5. Plotting Loop
+    for chunk_idx, rxn_chunk in enumerate(chunks):
+        
+        fig_height = len(rxn_chunk) * 0.5 + 2
+        fig, ax = plt.subplots(figsize=(12, fig_height))
+        
+        for i, rxn in enumerate(rxn_chunk):
+            y_pos = i
+            
+            # Get normalization parameters for this reaction
+            norm_factor = normalization_factors[rxn]['factor']
+            norm_offset = normalization_factors[rxn]['offset']
+            
+            # A. Plot MFA Reference (Black Range Bar) - Normalized
+            row = master_df[master_df['rxn_id'] == rxn].iloc[0]
+            mfa_lb = row['mfa_lb']
+            mfa_ub = row['mfa_ub']
+            
+            # Normalize MFA values
+            mfa_lb_norm = (mfa_lb - norm_offset) / norm_factor
+            mfa_ub_norm = (mfa_ub - norm_offset) / norm_factor
+            
+            # Plot normalized MFA range
+            ax.hlines(
+                y=y_pos + mfa_offset, 
+                xmin=mfa_lb_norm, 
+                xmax=mfa_ub_norm,
+                color='black', 
+                linewidth=4, 
+                alpha=0.8,
+                zorder=10, 
+                label='MFA Range' if i == 0 else ""
+            )
+            
+            # B. Plot Each Model's FVA Range - Normalized
+            for model_idx, (name, df) in enumerate(models_data.items()):
+                model_row = df[df['rxn_id'] == rxn]
+                
+                if not model_row.empty:
+                    fva_lb = model_row.iloc[0]['fva_lb']
+                    fva_ub = model_row.iloc[0]['fva_ub']
+                    
+                    # Normalize FVA values using the same factors
+                    fva_lb_norm = (fva_lb - norm_offset) / norm_factor
+                    fva_ub_norm = (fva_ub - norm_offset) / norm_factor
+                    
+                    y_offset = y_pos + model_offsets[model_idx]
+                    
+                    # Draw the normalized range bar
+                    ax.hlines(
+                        y=y_offset, 
+                        xmin=fva_lb_norm, 
+                        xmax=fva_ub_norm,
+                        color=colors[model_idx % len(colors)],
+                        linewidth=4, 
+                        alpha=0.8,
+                        label=name if i == 0 else ""
+                    )
+            
+            # Add a vertical line at the center (MFA midpoint) for reference
+            ax.axvline(x=0, color='gray', linestyle='--', alpha=0.2, linewidth=0.5)
+            
+            # Guideline for readability
+            ax.axhline(y=y_pos, color='gray', linestyle=':', alpha=0.1, linewidth=0.5)
+
+        # 6. Formatting
+        ax.set_yticks(range(len(rxn_chunk)))
+        ax.set_yticklabels(rxn_chunk, fontsize=10, fontfamily='monospace')
+        ax.invert_yaxis()
+        ax.set_xlabel('Normalized Flux (relative to MFA range)')
+        ax.set_title(f'MFA vs FVA Range Comparison')
+        ax.grid(axis='x', linestyle='--', alpha=0.5)
+        
+        # Create custom legend
+        handles = [
+            mlines.Line2D([], [], color='black', linewidth=4, label='MFA Range')
+        ]
+        for idx, name in enumerate(models_data.keys()):
+            handles.append(
+                mlines.Line2D([], [], color=colors[idx], linewidth=4, label=name)
+            )
+            
+        ax.legend(handles=handles, loc='upper right', frameon=True)
+        
+        plt.tight_layout()
+        plt.show()
+
+
+
+def plot_jaccard_index_comparison(
+    jaccard_indices: list[float],
+    zero_overlaps: list[int],
+    model_names: list[str] = None
+) -> None:
+    """
+    Plot bar chart of Jaccard indices and zero overlaps for multiple models.
+    
+    Parameters:
+        jaccard_indices : list[float]
+            List of mean Jaccard indices for each model
+        zero_overlaps : list[int]
+            List of number of zero-overlap reactions for each model
+        model_names : list[str], optional
+            List of model names for x-axis labels. If None, uses "Model 1", "Model 2", etc.
+    """
+    if model_names is None:
+        model_names = [f"Model {i+1}" for i in range(len(jaccard_indices))]
+    
+    if len(jaccard_indices) != len(zero_overlaps) or len(jaccard_indices) != len(model_names):
+        raise ValueError("jaccard_indices, zero_overlaps, and model_names must have the same length")
+    
+    # Create figure with 2 subplots arranged horizontally
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 5))
+    
+    # Left subplot: Jaccard indices
+    bars1 = ax1.bar(model_names, jaccard_indices, color='#2ca02c', alpha=0.7, edgecolor='black', linewidth=1)
+    ax1.set_ylabel('Mean Jaccard Index', fontsize=12)
+    ax1.set_title('Mean Jaccard Index', fontsize=13)
+    ax1.set_ylim([0, 0.1])
+    ax1.grid(axis='y', linestyle='--', alpha=0.3)
+    ax1.set_xticklabels(model_names)
+    
+    # Add value labels on top of bars
+    for bar in bars1:
+        height = bar.get_height()
+        ax1.text(bar.get_x() + bar.get_width()/2., height,
+                f'{height:.3f}',
+                ha='center', va='bottom', fontsize=10)
+    
+    # Right subplot: Zero overlaps
+    bars2 = ax2.bar(model_names, zero_overlaps, color='#d62728', alpha=0.7, edgecolor='black', linewidth=1)
+    ax2.set_ylabel('Number of Reactions', fontsize=12)
+    ax2.set_title('Non-overlapping Reactions (J = 0)', fontsize=13)
+    ax2.grid(axis='y', linestyle='--', alpha=0.3)
+    ax2.set_xticklabels(model_names)
+    
+    # Add value labels on top of bars
+    for bar in bars2:
+        height = bar.get_height()
+        ax2.text(bar.get_x() + bar.get_width()/2., height,
+                f'{int(height)}',
+                ha='center', va='bottom', fontsize=10)
+    
+    plt.tight_layout()
+    plt.show()
