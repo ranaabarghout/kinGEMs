@@ -10,19 +10,127 @@ from kinGEMs.config import ECOLI_VALIDATION_DIR
 from kinGEMs.modeling.optimize import run_optimization_with_dataframe
 
 
-def prepare_model(model):
-# INPUT
-# - model: cobrapy model object
-# OUTPUT
-# - model: cobrapy model object with exchange bounds set
-    # turn off exchange reactions by setting lower and upper bounds to 0 and 1000 respectively
-    for ex in model.exchanges:
-        ex.lower_bound = 0
-        ex.upper_bound = 1000
+def prepare_model(model, handle_irreversible=True):
+    """
+    Prepare model for validation by setting appropriate exchange bounds.
+
+    Parameters
+    ----------
+    model : cobra.Model
+        The model to prepare
+    handle_irreversible : bool
+        If True, preserve irreversible structure for irreversible exchanges
+        If False, use original logic (all exchanges become reversible)
+
+    Returns
+    -------
+    cobra.Model
+        Model with exchange bounds set for validation
+    """
+    if not handle_irreversible:
+        print("Using irreversible model handling: all exchanges set to reversible")
+        for ex in model.exchanges:
+            ex.lower_bound = 0
+            ex.upper_bound = 1000
+    else:
+        print("Using irreversible model handling: preserving irreversible exchange structure")
+        # Improved behavior: preserve irreversible structure where appropriate
+        for ex in model.exchanges:
+            # Check if this is an irreversible uptake-only exchange (e.g., carbon sources)
+            is_uptake_only = (ex.lower_bound < 0 and ex.upper_bound <= 0)
+            # Check if this is an irreversible export-only exchange (e.g., waste products)
+            is_export_only = (ex.lower_bound >= 0 and ex.upper_bound > 0)
+
+            if is_uptake_only:
+                # Keep as uptake-only but allow wider range
+                ex.lower_bound = -1000
+                ex.upper_bound = 0
+            elif is_export_only:
+                # Keep as export-only but allow wider range
+                ex.lower_bound = 0
+                ex.upper_bound = 1000
+            else:
+                # Default: make bidirectional with wide bounds
+                ex.lower_bound = -1000
+                ex.upper_bound = 1000
+
     # We leave the maintenance on here
     # turn off maintenance reactions by setting the lower bound to 0 (turning off maintenance can make results easier to interpret)
     # model.reactions.get_by_id("ATPM").lower_bound = 0
     return model
+
+
+def set_carbon_source_safely(model, carbon_ex_idx, uptake_rate=-10):
+    """
+    Safely set carbon source uptake rate while respecting irreversible constraints.
+
+    Parameters
+    ----------
+    model : cobra.Model
+        The model to modify
+    carbon_ex_idx : int
+        Index of the carbon exchange reaction in model.exchanges
+    uptake_rate : float
+        Desired uptake rate (should be negative for uptake)
+
+    Returns
+    -------
+    bool
+        True if carbon source was set successfully, False otherwise
+    """
+    if carbon_ex_idx == -1:
+        return False
+
+    ex_rxn = model.exchanges[carbon_ex_idx]
+
+    # Check if the exchange can handle the requested uptake rate
+    if uptake_rate < 0:  # Uptake (negative flux)
+        if ex_rxn.lower_bound <= uptake_rate:
+            ex_rxn.lower_bound = uptake_rate
+            return True
+        else:
+            # Exchange reaction cannot handle this uptake rate (e.g., export-only)
+            print(f"Warning: Exchange {ex_rxn.id} cannot handle uptake rate {uptake_rate} (bounds: [{ex_rxn.lower_bound}, {ex_rxn.upper_bound}])")
+            return False
+    else:  # Export (positive flux)
+        if ex_rxn.upper_bound >= uptake_rate:
+            ex_rxn.upper_bound = uptake_rate
+            return True
+        else:
+            # Exchange reaction cannot handle this export rate (e.g., uptake-only)
+            print(f"Warning: Exchange {ex_rxn.id} cannot handle export rate {uptake_rate} (bounds: [{ex_rxn.lower_bound}, {ex_rxn.upper_bound}])")
+            return False
+
+
+def reset_carbon_source_safely(model, carbon_ex_idx):
+    """
+    Reset carbon source to default bounds while preserving irreversible structure.
+
+    Parameters
+    ----------
+    model : cobra.Model
+        The model to modify
+    carbon_ex_idx : int
+        Index of the carbon exchange reaction in model.exchanges
+    """
+    if carbon_ex_idx == -1:
+        return
+
+    ex_rxn = model.exchanges[carbon_ex_idx]
+
+    # Reset to wide bounds while preserving directionality
+    if ex_rxn.lower_bound < 0 and ex_rxn.upper_bound <= 0:
+        # This was uptake-only, keep it that way
+        ex_rxn.lower_bound = -1000
+        ex_rxn.upper_bound = 0
+    elif ex_rxn.lower_bound >= 0 and ex_rxn.upper_bound > 0:
+        # This was export-only, keep it that way
+        ex_rxn.lower_bound = 0
+        ex_rxn.upper_bound = 1000
+    else:
+        # This was bidirectional, keep it that way
+        ex_rxn.lower_bound = -1000
+        ex_rxn.upper_bound = 1000
 
 
 def load_environment(base_directory):
@@ -144,9 +252,24 @@ def model_adjustments(adj_strain, adj_essential, adj_carbon, model, name_genes_m
 
     if adj_essential:
         thresh = 0.001
+        # Temporarily set all exchanges to wide bounds for essential gene testing
+        original_bounds = {}
         for ex in model_adj.exchanges:
-            ex.lower_bound = -1000
-            ex.upper_bound = 1000
+            original_bounds[ex.id] = (ex.lower_bound, ex.upper_bound)
+            # Preserve directionality while allowing wide bounds
+            if ex.lower_bound < 0 and ex.upper_bound <= 0:
+                # Uptake-only exchange
+                ex.lower_bound = -1000
+                ex.upper_bound = 0
+            elif ex.lower_bound >= 0 and ex.upper_bound > 0:
+                # Export-only exchange
+                ex.lower_bound = 0
+                ex.upper_bound = 1000
+            else:
+                # Bidirectional exchange
+                ex.lower_bound = -1000
+                ex.upper_bound = 1000
+
         tmp_inds = []
         print("Removing essential genes: ")
         for g in range(len(name_genes_matched_adj)):
@@ -158,9 +281,11 @@ def model_adjustments(adj_strain, adj_essential, adj_carbon, model, name_genes_m
                     print(name_genes_matched_adj[g])
         name_genes_matched_adj = np.delete(name_genes_matched_adj, tmp_inds, 0)
         data_fitness_matched_adj = np.delete(data_fitness_matched_adj, tmp_inds, 0)
+
+        # Restore original bounds
         for ex in model_adj.exchanges:
-            ex.lower_bound = 0
-            ex.upper_bound = 1000
+            if ex.id in original_bounds:
+                ex.lower_bound, ex.upper_bound = original_bounds[ex.id]
 
     if adj_carbon:
         print("Removing carbon sources: ")
@@ -210,26 +335,45 @@ def check_environment(model_adj, name_medium_model, name_carbon_model_matched_ad
 def test_growth(model_adj, name_carbon_model_matched_adj, medium_ex_inds, carbon_ex_inds, thresh=0.001):
     """
     Test growth of model on base medium and each carbon source. Returns growth/no-growth results.
+    Uses safe bounds handling for irreversible models.
     """
     results = {}
     with model_adj:
+        # Set medium with safe bounds handling
         for e in medium_ex_inds:
             if e != -1:
-                model_adj.exchanges[e].lower_bound = -1000
+                ex = model_adj.exchanges[e]
+                # Allow uptake while preserving irreversible structure
+                if ex.upper_bound <= 0:  # Uptake-only
+                    ex.lower_bound = -1000
+                else:  # Bidirectional
+                    ex.lower_bound = -1000
+                    ex.upper_bound = 1000
+
         solution = model_adj.optimize()
         base_growth = 1 if solution.objective_value and solution.objective_value > thresh else 0
         print(f"Growth with no carbon source (base medium only): {'Growth' if base_growth == 1 else 'No growth'} (Objective value: {solution.objective_value})")
         results['base_growth'] = base_growth
+
         base_growth_C = np.ones(len(carbon_ex_inds), dtype=float) * -1
         for e, idx in enumerate(carbon_ex_inds):
             if idx != -1:
-                model_adj.exchanges[idx].lower_bound = -10
+                # Use safe carbon source setting
+                carbon_set = set_carbon_source_safely(model_adj, idx, -10)
+                if not carbon_set:
+                    print(f"Warning: Could not set carbon source {e}, skipping")
+                    base_growth_C[e] = 0
+                    continue
+
             sol = model_adj.slim_optimize()
             base_growth_C[e] = 1 if sol > thresh else 0
             carbon_name = name_carbon_model_matched_adj[e] if e < len(name_carbon_model_matched_adj) else f"Carbon {e}"
             print(f"Growth with carbon source '{carbon_name}': {'Growth' if base_growth_C[e] == 1 else 'No growth'} (Solution: {sol})")
+
             if idx != -1:
-                model_adj.exchanges[idx].lower_bound = 0
+                # Reset carbon source safely
+                reset_carbon_source_safely(model_adj, idx)
+
         results['carbon_growth'] = base_growth_C
     return results
 
@@ -252,17 +396,28 @@ def simulate_phenotype(
     """
     # Baseline GEM simulation
     baseline_GEM = np.zeros([len(name_genes_matched_adj), len(name_carbon_model_matched_adj)], dtype=float)
+    # Set medium with safe bounds handling
     for e in medium_ex_inds:
         if e != -1:
-            model_run.exchanges[e].lower_bound = -1000
+            ex = model_run.exchanges[e]
+            # Allow uptake while preserving irreversible structure
+            if ex.upper_bound <= 0:  # Uptake-only
+                ex.lower_bound = -1000
+            else:  # Bidirectional
+                ex.lower_bound = -1000
+                ex.upper_bound = 1000
+
     for e in range(len(name_carbon_model_matched_adj)):
         print(f"Baseline GEM progress: {e+1}/{len(name_carbon_model_matched_adj)}", end='\r')
         if name_carbon_model_matched_adj[e] in name_carbon_model_matched_adj[:e]:
             e_found = name_carbon_model_matched_adj[:e].index(name_carbon_model_matched_adj[e])
             baseline_GEM[:, e] = baseline_GEM[:, e_found]
         else:
+            # Use safe carbon source setting
+            carbon_set = False
             if carbon_ex_inds[e] != -1:
-                model_run.exchanges[carbon_ex_inds[e]].lower_bound = -10
+                carbon_set = set_carbon_source_safely(model_run, carbon_ex_inds[e], -10)
+
             for g in range(len(name_genes_matched_adj)):
                 with model_run:
                     model_run.genes.get_by_id(name_genes_matched_adj[g]).knock_out()
@@ -270,8 +425,10 @@ def simulate_phenotype(
                     if np.isnan(solution):
                         solution = 0
                     baseline_GEM[g, e] = solution
-            if carbon_ex_inds[e] != -1:
-                model_run.exchanges[carbon_ex_inds[e]].lower_bound = 0
+
+            # Reset carbon source safely
+            if carbon_ex_inds[e] != -1 and carbon_set:
+                reset_carbon_source_safely(model_run, carbon_ex_inds[e])
 
     # Enzyme-constrained GEM simulation
     if 'kcat_mean' in processed_df.columns:
@@ -284,8 +441,11 @@ def simulate_phenotype(
             e_found = name_carbon_model_matched_adj[:e].index(name_carbon_model_matched_adj[e])
             enzyme_constrained_GEM[:, e] = enzyme_constrained_GEM[:, e_found]
         else:
+            # Use safe carbon source setting
+            carbon_set = False
             if carbon_ex_inds[e] != -1:
-                model_run.exchanges[carbon_ex_inds[e]].lower_bound = -10
+                carbon_set = set_carbon_source_safely(model_run, carbon_ex_inds[e], -10)
+
             for g in range(len(name_genes_matched_adj)):
                 with model_run:
                     model_run.genes.get_by_id(name_genes_matched_adj[g]).knock_out()
@@ -304,7 +464,8 @@ def simulate_phenotype(
                             output_dir=None,
                             save_results=False,
                             print_reaction_conditions=False,
-                            verbose=False
+                            verbose=False,
+                            bidirectional_constraints=True  # Explicitly enable for irreversible models
                         )
                         # Use solution_value as the simulated growth value
                         if solution_value is None or np.isnan(solution_value):
@@ -313,8 +474,10 @@ def simulate_phenotype(
                     except Exception as ex:
                         print(f"Enzyme-constrained optimization failed for gene {name_genes_matched_adj[g]}, carbon {name_carbon_model_matched_adj[e]}: {ex}")
                         enzyme_constrained_GEM[g, e] = 0
-            if carbon_ex_inds[e] != -1:
-                model_run.exchanges[carbon_ex_inds[e]].lower_bound = 0
+
+            # Reset carbon source safely
+            if carbon_ex_inds[e] != -1 and carbon_set:
+                reset_carbon_source_safely(model_run, carbon_ex_inds[e])
 
     print("\nBaseline GEM and enzyme-constrained GEM simulation complete.")
     return baseline_GEM, enzyme_constrained_GEM
@@ -341,17 +504,28 @@ def simulate_phenotype_flux(
 
     # Baseline GEM flux simulation
     baseline_fluxes = np.zeros([n_genes, n_carbons, n_rxns], dtype=float)
+    # Set medium with safe bounds handling
     for e in medium_ex_inds:
         if e != -1:
-            model_run.exchanges[e].lower_bound = -1000
+            ex = model_run.exchanges[e]
+            # Allow uptake while preserving irreversible structure
+            if ex.upper_bound <= 0:  # Uptake-only
+                ex.lower_bound = -1000
+            else:  # Bidirectional
+                ex.lower_bound = -1000
+                ex.upper_bound = 1000
+
     for e in range(n_carbons):
         print(f"Baseline GEM flux progress: {e+1}/{n_carbons}", end='\r')
         if name_carbon_model_matched_adj[e] in name_carbon_model_matched_adj[:e]:
             e_found = name_carbon_model_matched_adj[:e].index(name_carbon_model_matched_adj[e])
             baseline_fluxes[:, e, :] = baseline_fluxes[:, e_found, :]
         else:
+            # Use safe carbon source setting
+            carbon_set = False
             if carbon_ex_inds[e] != -1:
-                model_run.exchanges[carbon_ex_inds[e]].lower_bound = -10
+                carbon_set = set_carbon_source_safely(model_run, carbon_ex_inds[e], -10)
+
             for g in range(n_genes):
                 with model_run:
                     model_run.genes.get_by_id(name_genes_matched_adj[g]).knock_out()
@@ -361,8 +535,10 @@ def simulate_phenotype_flux(
                     else:
                         fluxes = np.zeros(n_rxns)
                     baseline_fluxes[g, e, :] = fluxes
-            if carbon_ex_inds[e] != -1:
-                model_run.exchanges[carbon_ex_inds[e]].lower_bound = 0
+
+            # Reset carbon source safely
+            if carbon_ex_inds[e] != -1 and carbon_set:
+                reset_carbon_source_safely(model_run, carbon_ex_inds[e])
 
     # Enzyme-constrained GEM flux simulation
     if 'kcat_mean' in processed_df.columns:
@@ -375,8 +551,11 @@ def simulate_phenotype_flux(
             e_found = name_carbon_model_matched_adj[:e].index(name_carbon_model_matched_adj[e])
             enzyme_constrained_fluxes[:, e, :] = enzyme_constrained_fluxes[:, e_found, :]
         else:
+            # Use safe carbon source setting
+            carbon_set = False
             if carbon_ex_inds[e] != -1:
-                model_run.exchanges[carbon_ex_inds[e]].lower_bound = -10
+                carbon_set = set_carbon_source_safely(model_run, carbon_ex_inds[e], -10)
+
             for g in range(n_genes):
                 with model_run:
                     model_run.genes.get_by_id(name_genes_matched_adj[g]).knock_out()
@@ -413,8 +592,10 @@ def simulate_phenotype_flux(
                     except Exception as ex:
                         print(f"Enzyme-constrained optimization failed for gene {name_genes_matched_adj[g]}, carbon {name_carbon_model_matched_adj[e]}: {ex}")
                         enzyme_constrained_fluxes[g, e, :] = np.zeros(n_rxns)
-            if carbon_ex_inds[e] != -1:
-                model_run.exchanges[carbon_ex_inds[e]].lower_bound = 0
+
+            # Reset carbon source safely
+            if carbon_ex_inds[e] != -1 and carbon_set:
+                reset_carbon_source_safely(model_run, carbon_ex_inds[e])
 
     print("\nBaseline GEM and enzyme-constrained GEM flux simulation complete.")
     return baseline_fluxes, enzyme_constrained_fluxes
@@ -499,20 +680,30 @@ def _simulate_gene_carbon(model, processed_df, gene, carbon_idx, carbon_name,
         where improvement_info is a dict with growth improvement details or None
     """
     from kinGEMs.modeling.optimize import run_optimization_with_dataframe
-    
+
     improvement_info = None  # Will store growth improvement details if detected
 
     print(f"  🚀 Starting {mode} simulation: Gene {gene} × Carbon {carbon_name} (idx {carbon_idx})")
 
-    # Set up medium
+    # Set up medium with safe bounds handling
     for e in medium_ex_inds:
         if e != -1:
-            model.exchanges[e].lower_bound = -1000
+            ex = model.exchanges[e]
+            # Allow uptake while preserving irreversible structure
+            if ex.upper_bound <= 0:  # Uptake-only
+                ex.lower_bound = -1000
+            else:  # Bidirectional
+                ex.lower_bound = -1000
+                ex.upper_bound = 1000
 
-    # Set carbon source
+    # Set carbon source with safe bounds handling
+    carbon_set = False
     if carbon_ex_inds[carbon_idx] != -1:
-        model.exchanges[carbon_ex_inds[carbon_idx]].lower_bound = -10
-        print(f"    - Carbon source '{carbon_name}' set to lower bound -10")
+        carbon_set = set_carbon_source_safely(model, carbon_ex_inds[carbon_idx], -10)
+        if carbon_set:
+            print(f"    - Carbon source '{carbon_name}' set with safe bounds handling")
+        else:
+            print(f"    - Warning: Could not safely set carbon source '{carbon_name}'")
 
     # Knockout gene
     try:
@@ -593,16 +784,16 @@ def _simulate_gene_carbon(model, processed_df, gene, carbon_idx, carbon_name,
             try:
                 if 'wild_type_growth' in locals() and wild_type_growth > 0:
                     change = ((solution - wild_type_growth) / wild_type_growth) * 100
-                    
+
                     # Check for growth IMPROVEMENT (>1% increase)
                     if change > 1.0:
                         print(f"    🌟 GROWTH IMPROVEMENT DETECTED: {change:.2f}% increase!")
                         print(f"       Wild-type: {wild_type_growth:.6f} → Knockout: {solution:.6f}")
-                        
+
                         # Get associated reactions for this gene
                         gene_obj = model.genes.get_by_id(gene)
                         associated_reactions = [r.id for r in gene_obj.reactions if r.id != objective_reaction]
-                        
+
                         improvement_info = {
                             'gene': gene,
                             'carbon_source': carbon_name,
@@ -655,16 +846,16 @@ def _simulate_gene_carbon(model, processed_df, gene, carbon_idx, carbon_name,
             try:
                 if 'wt_solution_value' in locals() and wt_solution_value > 0:
                     change = ((solution_value - wt_solution_value) / wt_solution_value) * 100
-                    
+
                     # Check for growth IMPROVEMENT (>1% increase)
                     if change > 1.0:
                         print(f"    🌟 GROWTH IMPROVEMENT DETECTED: {change:.2f}% increase!")
                         print(f"       Wild-type: {wt_solution_value:.6f} → Knockout: {solution_value:.6f}")
-                        
+
                         # Get associated reactions for this gene
                         gene_obj = model.genes.get_by_id(gene)
                         associated_reactions = [r.id for r in gene_obj.reactions if r.id != objective_reaction]
-                        
+
                         improvement_info = {
                             'gene': gene,
                             'carbon_source': carbon_name,
@@ -716,16 +907,16 @@ def _simulate_gene_carbon(model, processed_df, gene, carbon_idx, carbon_name,
                     try:
                         if 'wt_solution_value' in locals() and wt_solution_value > 0:
                             change = ((solution_value - wt_solution_value) / wt_solution_value) * 100
-                            
+
                             # Check for growth IMPROVEMENT (>1% increase)
                             if change > 1.0:
                                 print(f"    🌟 GROWTH IMPROVEMENT DETECTED: {change:.2f}% increase!")
                                 print(f"       Wild-type: {wt_solution_value:.6f} → Knockout: {solution_value:.6f}")
-                                
+
                                 # Get associated reactions for this gene
                                 gene_obj = model.genes.get_by_id(gene)
                                 associated_reactions = [r.id for r in gene_obj.reactions if r.id != objective_reaction]
-                                
+
                                 improvement_info = {
                                     'gene': gene,
                                     'carbon_source': carbon_name,
@@ -788,7 +979,7 @@ def _simulate_gene_carbon_chunk(model, processed_df, tasks, medium_ex_inds,
     """
     results = []
     improvements = []
-    
+
     for gene, carbon_idx, carbon_name in tasks:
         gene_result, carbon_idx_result, growth_value, improvement_info = _simulate_gene_carbon(
             model=model.copy(),
@@ -804,10 +995,10 @@ def _simulate_gene_carbon_chunk(model, processed_df, tasks, medium_ex_inds,
             solver_name=solver_name
         )
         results.append((gene_result, carbon_idx_result, growth_value))
-        
+
         if improvement_info is not None:
             improvements.append(improvement_info)
-    
+
     return (results, improvements)
 
 
@@ -1023,35 +1214,35 @@ def simulate_phenotype_parallel(
         enzyme_constrained_GEM[:, cached_idx] = enzyme_constrained_GEM[:, original_idx]
 
     print("  Enzyme-constrained GEM simulation complete.")
-    
+
     # ===== Save and Report Growth Improvements =====
     all_improvements = []
     if not skip_baseline:
         all_improvements.extend(baseline_improvements)
     all_improvements.extend(enzyme_improvements)
-    
+
     if all_improvements:
         print(f"\n  {'='*80}")
         print(f"  🌟 GROWTH IMPROVEMENTS DETECTED: {len(all_improvements)} cases")
         print(f"  {'='*80}")
-        
+
         # Save improvements to CSV
         import pandas as pd
         improvements_df = pd.DataFrame(all_improvements)
-        
+
         # Sort by percent increase (descending)
         improvements_df = improvements_df.sort_values('percent_increase', ascending=False)
-        
+
         # Create output filename with timestamp
         from datetime import datetime
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         output_file = f"growth_improvements_{timestamp}.csv"
         improvements_df.to_csv(output_file, index=False)
-        
+
         print(f"  ✅ Saved growth improvements to: {output_file}")
         print(f"\n  Top 10 growth improvements:")
         print(f"  {'-'*80}")
-        
+
         # Display top 10
         for idx, row in improvements_df.head(10).iterrows():
             print(f"  {idx+1}. Gene: {row['gene']}, Carbon: {row['carbon_source']}")
@@ -1059,7 +1250,7 @@ def simulate_phenotype_parallel(
             print(f"     Reactions: {', '.join(row['associated_reactions'][:5])}{' ...' if len(row['associated_reactions']) > 5 else ''}")
             print(f"     Mode: {row['mode']}")
             print()
-        
+
         print(f"  {'-'*80}")
         print(f"  See full list in: {output_file}")
         print(f"  {'='*80}\n")
@@ -1179,6 +1370,8 @@ def _run_validation_dask(model, processed_df, chunks, medium_ex_inds, carbon_ex_
                 cluster.close(timeout=5)
             except Exception:
                 pass
+
+
 def _run_validation_multiprocessing(model, processed_df, chunks, medium_ex_inds,
                                     carbon_ex_inds, objective_reaction,
                                     enzyme_upper_bound, n_workers, mode='baseline', solver_name='glpk'):
@@ -1215,7 +1408,7 @@ def _run_validation_multiprocessing(model, processed_df, chunks, medium_ex_inds,
             # Unpack chunk results and improvements
             chunk_data, chunk_improvements = chunk_result
             results.append(chunk_data)
-            
+
             # Collect any growth improvements from this chunk
             if chunk_improvements:
                 all_improvements.extend(chunk_improvements)
@@ -1245,3 +1438,262 @@ def _run_validation_multiprocessing(model, processed_df, chunks, medium_ex_inds,
             print(f"    Chunk time: {avg_chunk_time:.1f}s, Total time: {time_str}")
 
     return (results, all_improvements)
+
+def set_carbon_source_safely(model, carbon_ex_idx, uptake_rate=-10):
+    """
+    Safely set carbon source uptake rate while respecting irreversible constraints.
+
+    Parameters
+    ----------
+    model : cobra.Model
+        The model to modify
+    carbon_ex_idx : int
+        Index of the carbon exchange reaction in model.exchanges
+    uptake_rate : float
+        Desired uptake rate (should be negative for uptake)
+
+    Returns
+    -------
+    bool
+        True if carbon source was set successfully, False otherwise
+    """
+    if carbon_ex_idx == -1:
+        return False
+
+    ex_rxn = model.exchanges[carbon_ex_idx]
+
+    # Check if the exchange can handle the requested uptake rate
+    if uptake_rate < 0:  # Uptake (negative flux)
+        if ex_rxn.lower_bound <= uptake_rate:
+            ex_rxn.lower_bound = uptake_rate
+            return True
+        else:
+            # Exchange reaction cannot handle this uptake rate (e.g., export-only)
+            print(f"Warning: Exchange {ex_rxn.id} cannot handle uptake rate {uptake_rate} (bounds: [{ex_rxn.lower_bound}, {ex_rxn.upper_bound}])")
+            return False
+    else:  # Export (positive flux)
+        if ex_rxn.upper_bound >= uptake_rate:
+            ex_rxn.upper_bound = uptake_rate
+            return True
+        else:
+            # Exchange reaction cannot handle this export rate (e.g., uptake-only)
+            print(f"Warning: Exchange {ex_rxn.id} cannot handle export rate {uptake_rate} (bounds: [{ex_rxn.lower_bound}, {ex_rxn.upper_bound}])")
+            return False
+
+
+def reset_carbon_source_safely(model, carbon_ex_idx):
+    """
+    Reset carbon source to default bounds while preserving irreversible structure.
+
+    Parameters
+    ----------
+    model : cobra.Model
+        The model to modify
+    carbon_ex_idx : int
+        Index of the carbon exchange reaction in model.exchanges
+    """
+    if carbon_ex_idx == -1:
+        return
+
+    ex_rxn = model.exchanges[carbon_ex_idx]
+
+    # Reset to wide bounds while preserving directionality
+    if ex_rxn.lower_bound < 0 and ex_rxn.upper_bound <= 0:
+        # This was uptake-only, keep it that way
+        ex_rxn.lower_bound = -1000
+        ex_rxn.upper_bound = 0
+    elif ex_rxn.lower_bound >= 0 and ex_rxn.upper_bound > 0:
+        # This was export-only, keep it that way
+        ex_rxn.lower_bound = 0
+        ex_rxn.upper_bound = 1000
+    else:
+        # This was bidirectional, keep it that way
+        ex_rxn.lower_bound = -1000
+        ex_rxn.upper_bound = 1000
+
+def diagnose_model_for_validation(model, verbose=True):
+    """
+    Diagnose if a model is suitable for validation and identify potential issues.
+
+    Parameters
+    ----------
+    model : cobra.Model
+        The model to diagnose
+    verbose : bool
+        Whether to print detailed diagnostic information
+
+    Returns
+    -------
+    dict
+        Diagnostic results including compatibility status and recommendations
+    """
+    results = {
+        'compatible': True,
+        'warnings': [],
+        'recommendations': [],
+        'exchange_analysis': {},
+        'model_type': 'unknown'
+    }
+
+    if verbose:
+        print("\n" + "="*60)
+        print("kinGEMs Validation Compatibility Diagnostic")
+        print("="*60)
+
+    # Analyze exchange reactions
+    uptake_only = 0
+    export_only = 0
+    bidirectional = 0
+    problematic = []
+
+    for ex in model.exchanges:
+        lb, ub = ex.lower_bound, ex.upper_bound
+
+        if lb < 0 and ub <= 0:
+            uptake_only += 1
+        elif lb >= 0 and ub > 0:
+            export_only += 1
+        elif lb < 0 and ub > 0:
+            bidirectional += 1
+        else:
+            problematic.append(ex.id)
+
+    results['exchange_analysis'] = {
+        'total': len(model.exchanges),
+        'uptake_only': uptake_only,
+        'export_only': export_only,
+        'bidirectional': bidirectional,
+        'problematic': len(problematic)
+    }
+
+    # Determine model type
+    if uptake_only > 0 or export_only > 0:
+        results['model_type'] = 'irreversible_exchanges'
+        if verbose:
+            print(f"Model Type: Contains irreversible exchanges")
+            print(f"  - Uptake-only exchanges: {uptake_only}")
+            print(f"  - Export-only exchanges: {export_only}")
+            print(f"  - Bidirectional exchanges: {bidirectional}")
+    else:
+        results['model_type'] = 'reversible_exchanges'
+        if verbose:
+            print(f"Model Type: All exchanges are bidirectional ({bidirectional})")
+
+    # Check for problematic exchanges
+    if problematic:
+        results['compatible'] = False
+        results['warnings'].append(f"Found {len(problematic)} exchanges with invalid bounds: {problematic[:5]}")
+        if verbose:
+            print(f"⚠️  Warning: {len(problematic)} exchanges have invalid bounds")
+
+    # Analyze reactions
+    reversible_rxns = sum(1 for rxn in model.reactions if rxn.reversibility)
+    irreversible_rxns = len(model.reactions) - reversible_rxns
+
+    if verbose:
+        print(f"\nReaction Analysis:")
+        print(f"  - Total reactions: {len(model.reactions)}")
+        print(f"  - Reversible: {reversible_rxns}")
+        print(f"  - Irreversible: {irreversible_rxns}")
+
+    # Check for enzyme constraint compatibility
+    has_kcats = 0
+    for rxn in model.reactions:
+        if hasattr(rxn, 'annotation') and 'kcat' in rxn.annotation:
+            if rxn.annotation['kcat'] not in [None, '', 0, '0']:
+                has_kcats += 1
+
+    if verbose:
+        print(f"\nEnzyme Constraint Readiness:")
+        print(f"  - Reactions with kcat data: {has_kcats}/{len(model.reactions)} ({100*has_kcats/len(model.reactions):.1f}%)")
+
+    if has_kcats == 0:
+        results['warnings'].append("No kcat data found in model annotations")
+        results['recommendations'].append("Process kcat data with kinGEMs pipeline before validation")
+
+    # Provide recommendations
+    if results['model_type'] == 'irreversible_exchanges':
+        results['recommendations'].append("Use prepare_model(model, handle_irreversible=True) for proper bounds handling")
+        results['recommendations'].append("Consider using the updated validation functions that respect irreversible constraints")
+
+    if verbose:
+        print(f"\nCompatibility Status: {'✅ Compatible' if results['compatible'] else '❌ Issues Found'}")
+
+        if results['warnings']:
+            print(f"\nWarnings:")
+            for warning in results['warnings']:
+                print(f"  ⚠️  {warning}")
+
+        if results['recommendations']:
+            print(f"\nRecommendations:")
+            for rec in results['recommendations']:
+                print(f"  💡 {rec}")
+
+        print("="*60)
+
+    return results
+
+def validate_kinGEMs_model(model, processed_df, objective_reaction,
+                          enzyme_upper_bound=0.125, handle_irreversible=True,
+                          **kwargs):
+    """
+    Convenience function to run kinGEMs validation with proper irreversible model support.
+
+    This function automatically handles:
+    - Model preparation with irreversible constraint preservation
+    - Safe bounds handling for exchange reactions
+    - Compatibility checking and warnings
+
+    Parameters
+    ----------
+    model : cobra.Model
+        The kinGEMs model to validate
+    processed_df : pandas.DataFrame
+        Processed enzyme constraint data
+    objective_reaction : str
+        Biomass reaction ID
+    enzyme_upper_bound : float
+        Enzyme upper bound constraint (default: 0.125)
+    handle_irreversible : bool
+        Whether to preserve irreversible exchange constraints (default: True)
+    **kwargs
+        Additional arguments passed to validation functions
+
+    Returns
+    -------
+    dict
+        Validation results including compatibility status and recommendations
+
+    Examples
+    --------
+    >>> # Basic validation
+    >>> results = validate_kinGEMs_model(model, processed_df, 'BIOMASS_Ecoli_core')
+
+    >>> # With parallel processing
+    >>> results = validate_kinGEMs_model(
+    ...     model, processed_df, 'BIOMASS_Ecoli_core',
+    ...     use_parallel=True, n_workers=4
+    ... )
+    """
+    # First diagnose the model for compatibility
+    diagnosis = diagnose_model_for_validation(model, verbose=True)
+
+    if not diagnosis['compatible']:
+        print("❌ Model has compatibility issues. See warnings above.")
+        return diagnosis
+
+    # Prepare model with appropriate settings
+    model_prepared = prepare_model(model.copy(), handle_irreversible=handle_irreversible)
+
+    print(f"✅ Model prepared successfully with irreversible support: {handle_irreversible}")
+    print(f"📊 Ready to run kinGEMs validation with {len(model.reactions)} reactions")
+
+    # Add model preparation info to diagnosis
+    diagnosis['model_prepared'] = True
+    diagnosis['settings'] = {
+        'handle_irreversible': handle_irreversible,
+        'enzyme_upper_bound': enzyme_upper_bound,
+        'objective_reaction': objective_reaction
+    }
+
+    return diagnosis

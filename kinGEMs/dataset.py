@@ -127,7 +127,29 @@ def convert_to_irreversible(model):
         # If a reaction is reverse only, the forward reaction (which
         # will be constrained to 0) will be left in the model.
         if reaction.lower_bound < 0:
-            reverse_reaction = Reaction(reaction.id + "_reverse")
+            reverse_id = reaction.id + "_reverse"
+
+            # If a reverse reaction already exists in the model, reuse it
+            if reverse_id in model.reactions:
+                existing_rev = model.reactions.get_by_id(reverse_id)
+                # Update bounds to ensure they cover the computed range
+                existing_rev.lower_bound = max(existing_rev.lower_bound, max(0, -reaction.upper_bound))
+                existing_rev.upper_bound = max(existing_rev.upper_bound, -reaction.lower_bound)
+                coefficients[existing_rev] = reaction.objective_coefficient * -1
+
+                reaction.lower_bound = max(0, reaction.lower_bound)
+                reaction.upper_bound = max(0, reaction.upper_bound)
+
+                # Link reflections
+                reaction.notes["reflection"] = existing_rev.id
+                existing_rev.notes["reflection"] = reaction.id
+                continue
+
+            # Avoid creating duplicates if we've already queued one
+            if reverse_id in {r.id for r in reactions_to_add}:
+                continue
+
+            reverse_reaction = Reaction(reverse_id)
             reverse_reaction.lower_bound = max(0, -reaction.upper_bound)
             reverse_reaction.upper_bound = -reaction.lower_bound
             coefficients[reverse_reaction] = reaction.objective_coefficient * -1
