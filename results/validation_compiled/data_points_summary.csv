@@ -4,7 +4,7 @@ Baseline GEM [fit_filter],fit_filter,33150,30102,3048,90.8054298642534,-2,None
 Baseline GEM [both_filter],both_filter,33150,29520,3630,89.0497737556561,-2,0.0001
 Pre-tuning kinGEMs [no_filter],no_filter,33150,33150,0,100.0,None,None
 Pre-tuning kinGEMs [fit_filter],fit_filter,33150,30102,3048,90.8054298642534,-2,None
-Pre-tuning kinGEMs [both_filter],both_filter,33150,29543,3607,89.11915535444948,-2,0.0001
+Pre-tuning kinGEMs [both_filter],both_filter,33150,29520,3630,89.0497737556561,-2,0.0001
 Post-tuning kinGEMs [no_filter],no_filter,33150,33150,0,100.0,None,None
 Post-tuning kinGEMs [fit_filter],fit_filter,33150,30102,3048,90.8054298642534,-2,None
 Post-tuning kinGEMs [both_filter],both_filter,33150,29520,3630,89.0497737556561,-2,0.0001

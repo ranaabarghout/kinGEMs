@@ -1,0 +1,11 @@
+2025-11-28 11:44:38.039 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2025-11-28 13:13:21.116 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2025-11-28 13:13:21.116 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2025-11-28 13:13:21.116 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2025-11-28 13:13:21.116 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2025-11-28 13:13:21.116 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2025-11-28 13:13:21.116 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2025-11-28 13:13:21.116 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2025-11-28 13:13:21.118 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+/localscratch/spool/slurmd/job13031551/slurm_script: line 67: 2715039 Killed                  python scripts/run_pipeline.py "$TEMP_CONFIG"
+slurmstepd: error: Detected 1 oom_kill event in StepId=13031551.batch. Some of the step tasks have been OOM Killed.

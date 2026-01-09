@@ -136,7 +136,7 @@ def strip_compartment(met_id):
 
 
 
-def prepare_modelseed_model_data(model_path, substrates_output=None, sequences_output=None, organism='E coli', metadata_dir=None):
+def prepare_modelseed_model_data(model_path, substrates_output=None, sequences_output=None, organism='E coli', metadata_dir=None, convert_to_irreversible=True):
     """
     Prepare model data using ModelSEED compound IDs to retrieve SMILES.
     - Removes compartment suffixes from metabolite IDs (e.g., cpd00010_e0 -> cpd00010)
@@ -146,6 +146,11 @@ def prepare_modelseed_model_data(model_path, substrates_output=None, sequences_o
     """
     # Load model
     model = load_model(model_path)
+    if convert_to_irreversible:
+        model = convert_to_irreversible(model)
+        print(f"Converted to irreversible model with {len(model.reactions)} reactions")
+
+
     print(f"Loaded model with {len(model.reactions)} reactions and {len(model.metabolites)} metabolites")
 
     # Extract substrate info

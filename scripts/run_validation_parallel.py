@@ -45,7 +45,10 @@ from kinGEMs.validation_utils import (
     prepare_model,
     simulate_phenotype,
     simulate_phenotype_parallel,
+    set_carbon_source_safely,
+    reset_carbon_source_safely,
 )
+from kinGEMs.dataset import convert_to_irreversible
 
 # Silence warnings
 warnings.filterwarnings('ignore')
@@ -59,13 +62,44 @@ def load_config(config_path):
     return config
 
 
+def set_medium_safely(model, medium_ex_inds, uptake_rate=-1000):
+    """
+    Safely set medium exchange reactions for irreversible models.
+
+    For irreversible models, this handles both uptake-only exchanges and
+    split reversible exchanges properly.
+
+    Parameters
+    ----------
+    model : cobra.Model
+        The model containing exchange reactions
+    medium_ex_inds : list
+        Indices of medium exchange reactions
+    uptake_rate : float
+        Uptake rate to set (negative value)
+    """
+    for e in medium_ex_inds:
+        if e != -1:
+            exchange_rxn = model.exchanges[e]
+
+            # Check if this is an irreversible uptake-only exchange
+            if exchange_rxn.lower_bound < 0 and exchange_rxn.upper_bound <= 0:
+                # This is an uptake-only exchange, set lower bound directly
+                exchange_rxn.lower_bound = uptake_rate
+            else:
+                # This might be a reversible exchange or export-only
+                # For safety, just allow uptake by setting negative lower bound
+                # This preserves the original validation logic
+                exchange_rxn.lower_bound = uptake_rate
+
+
 def simulate_wild_type_growth(model_adj, name_carbon_model_matched_adj,
                               medium_ex_inds, carbon_ex_inds):
     """Simulate wild-type growth (no gene knockouts) for each carbon source.
-    
+
     This provides the reference growth rates needed to convert mutant growth
     rates to fitness values (log2 ratios).
-    
+
     Parameters
     ----------
     model_adj : cobra.Model
@@ -76,7 +110,6 @@ def simulate_wild_type_growth(model_adj, name_carbon_model_matched_adj,
         Indices of medium exchange reactions
     carbon_ex_inds : list
         Indices of carbon source exchange reactions
-        
     Returns
     -------
     numpy.ndarray
@@ -84,44 +117,40 @@ def simulate_wild_type_growth(model_adj, name_carbon_model_matched_adj,
     """
     n_carbons = len(name_carbon_model_matched_adj)
     wild_type_growth = np.zeros(n_carbons)
-    
-    # Set medium
-    for e in medium_ex_inds:
-        if e != -1:
-            model_adj.exchanges[e].lower_bound = -1000
-    
+
+    # Set medium using safe bounds handling
+    set_medium_safely(model_adj, medium_ex_inds, uptake_rate=-1000)
+
     print(f"  Calculating wild-type growth for {n_carbons} carbon sources...")
-    
+
     for e, carbon in enumerate(name_carbon_model_matched_adj):
         print(f"  Wild-type growth progress: {e+1}/{n_carbons}", end='\r')
-        
+
         # Check if this carbon source was already tested
         if carbon in name_carbon_model_matched_adj[:e]:
             e_found = name_carbon_model_matched_adj[:e].index(carbon)
             wild_type_growth[e] = wild_type_growth[e_found]
             continue
-        
-        # Set carbon source
-        if carbon_ex_inds[e] != -1:
-            model_adj.exchanges[carbon_ex_inds[e]].lower_bound = -10
-        
+
+        # Set carbon source using safe bounds handling
+        set_carbon_source_safely(model_adj, carbon_ex_inds[e], uptake_rate=-10)
+
         # Optimize (NO gene knockouts)
         solution = model_adj.slim_optimize()
         if np.isnan(solution):
             solution = 0
         wild_type_growth[e] = solution
-        
-        # Reset carbon source
-        if carbon_ex_inds[e] != -1:
-            model_adj.exchanges[carbon_ex_inds[e]].lower_bound = 0
-        
+
+        # Reset carbon source using safe bounds handling
+        reset_carbon_source_safely(model_adj, carbon_ex_inds[e])
+
         if (e + 1) % 5 == 0:
             print(f"  Wild-type growth progress: {e+1}/{n_carbons} carbon sources completed")
-    
+
     print(f"\n  Wild-type growth calculation complete ({n_carbons} carbon sources).")
     print(f"  Mean growth rate: {np.mean(wild_type_growth):.6f}")
     print(f"  Range: {np.min(wild_type_growth):.6f} to {np.max(wild_type_growth):.6f}")
-    
+
     return wild_type_growth
 
 
@@ -129,10 +158,10 @@ def simulate_wild_type_growth_kingems(model_adj, name_carbon_model_matched_adj,
                                       medium_ex_inds, carbon_ex_inds,
                                       processed_df, objective_reaction, enzyme_upper_bound):
     """Simulate wild-type growth for kinGEMs model (WITH enzyme constraints, but no gene knockouts).
-    
+
     This calculates the reference growth rates for kinGEMs models that have enzyme
     constraints applied, which is needed to convert mutant growth rates to fitness values.
-    
+
     Parameters
     ----------
     model_adj : cobra.Model
@@ -149,7 +178,6 @@ def simulate_wild_type_growth_kingems(model_adj, name_carbon_model_matched_adj,
         Objective reaction ID
     enzyme_upper_bound : float
         Upper bound for enzyme concentration
-        
     Returns
     -------
     numpy.ndarray
@@ -157,33 +185,29 @@ def simulate_wild_type_growth_kingems(model_adj, name_carbon_model_matched_adj,
     """
     n_carbons = len(name_carbon_model_matched_adj)
     wild_type_growth = np.zeros(n_carbons)
-    
     # Ensure kcat_mean is numeric
     if 'kcat_mean' in processed_df.columns:
         processed_df['kcat_mean'] = processed_df['kcat_mean'].apply(
             lambda x: float(x) if isinstance(x, str) and x.replace('.','',1).isdigit() else x)
-    
-    # Set medium
-    for e in medium_ex_inds:
-        if e != -1:
-            model_adj.exchanges[e].lower_bound = -1000
-    
+
+    # Set medium using safe bounds handling
+    set_medium_safely(model_adj, medium_ex_inds, uptake_rate=-1000)
+
     print(f"  Calculating kinGEMs wild-type growth for {n_carbons} carbon sources...")
     print("  (WITH enzyme constraints, NO gene knockouts)")
-    
+
     for e, carbon in enumerate(name_carbon_model_matched_adj):
         print(f"  kinGEMs wild-type progress: {e+1}/{n_carbons}", end='\r')
-        
+
         # Check if this carbon source was already tested
         if carbon in name_carbon_model_matched_adj[:e]:
             e_found = name_carbon_model_matched_adj[:e].index(carbon)
             wild_type_growth[e] = wild_type_growth[e_found]
             continue
-        
-        # Set carbon source
-        if carbon_ex_inds[e] != -1:
-            model_adj.exchanges[carbon_ex_inds[e]].lower_bound = -10
-        
+
+        # Set carbon source using safe bounds handling
+        set_carbon_source_safely(model_adj, carbon_ex_inds[e], uptake_rate=-10)
+
         # Optimize WITH enzyme constraints, but NO gene knockouts
         # No gene knockout needed - just optimize with enzyme constraints
         try:
@@ -212,20 +236,19 @@ def simulate_wild_type_growth_kingems(model_adj, name_carbon_model_matched_adj,
         except Exception as ex:
             print(f"\n  Warning: Optimization failed for carbon {carbon}: {ex}")
             solution = 0
-        
+
         wild_type_growth[e] = solution
-        
-        # Reset carbon source
-        if carbon_ex_inds[e] != -1:
-            model_adj.exchanges[carbon_ex_inds[e]].lower_bound = 0
-        
+
+        # Reset carbon source using safe bounds handling
+        reset_carbon_source_safely(model_adj, carbon_ex_inds[e])
+
         if (e + 1) % 5 == 0:
             print(f"  kinGEMs wild-type progress: {e+1}/{n_carbons} carbon sources completed")
-    
+
     print(f"\n  kinGEMs wild-type growth calculation complete ({n_carbons} carbon sources).")
     print(f"  Mean growth rate: {np.mean(wild_type_growth):.6f}")
     print(f"  Range: {np.min(wild_type_growth):.6f} to {np.max(wild_type_growth):.6f}")
-    
+
     return wild_type_growth
 
 
@@ -236,10 +259,8 @@ def simulate_baseline_only(model_adj, name_genes_matched_adj, name_carbon_model_
     n_carbons = len(name_carbon_model_matched_adj)
     baseline_GEM = np.zeros((n_genes, n_carbons))
 
-    # Set medium
-    for e in medium_ex_inds:
-        if e != -1:
-            model_adj.exchanges[e].lower_bound = -1000
+    # Set medium using safe bounds handling
+    set_medium_safely(model_adj, medium_ex_inds, uptake_rate=-1000)
 
     for e, carbon in enumerate(name_carbon_model_matched_adj):
         print(f"  Baseline GEM progress: {e+1}/{n_carbons}", end='\r')
@@ -250,9 +271,8 @@ def simulate_baseline_only(model_adj, name_genes_matched_adj, name_carbon_model_
             baseline_GEM[:, e] = baseline_GEM[:, e_found]
             continue
 
-        # Set carbon source
-        if carbon_ex_inds[e] != -1:
-            model_adj.exchanges[carbon_ex_inds[e]].lower_bound = -10
+        # Set carbon source using safe bounds handling
+        set_carbon_source_safely(model_adj, carbon_ex_inds[e], uptake_rate=-10)
 
         # Test each gene knockout
         for g, gene in enumerate(name_genes_matched_adj):
@@ -263,9 +283,8 @@ def simulate_baseline_only(model_adj, name_genes_matched_adj, name_carbon_model_
                     solution = 0
                 baseline_GEM[g, e] = solution
 
-        # Reset carbon source
-        if carbon_ex_inds[e] != -1:
-            model_adj.exchanges[carbon_ex_inds[e]].lower_bound = 0
+        # Reset carbon source using safe bounds handling
+        reset_carbon_source_safely(model_adj, carbon_ex_inds[e])
 
         if (e + 1) % 5 == 0:
             print(f"  Baseline GEM progress: {e+1}/{n_carbons} carbon sources completed")
@@ -276,7 +295,7 @@ def simulate_baseline_only(model_adj, name_genes_matched_adj, name_carbon_model_
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('--mode', required=True, 
+    parser.add_argument('--mode', required=True,
                        choices=['wildtype', 'baseline', 'pretuning', 'posttuning'],
                        help='Validation mode to run')
     parser.add_argument('--config', required=True, help='Path to configuration JSON file')
@@ -320,12 +339,13 @@ def main():
     # === Step 1: Load Model ===
     print("\n=== Step 1: Loading model ===")
     model = cobra.io.read_sbml_model(model_path)
+    model = convert_to_irreversible(model)
     print(f"  Genes: {len(model.genes)}")
     print(f"  Reactions: {len(model.reactions)}")
 
     # Set solver
     solver_name = config.get('solver', None)
-    
+
     # Verify Pyomo can find CPLEX if requested
     if solver_name and solver_name.lower() == 'cplex':
         try:
@@ -338,7 +358,7 @@ def main():
                 print("  Pyomo will fall back to GLPK (slower)")
         except Exception as e:
             print(f"  ⚠️  Could not verify CPLEX in Pyomo: {e}")
-    
+
     if solver_name:
         try:
             model.solver = solver_name
@@ -424,7 +444,6 @@ def main():
         output_file = os.path.join(args.output, 'wild_type_growth.npy')
         np.save(output_file, wild_type_growth)
         print(f"  Saved: {output_file}")
-        
         # Also save as text for easy inspection
         output_txt = os.path.join(args.output, 'wild_type_growth.txt')
         with open(output_txt, 'w') as f:
@@ -442,7 +461,6 @@ def main():
 
     elif args.mode == 'baseline':
         print("Running Baseline GEM (no enzyme constraints)...")
-        
         # First, calculate wild-type growth for baseline model
         print("\n  Calculating baseline wild-type growth...")
         baseline_wildtype = simulate_wild_type_growth(
@@ -451,12 +469,10 @@ def main():
             medium_ex_inds=medium_ex_inds,
             carbon_ex_inds=carbon_ex_inds
         )
-        
         # Save baseline wild-type growth
         wt_file = os.path.join(args.output, 'baseline_wildtype.npy')
         np.save(wt_file, baseline_wildtype)
         print(f"  Saved: {wt_file}")
-        
         # Now run gene knockout simulations
         baseline_GEM = simulate_baseline_only(
             model_adj=model_adj,
@@ -490,7 +506,6 @@ def main():
             objective_reaction=objective_reaction,
             enzyme_upper_bound=enzyme_upper_bound
         )
-        
         # Save pre-tuning wild-type growth
         wt_file = os.path.join(args.output, 'pretuning_wildtype.npy')
         np.save(wt_file, pretuning_wildtype)
@@ -551,7 +566,6 @@ def main():
             objective_reaction=objective_reaction,
             enzyme_upper_bound=enzyme_upper_bound
         )
-        
         # Save post-tuning wild-type growth
         wt_file = os.path.join(args.output, 'posttuning_wildtype.npy')
         np.save(wt_file, posttuning_wildtype)

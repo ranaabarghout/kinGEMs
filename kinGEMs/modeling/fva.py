@@ -714,7 +714,7 @@ def flux_variability_analysis_parallel_chunked(model, processed_df, biomass_reac
         promiscuous_off=promiscuous_off,
         complexes_off=complexes_off,
         maximization=True, save_results=False,
-        verbose=False
+        verbose=True
     )
     print(f"  Optimal biomass: {sol_biomass:.6f}")
     print(f"  Biomass constraint: {sol_biomass * opt_ratio:.6f} ≤ biomass ≤ {sol_biomass:.6f} (opt_ratio={opt_ratio})")

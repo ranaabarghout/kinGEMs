@@ -38,12 +38,12 @@ from .config import (
 def load_model(model_path):
     """
     Load a COBRA model from file.
-    
+
     Parameters
     ----------
     model_path : str
         Path to the model file (SBML format)
-        
+
     Returns
     -------
     cobra.Model
@@ -100,91 +100,98 @@ def load_model(model_path):
 #     return model_irrev
 
 def convert_to_irreversible(model):
-        """
-        Convert all non-exchange reversible reactions to irreversible and ensure all exchange reactions
-        have a reversible counterpart (create reverse reactions if needed).
-        """
-        # List to hold reactions to add
-        reactions_to_add = []
-        coefficients = {}
-    
-        # Convert only non-exchange reversible reactions to irreversible
-        non_exchange_reactions = [rxn for rxn in model.reactions if rxn not in model.exchanges]
-        exchange_reactions = [rxn for rxn in model.exchanges]
-        print('Number of reactions that are non-exchange: ', len(non_exchange_reactions))
-        print('Number of reactions that are exchange: ', len(exchange_reactions))
-    
-        for reaction in non_exchange_reactions:
-            if reaction.reversibility:
-                reverse_reaction_id = reaction.id + "_reverse"
-                
-                # Check if the reverse reaction already exists in the model
-                if reverse_reaction_id not in [rxn.id for rxn in model.reactions]:
-                    reverse_reaction = Reaction(reverse_reaction_id)
-                    reverse_reaction.lower_bound = max(0, -reaction.upper_bound)
-                    reverse_reaction.upper_bound = abs(reaction.lower_bound)
-                    coefficients[reverse_reaction] = reaction.objective_coefficient * -1
-    
-                    # Modify the original reaction to be irreversible
-                    reaction.lower_bound = max(0, reaction.lower_bound)
-                    reaction.upper_bound = max(0, reaction.upper_bound)
-    
-                    # Create the reverse reaction metabolites with reversed stoichiometry
-                    reaction_dict = {k: v * -1 for k, v in reaction._metabolites.items()}
-                    reverse_reaction.add_metabolites(reaction_dict)
-    
-                    # Copy genes and GPR rule from the original reaction
-                    reverse_reaction._model = reaction._model
-                    reverse_reaction._genes = reaction._genes
-                    reverse_reaction._gpr = reaction._gpr
-    
-                    for gene in reaction._genes:
-                        gene._reaction.add(reverse_reaction)
-    
-                    # Add reverse reaction to the list
-                    reactions_to_add.append(reverse_reaction)
-        
-        print('Number of reactions being added from non-exchange:', len(reactions_to_add))
-        # Ensure all exchange reactions are reversible by creating reverse reactions
-        for exchange_reaction in model.exchanges:
-            reverse_exchange_id = exchange_reaction.id + "_reverse"
-            
-            # Check if the reverse reaction already exists in the model
-            if reverse_exchange_id not in [rxn.id for rxn in model.reactions]:
-                # Create a reverse reaction for exchange reactions without reversible behavior
-                reverse_exchange = Reaction(reverse_exchange_id)
-                reverse_exchange.lower_bound = 0
-                reverse_exchange.upper_bound = -exchange_reaction.lower_bound
-    
-                # Reverse the metabolites in the exchange reaction (flip stoichiometry)
-                reverse_metabolites = {met: -coeff for met, coeff in exchange_reaction.metabolites.items()}
-                reverse_exchange.add_metabolites(reverse_metabolites)
-    
-                # Copy the GPR rule (if any) from the original exchange reaction
-                reverse_exchange.gene_reaction_rule = exchange_reaction.gene_reaction_rule
-    
-                # Add reverse exchange reaction to the list
-                reactions_to_add.append(reverse_exchange)
-        
-        print('Number of reactions being added from exchange:', len(reactions_to_add))
-        # Add the newly created reverse reactions to the model
-        model.add_reactions(reactions_to_add)
-    
-        # Set new objective with the added reverse reactions
-        set_objective(model, coefficients, additive=True)
-    
-        return model
+    """
+    Split reversible reactions into two irreversible reactions.
+
+    These two reactions will proceed in opposite directions. This
+    guarantees that all reactions in the model will only allow
+    positive flux values, which is useful for some modeling problems.
+
+    This function mimics the COBRApy convert_to_irreversible implementation
+    to ensure mathematical correctness and preserve solution space.
+
+    Parameters
+    ----------
+    model : cobra.Model
+        A Model object which will be modified in place.
+
+    Returns
+    -------
+    cobra.Model
+        The modified model with irreversible reactions.
+    """
+    reactions_to_add = []
+    coefficients = {}
+
+    for reaction in model.reactions:
+        # If a reaction is reverse only, the forward reaction (which
+        # will be constrained to 0) will be left in the model.
+        if reaction.lower_bound < 0:
+            reverse_id = reaction.id + "_reverse"
+
+            # If a reverse reaction already exists in the model, reuse it
+            if reverse_id in model.reactions:
+                existing_rev = model.reactions.get_by_id(reverse_id)
+                # Update bounds to ensure they cover the computed range
+                existing_rev.lower_bound = max(existing_rev.lower_bound, max(0, -reaction.upper_bound))
+                existing_rev.upper_bound = max(existing_rev.upper_bound, -reaction.lower_bound)
+                coefficients[existing_rev] = reaction.objective_coefficient * -1
+
+                reaction.lower_bound = max(0, reaction.lower_bound)
+                reaction.upper_bound = max(0, reaction.upper_bound)
+
+                # Link reflections
+                reaction.notes["reflection"] = existing_rev.id
+                existing_rev.notes["reflection"] = reaction.id
+                continue
+
+            # Avoid creating duplicates if we've already queued one
+            if reverse_id in {r.id for r in reactions_to_add}:
+                continue
+
+            reverse_reaction = Reaction(reverse_id)
+            reverse_reaction.lower_bound = max(0, -reaction.upper_bound)
+            reverse_reaction.upper_bound = -reaction.lower_bound
+            coefficients[reverse_reaction] = reaction.objective_coefficient * -1
+
+            reaction.lower_bound = max(0, reaction.lower_bound)
+            reaction.upper_bound = max(0, reaction.upper_bound)
+
+            # Make the directions aware of each other
+            reaction.notes["reflection"] = reverse_reaction.id
+            reverse_reaction.notes["reflection"] = reaction.id
+
+            # Create the reverse reaction metabolites with reversed stoichiometry
+            reaction_dict = {k: v * -1 for k, v in reaction._metabolites.items()}
+            reverse_reaction.add_metabolites(reaction_dict)
+
+            # Copy model reference and genes properly
+            reverse_reaction._model = reaction._model
+
+            # Copy gene-reaction associations (COBRApy style)
+            if reaction.gene_reaction_rule:
+                reverse_reaction.gene_reaction_rule = reaction.gene_reaction_rule
+
+            # Copy other attributes
+            reverse_reaction.subsystem = reaction.subsystem
+
+            reactions_to_add.append(reverse_reaction)
+
+    model.add_reactions(reactions_to_add)
+    set_objective(model, coefficients, additive=True)
+
+    return model
 
 
 def get_substrate_metabolites(reaction):
     """
     Get the substrates (reactants) for a reaction.
-    
+
     Parameters
     ----------
     reaction : cobra.Reaction
         The reaction to analyze
-        
+
     Returns
     -------
     list
@@ -196,7 +203,7 @@ def get_substrate_metabolites(reaction):
 def map_metabolites(substrate_df, external_db_dir=None, max_retries=3, retry_delay=2):
     """
     Map metabolites to SMILES structures using external databases.
-    
+
     Parameters
     ----------
     substrate_df : pandas.DataFrame
@@ -207,7 +214,7 @@ def map_metabolites(substrate_df, external_db_dir=None, max_retries=3, retry_del
         Maximum number of retries for web service requests. Default is 3.
     retry_delay : int, optional
         Delay between retries in seconds. Default is 2.
-        
+
     Returns
     -------
     pandas.DataFrame
@@ -221,16 +228,16 @@ def map_metabolites(substrate_df, external_db_dir=None, max_retries=3, retry_del
 
     import numpy as np
     import pandas as pd
-    
+
     # Configure logging
-    logging.basicConfig(level=logging.INFO, 
+    logging.basicConfig(level=logging.INFO,
                         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     logger = logging.getLogger(__name__)
-    
+
     # Load database files
     if external_db_dir is None:
         external_db_dir = os.path.dirname(BiGG_MAPPING)
-    
+
     # Load database files
     BiGG_comps = pd.read_csv(BiGG_MAPPING)
     CHEBI_comps = pd.read_csv(CHEBI_COMPOUNDS, sep='\t')  # noqa: F841
@@ -238,7 +245,7 @@ def map_metabolites(substrate_df, external_db_dir=None, max_retries=3, retry_del
     MetaNetX_comps = pd.read_csv(METANETX_COMPOUNDS, sep='\t')
     MetaNetX_refcomps = pd.read_csv(METANETX_XREF, sep='\t')  # noqa: F841
     SEED_comps = pd.read_csv(SEED_COMPOUNDS, sep='\t')
-    
+
     # Initialize new columns
     df = substrate_df.copy()
     df['SMILES'] = np.nan
@@ -292,7 +299,7 @@ def map_metabolites(substrate_df, external_db_dir=None, max_retries=3, retry_del
                         db_name_mapping[substrate] = metanetx_hit['name'].values[0]
                         logger.info(f"SMILES found in MetaNetX: {smiles}")
                         continue
-            
+
             # Check SEED database
             if not bigg_hit['SEED'].isna().all():
                 seed_hit = SEED_comps[SEED_comps['id'] == bigg_hit['SEED'].values[0]]
@@ -304,7 +311,7 @@ def map_metabolites(substrate_df, external_db_dir=None, max_retries=3, retry_del
                         db_name_mapping[substrate] = name
                         logger.info(f"SMILES found in SEED: {smiles}")
                         continue
-            
+
             # Check CHEBI database
             if not bigg_hit['CHEBI'].isna().all():
                 try:
@@ -315,7 +322,7 @@ def map_metabolites(substrate_df, external_db_dir=None, max_retries=3, retry_del
                     CHEBIInChI_comps['CHEBI_ID'] = CHEBIInChI_comps['CHEBI_ID'].astype(str)
                     chebi_hit = CHEBIInChI_comps[CHEBIInChI_comps['CHEBI_ID'].str.contains(
                         fr'\b{re.escape(bigg_hit["CHEBI"].values[0])}\b', regex=True, case=False)]
-                
+
                 if not chebi_hit.empty:
                     inchi = chebi_hit['InChI'].values[0]
                     inchi_hit = MetaNetX_comps[MetaNetX_comps['InChI'] == inchi]
@@ -327,11 +334,11 @@ def map_metabolites(substrate_df, external_db_dir=None, max_retries=3, retry_del
                             db_name_mapping[substrate] = name
                             logger.info(f"SMILES found in ChEBI: {smiles}")
                             continue
-        
+
         # If no BiGG hit, check other databases directly
         else:
             logger.info("No BiGG match found, checking other databases...")
-            
+
             # Check MetaNetX directly
             metanetx_hit = MetaNetX_comps[MetaNetX_comps['ID'].str.contains(
                 fr'\b{re.escape(substrate)}\b', regex=True, case=False)]
@@ -343,7 +350,7 @@ def map_metabolites(substrate_df, external_db_dir=None, max_retries=3, retry_del
                     db_name_mapping[substrate] = name
                     logger.info(f"MetaNetX match: {name}")
                     continue
-            
+
             # Check SEED
             seed_hit = SEED_comps[SEED_comps['id'].str.contains(
                 fr'\b{re.escape(substrate)}\b', regex=True, case=False)]
@@ -358,7 +365,7 @@ def map_metabolites(substrate_df, external_db_dir=None, max_retries=3, retry_del
 
     # If SMILES is still missing, try to get from web services
     missing_substrates = [sub for sub in df['Substrate partner'].unique() if sub not in smiles_mapping]
-    
+
     for substrate in missing_substrates:
         # First, check alternative databases directly
         metanetx_hit = MetaNetX_comps[MetaNetX_comps['ID'].str.contains(
@@ -385,10 +392,10 @@ def map_metabolites(substrate_df, external_db_dir=None, max_retries=3, retry_del
         cleaned_substrate = df.loc[df['Substrate partner'] == substrate, 'Cleaned Substrate'].iloc[0]
         logger.info('-----------------------------')
         logger.info(f'Mapping substrate: {substrate}')
-        
+
         # Try searches with both original and cleaned names
         names_to_try = [cleaned_substrate, substrate]
-        
+
         for name in names_to_try:
             if pd.notna(name):
                 # Try CIR with retries
@@ -408,20 +415,20 @@ def map_metabolites(substrate_df, external_db_dir=None, max_retries=3, retry_del
     # Apply mappings back to the dataframe
     for substrate, smiles in smiles_mapping.items():
         df.loc[df['Substrate partner'] == substrate, 'SMILES'] = smiles
-    
+
     for substrate, bigg_name in bigg_name_mapping.items():
         df.loc[df['Substrate partner'] == substrate, 'BiGG Name'] = bigg_name
-    
+
     for substrate, db_name in db_name_mapping.items():
         df.loc[df['Substrate partner'] == substrate, 'DB Name'] = db_name
-    
+
     return df
 
 
 def get_SMILES_with_retries(name, service='cactus', max_retries=3, retry_delay=2):
     """
     Get SMILES from various services with retry logic.
-    
+
     Parameters
     ----------
     name : str
@@ -432,7 +439,7 @@ def get_SMILES_with_retries(name, service='cactus', max_retries=3, retry_delay=2
         Maximum number of retries
     retry_delay : int
         Delay between retries in seconds
-        
+
     Returns
     -------
     str or list
@@ -440,9 +447,9 @@ def get_SMILES_with_retries(name, service='cactus', max_retries=3, retry_delay=2
     """
     import logging
     import time  # noqa: F811
-    
+
     logger = logging.getLogger(__name__)
-    
+
     for attempt in range(1, max_retries + 1):
         try:
             if service == 'cactus':
@@ -459,19 +466,19 @@ def get_SMILES_with_retries(name, service='cactus', max_retries=3, retry_delay=2
             else:
                 logger.error(f"Failed to retrieve SMILES for {name} after {max_retries} attempts")
                 return None
-    
+
     return None
 
 
 def get_SMILES_from_cactus(name):
     """
     Get SMILES from Chemical Identifier Resolver (CIR) with improved error handling.
-    
+
     Parameters
     ----------
     name : str
         Compound name to search
-        
+
     Returns
     -------
     str
@@ -481,13 +488,13 @@ def get_SMILES_from_cactus(name):
     import urllib.error
     import urllib.parse
     import urllib.request
-    
+
     logger = logging.getLogger(__name__)
-    
+
     # Properly encode the name for URL
     encoded_name = urllib.parse.quote(name)
     url = f"https://cactus.nci.nih.gov/chemical/structure/{encoded_name}/smiles"
-    
+
     try:
         with urllib.request.urlopen(url, timeout=10) as response:
             smiles = response.read().decode('utf8')
@@ -506,12 +513,12 @@ def get_SMILES_from_cactus(name):
 def get_PubChem_SMILES(name):
     """
     Get SMILES from PubChem with improved error handling.
-    
+
     Parameters
     ----------
     name : str
         Compound name to search
-        
+
     Returns
     -------
     list
@@ -522,33 +529,33 @@ def get_PubChem_SMILES(name):
     import time  # noqa: F811
 
     import requests
-    
+
     logger = logging.getLogger(__name__)
-    
+
     # First search for the compound to get CIDs
     search_url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/{urllib.parse.quote(name)}/cids/JSON"
     smiles_list = []
-    
+
     try:
         search_response = requests.get(search_url, timeout=15)
         search_response.raise_for_status()
         search_data = search_response.json()
-        
+
         if 'IdentifierList' in search_data and 'CID' in search_data['IdentifierList']:
             cids = search_data['IdentifierList']['CID']
-            
+
             # Limit to first 3 results to avoid too many requests
             for cid in cids[:3]:
                 # Small delay to avoid rate limiting
                 time.sleep(0.5)
-                
+
                 # Get SMILES for each CID
                 property_url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{cid}/property/CanonicalSMILES/JSON"
                 try:
                     prop_response = requests.get(property_url, timeout=15)
                     prop_response.raise_for_status()
                     prop_data = prop_response.json()
-                    
+
                     if 'PropertyTable' in prop_data and 'Properties' in prop_data['PropertyTable']:
                         for compound in prop_data['PropertyTable']['Properties']:
                             if 'CanonicalSMILES' in compound:
@@ -556,7 +563,7 @@ def get_PubChem_SMILES(name):
                 except Exception as e:
                     logger.warning(f"Error retrieving SMILES properties for CID {cid}: {e}")
                     continue
-        
+
         return smiles_list
     except requests.exceptions.RequestException as e:
         logger.warning(f"Request error retrieving PubChem data for {name}: {e}")
@@ -572,49 +579,49 @@ def get_PubChem_SMILES(name):
 def clean_metabolite_names(name):
     """
     Clean metabolite names for better matching in databases.
-    
+
     Parameters
     ----------
     name : str
         Raw metabolite name
-        
+
     Returns
     -------
     str
         Cleaned metabolite name
     """
     import re  # noqa: F811
-    
+
     if pd.isna(name):
         return name
-    
+
     # Convert to string if not already
     name = str(name)
-    
+
     # Remove compartment suffix (e.g., _c, _e, _p)
     name = re.sub(r'_[a-z]$', '', name)
-    
+
     # Remove common prefixes/suffixes
     name = re.sub(r'^(cpd|M_|m_)', '', name)
-    
+
     # Replace underscores with spaces
     name = name.replace('_', ' ')
-    
+
     # Remove concentration indicators like (e) or [e]
     name = re.sub(r'[\(\[].[^\)\]]*[\)\]]', '', name)
-    
+
     # Remove charge indicators
     name = re.sub(r'[+-]\d*', '', name)
-    
+
     # Strip whitespace
     name = name.strip()
-    
+
     return name
 
 def retrieve_sequences(model, organism, output_path=None):
     """
     Retrieve protein sequences for genes in a model using UniProt web service.
-    
+
     Parameters
     ----------
     model : cobra.Model or str
@@ -623,7 +630,7 @@ def retrieve_sequences(model, organism, output_path=None):
         Organism name (e.g., 'E coli', 'Yeast')
     output_path : str, optional
         Path to save sequence data
-        
+
     Returns
     -------
     pandas.DataFrame
@@ -632,13 +639,13 @@ def retrieve_sequences(model, organism, output_path=None):
     # Load model if string
     if isinstance(model, str):
         model = load_model(model)
-    
+
     # Get taxonomy ID
     if organism in TAXONOMY_IDS:
         taxon_ID = TAXONOMY_IDS[organism]
     else:
         raise ValueError(f"Unknown organism '{organism}'. Available options: {list(TAXONOMY_IDS.keys())}")
-    
+
     # Helper functions
     def extract_genes(gpr_rules):
         """Extract individual genes from a GPR rule."""
@@ -649,16 +656,16 @@ def retrieve_sequences(model, organism, output_path=None):
                 gene = gene.replace('(', '').replace(')', '')
                 genes.append(gene)
         return genes
-    
+
     def get_UniProt_sequence(gene):
         """
         Query UniProt for gene sequence.
-        
+
         Parameters
         ----------
         gene : str
             Gene name to query
-        
+
         Returns
         -------
         str or None
@@ -666,42 +673,42 @@ def retrieve_sequences(model, organism, output_path=None):
         """
         if not gene:
             return None
-        
+
         try:
             query = f"gene_exact:({gene}) AND taxonomy_id:({taxon_ID})"
             result = service.search(query, frmt="fasta")
-            
+
             # Validate result
             if not result:
                 logging.warning(f"No sequence found for gene {gene}")
                 return None
-            
+
             # Extract sequence from FASTA format
             sequence = result.split("\n", 1)[-1]
             sequence = sequence.replace("\n", "").strip()
-            
+
             # Additional validation
             if not sequence:
                 logging.warning(f"Empty sequence retrieved for gene {gene}")
                 return None
-            
+
             return sequence
-        
+
         except urllib.error.URLError as url_err:
             # Network-related errors
             logging.warning(f"Network error retrieving sequence for {gene}: {url_err}")
             return None
-        
+
         except AttributeError as attr_err:
             # Potential issues with service or method
             logging.error(f"Attribute error for gene {gene}: {attr_err}", exc_info=True)
             return None
-        
+
         except Exception as e:
             # Catch any other unexpected errors
             logging.error(f"Unexpected error retrieving sequence for {gene}: {e}", exc_info=True)
             return None
-    
+
     # Create dataframe with all genes
     gene_data = []
     for gene in model.genes:
@@ -709,34 +716,34 @@ def retrieve_sequences(model, organism, output_path=None):
             'Single_gene': gene.id,
             'Name': gene.name
         })
-    
+
     df_genes = pd.DataFrame(gene_data)
-    
+
     # Initialize UniProt service
     service = UniProt()
-    
+
     # Query sequences for each gene
     df_genes['Sequence'] = df_genes['Single_gene'].apply(get_UniProt_sequence)
-    
+
     # Save if output path provided
     if output_path:
         ensure_dir_exists(os.path.dirname(output_path))
         df_genes.to_csv(output_path, index=False)
-    
+
     return df_genes
 
-def prepare_model_data(model_path, substrates_output=None, sequences_output=None, 
-                      organism='E coli', metadata_dir=None):
+def prepare_model_data(model_path, substrates_output=None, sequences_output=None,
+                      organism='E coli', metadata_dir=None, convert_irreversible=False):
     """
     Prepare model data for kinetic analysis.
-    
+
     This function performs several preprocessing steps:
     1. Load the model
     2. Convert to irreversible reactions
     3. Extract substrate information
     4. Map metabolites to SMILES
     5. Retrieve protein sequences
-    
+
     Parameters
     ----------
     model_path : str
@@ -749,7 +756,7 @@ def prepare_model_data(model_path, substrates_output=None, sequences_output=None
         Organism name for sequence retrieval
     metadata_dir : str, optional
         Directory containing metadata files
-        
+
     Returns
     -------
     tuple
@@ -758,11 +765,16 @@ def prepare_model_data(model_path, substrates_output=None, sequences_output=None
     # Load model
     model = load_model(model_path)
     print(f"Loaded model with {len(model.reactions)} reactions and {len(model.metabolites)} metabolites")
-    
-    # Convert to irreversible
-    irrev_model = model #convert_to_irreversible(model)
-    # print(f"Converted to irreversible model with {len(irrev_model.reactions)} reactions")
-    
+
+    # Convert to irreversible (required for proper enzyme constraints)
+    if convert_irreversible:
+        irrev_model = convert_to_irreversible(model)
+        print(f"Converted to irreversible model with {len(irrev_model.reactions)} reactions")
+    else:
+        # Default behavior: convert to irreversible for enzyme constraints
+        irrev_model = convert_to_irreversible(model)
+        print(f"Converted to irreversible model with {len(irrev_model.reactions)} reactions")
+
     # Extract substrates for both directions if reversible
     rxn_data = []
     for reaction in irrev_model.reactions:
@@ -787,30 +799,30 @@ def prepare_model_data(model_path, substrates_output=None, sequences_output=None
 
     substrate_df = pd.DataFrame(rxn_data)
     print(f"Extracted {len(substrate_df)} substrate-reaction-direction pairs")
-    
+
     # Map metabolites to SMILES
     substrate_df_with_smiles = map_metabolites(substrate_df, metadata_dir)
     print(f"Mapped metabolites to SMILES ({substrate_df_with_smiles['SMILES'].notna().sum()} found)")
-    
+
     # Retrieve protein sequences
     sequences_df = retrieve_sequences(irrev_model, organism)
     print(f"Retrieved {sequences_df['Sequence'].notna().sum()} protein sequences")
-    
+
     # Save outputs if paths provided
     if substrates_output:
         ensure_dir_exists(os.path.dirname(substrates_output))
         substrate_df_with_smiles.to_csv(substrates_output, index=False)
-    
+
     if sequences_output:
         ensure_dir_exists(os.path.dirname(sequences_output))
         sequences_df.to_csv(sequences_output, index=False)
-    
+
     return irrev_model, substrate_df_with_smiles, sequences_df
 
 def merge_substrate_sequences(substrate_df, sequences_df, model, output_path=None):
     """
     Merge substrate and sequence data for kinetic analysis.
-    
+
     Parameters
     ----------
     substrate_df : pandas.DataFrame
@@ -821,7 +833,7 @@ def merge_substrate_sequences(substrate_df, sequences_df, model, output_path=Non
         The model containing reactions and their GPR rules
     output_path : str, optional
         Path to save the merged data
-        
+
     Returns
     -------
     pandas.DataFrame
@@ -829,31 +841,31 @@ def merge_substrate_sequences(substrate_df, sequences_df, model, output_path=Non
     """
     # Extract gene information from model reactions
     reaction_genes = []
-    
+
     # Helper function to extract genes from GPR
     def extract_genes(gpr_rule):
         genes = []
         if not gpr_rule or pd.isna(gpr_rule):
             return genes
-            
+
         for rule in gpr_rule.split(' and '):
             sub_genes = rule.split(' or ')
             for gene in sub_genes:
                 gene = gene.replace('(', '').replace(')', '')
                 genes.append(gene)
         return genes
-    
+
     def get_gpr_rule(reaction_id, model):
         """
         Extract the Gene-Protein-Reaction (GPR) rule for a given reaction.
-        
+
         Parameters
         ----------
         reaction_id : str
             The ID of the reaction
         model : cobra.Model
             The model containing the reaction
-            
+
         Returns
         -------
         str or None
@@ -863,7 +875,7 @@ def merge_substrate_sequences(substrate_df, sequences_df, model, output_path=Non
         try:
             # Get the reaction object from the model
             reaction = model.reactions.get_by_id(reaction_id)
-            
+
             # Return the gene_reaction_rule attribute
             return reaction.gene_reaction_rule
         except KeyError:
@@ -885,37 +897,37 @@ def merge_substrate_sequences(substrate_df, sequences_df, model, output_path=Non
                 'Single_gene': gene,
                 'GPR_rules': gpr_rule
             })
-    
+
     df_reaction_genes = pd.DataFrame(reaction_genes)
-    
+
     # Merge substrate data with gene data
     merged_df = substrate_df.merge(df_reaction_genes, on='Reaction', how='left')
-    
+
     # Merge with sequences
-    merged_df = merged_df.merge(sequences_df[['Single_gene', 'Sequence']], 
+    merged_df = merged_df.merge(sequences_df[['Single_gene', 'Sequence']],
                                on='Single_gene', how='left')
-    
+
     # Rename columns for consistency with original code
     merged_df = merged_df.rename(columns={
-        'Reaction': 'Reactions', 
+        'Reaction': 'Reactions',
         'Sequence': 'SEQ',
         'Substrate partner': 'Reaction_partners',
         'SMILES': 'CMPD_SMILES'
     })
 
     merged_df['kcat'] = np.random.random(len(merged_df))
-    
+
     # Save if output path provided
     if output_path:
         ensure_dir_exists(os.path.dirname(output_path))
         merged_df.to_csv(output_path, index=False)
-    
+
     return merged_df
 
 def process_kcat_predictions(merged_df, predictions_csv_path, output_path=None):
     """
     Process k-fold predictions for kcat values and merge with substrate-sequence data.
-    
+
     Parameters
     ----------
     merged_df : pandas.DataFrame
@@ -925,7 +937,7 @@ def process_kcat_predictions(merged_df, predictions_csv_path, output_path=None):
         (pred_value_0, pred_value_1, pred_value_2, pred_value_3, pred_value_4)
     output_path : str, optional
         Path to save the processed data
-        
+
     Returns
     -------
     pandas.DataFrame
@@ -935,72 +947,73 @@ def process_kcat_predictions(merged_df, predictions_csv_path, output_path=None):
 
     import numpy as np  # noqa: F401
     import pandas as pd
-    
+
     # Validate inputs
     if not os.path.exists(predictions_csv_path):
         raise FileNotFoundError(f"Predictions CSV file not found: {predictions_csv_path}")
-    
+
     # Make sure required columns exist in merged_df
     required_cols = ['CMPD_SMILES', 'SEQ']
     missing_cols = [col for col in required_cols if col not in merged_df.columns]
     if missing_cols:
         raise ValueError(f"Missing required columns in merged_df: {missing_cols}")
-    
+
     # Create a deep copy to avoid modifying the original dataframe
     result_df = merged_df.copy()
-    
+
     # Load the predictions CSV
     predictions_df = pd.read_csv(predictions_csv_path)
-    
+
     # Ensure the predictions CSV has the required columns
     required_pred_cols = ['CMPD_SMILES', 'SEQ'] + [f'pred_value_{i}' for i in range(5)]
     missing_pred_cols = [col for col in required_pred_cols if col not in predictions_df.columns]
     if missing_pred_cols:
         raise ValueError(f"Missing required columns in predictions CSV: {missing_pred_cols}")
-    
+
     # Merge with the predictions
     result_df = pd.merge(result_df, predictions_df, on=['CMPD_SMILES', 'SEQ'], how='left')
-    
+
     # Calculate statistics across the folds
     kcat_cols = [f'pred_value_{i}' for i in range(5)]
-    
+
     # Calculate mean kcat (average of the 5 folds)
     result_df['kcat_mean'] = result_df[kcat_cols].mean(axis=1)
-    
+
     # Calculate standard deviation of kcat values
     result_df['kcat_std'] = result_df[kcat_cols].std(axis=1)
-    
+
     # Calculate coefficient of variation (relative standard deviation)
     result_df['kcat_cv'] = result_df['kcat_std'] / result_df['kcat_mean'] * 100
-    
+
     # Calculate min and max kcat values
     result_df['kcat_min'] = result_df[kcat_cols].min(axis=1)
     result_df['kcat_max'] = result_df[kcat_cols].max(axis=1)
 
-    result_df = result_df.drop('kcat_x', axis=1)
-    
+    result_df = result_df.drop(columns=['kcat_y', 'kcat_x', 'Unnamed: 0'], axis=1)
+    result_df.drop_duplicates(inplace=True)
+
     # Save if output path provided
     if output_path:
         # Create directory if it doesn't exist
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         result_df.to_csv(output_path, index=False)
-    
+
     return result_df
 
 def process_merged_data_with_folds(merged_df, fold_csv_paths, output_path=None):
     """
     Directly process a merged dataframe with fold predictions.
-    
+
     Parameters
     ----------
     merged_df : pandas.DataFrame
-        DataFrame already containing substrate and sequence information 
+        DataFrame already containing substrate and sequence information
         (output from merge_substrate_sequences function)
     fold_csv_paths : list
         List of paths to the 5 CSV files containing kcat predictions for each fold
     output_path : str, optional
         Path to save the final processed data
-        
+
     Returns
     -------
     pandas.DataFrame
@@ -1008,7 +1021,7 @@ def process_merged_data_with_folds(merged_df, fold_csv_paths, output_path=None):
     """
     # Process the kcat predictions
     result_df = process_kcat_predictions(merged_df, fold_csv_paths, output_path)
-    
+
     return result_df
 
 def assign_kcats_to_model(model, df_new):
@@ -1084,11 +1097,14 @@ def annotate_model_with_kcat_and_gpr(model: cobra.Model,
                                      kcat_col: str     = "kcat_mean") -> cobra.Model:
     """
     For each reaction in `model` that appears in df[reaction_col]:
+      • If multiple substrates exist for the reaction, select only the substrate
+        with the highest average kcat_mean across all genes for that reaction.
+        Substrate identification: 'Reaction_partners' column first, fallback to 'CMPD_SMILES'.
       • Collect all df[kcat_col] values for each gene (df[gene_col]), convert to 1/hr.
       • reaction.annotation['kcat'] = flat list of all those converted kcats.
-      • reaction.annotation['gpr_replaced'] = original GPR (df[gpr_col]) 
+      • reaction.annotation['gpr_replaced'] = original GPR (df[gpr_col])
         with each gene name replaced by its kcat (or "(k1 or k2…)" if multiple).
-    
+
     Parameters
     ----------
     model : cobra.Model
@@ -1099,6 +1115,7 @@ def annotate_model_with_kcat_and_gpr(model: cobra.Model,
           - gene IDs in `gene_col`
           - numeric kcat values (1/s) in `kcat_col`
           - logical GPR strings in `gpr_col`
+          - substrate IDs in 'Reaction_partners' (preferred) OR 'CMPD_SMILES' (fallback)
     reaction_col : str
         Name of the DataFrame column with reaction IDs.
     gene_col : str
@@ -1107,12 +1124,12 @@ def annotate_model_with_kcat_and_gpr(model: cobra.Model,
         Name of the column with the original GPR expression.
     kcat_col : str
         Name of the column with kcat values in 1/s.
-    
+
     Returns
     -------
     cobra.Model
         The same model, with each annotated reaction carrying:
-          - annotation['kcat']
+          - annotation['kcat'] (only for the best substrate if multiple exist)
           - annotation['gpr_replaced']
     """
     # group your data by reaction
@@ -1127,6 +1144,28 @@ def annotate_model_with_kcat_and_gpr(model: cobra.Model,
             rxn.annotation["gpr"] = "AND/OR"
         else:
             rxn.annotation["gpr"] = "1"
+
+        # If multiple substrates exist, find the one with highest average kcat_mean
+        # Try 'Reaction_partners' first, fall back to 'CMPD_SMILES'
+        substrate_col = None
+        if 'Reaction_partners' in subdf.columns:
+            substrate_col = 'Reaction_partners'
+        elif 'CMPD_SMILES' in subdf.columns:
+            substrate_col = 'CMPD_SMILES'
+
+        if substrate_col and len(subdf[substrate_col].unique()) > 1:
+            # Group by substrate to calculate average kcat_mean for each substrate
+            substrate_avg_kcats = {}
+            for substrate, substrate_df in subdf.groupby(substrate_col):
+                valid_kcats = substrate_df[kcat_col].dropna()
+                if len(valid_kcats) > 0:
+                    substrate_avg_kcats[substrate] = valid_kcats.mean()
+
+            # Select substrate with highest average kcat_mean
+            if substrate_avg_kcats:
+                best_substrate = max(substrate_avg_kcats, key=substrate_avg_kcats.get)
+                # Filter dataframe to only include rows with the best substrate
+                subdf = subdf[subdf[substrate_col] == best_substrate].copy()
 
         # build gene → [kcat1, kcat2, …] (in 1/hr)
         gene2kcats = {}

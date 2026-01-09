@@ -322,7 +322,7 @@ def run_optimization(
                 constraints_skipped += 1
                 skip_reasons['no_kcat'] += 1
                 return Constraint.Skip  # noqa: F405
-            k_val = sum(all_ks) / len(all_ks)
+            k_val = max(all_ks) #/ len(all_ks) # Taking the max out of all substrates for a gene, reaction combo
             constraints_added += 1
             return mo.v[rxn_id] <= k_val * mo.E[gene_id]
         # Multiple clauses - will be handled by ISO or MIXED constraints
@@ -353,9 +353,9 @@ def run_optimization(
         for clause in clauses:
             g = clause[0]  # Single gene in this clause
             kl = kcat_dict.get((rxn_id, g), [])
-            if kl:
-                kmin = min(kl)
-                terms.append(kmin * mo.E[g])
+            if kl:  # taking the maximum kcat value for each gene, reaction pair to make sure we are picking the correct substrate
+                kmax = max(kl)
+                terms.append(kmax * mo.E[g])
 
         if not terms:
             iso_skipped += 1
@@ -425,7 +425,7 @@ def run_optimization(
     if not isoenzymes_off and not complexes_off:
         m.kcat_mixed = Constraint(m.R, rule=mixed_rule)  # noqa: F405
 
-    # 6d) Promiscuous enzymes
+    # 6d) Promiscuous enzymes (handles enzyme sharing across reactions)
     def promis_rule(mo, g_id):
         nonlocal promis_added, promis_skipped
         usage = []
@@ -439,6 +439,8 @@ def run_optimization(
             promis_skipped += 1
             return Constraint.Skip  # noqa: F405
         promis_added += 1
+        # This constraint already ensures that forward and reverse reactions
+        # share the same enzyme pool for gene g_id
         return sum(usage) <= mo.E[g_id]
 
     if not promiscuous_off:
@@ -533,7 +535,20 @@ def run_optimization(
     #solver.options['threads'] = 4
     # print("Solver:", solver)
     # print(f"Solver options: {dict(solver.options)}")
-    solver.solve(m, tee=tee, load_solutions=True)
+    result = solver.solve(m, tee=tee, load_solutions=True)
+
+    # Check if the optimization was successful
+    if result.solver.termination_condition != TerminationCondition.optimal:
+        if verbose:
+            print("⚠️  WARNING: Optimization did not converge to optimal solution")
+            print(f"   Termination condition: {result.solver.termination_condition}")
+            print(f"   Solver status: {result.solver.status}")
+
+        # Return None to indicate failure rather than invalid results
+        sol_val = None
+        records = []
+        df_FBA = pd.DataFrame(columns=['Variable','Index','Value'])
+        return sol_val, df_FBA, gene_sequences_dict, m
     # Print total enzyme usage after optimization if possible
     if enzyme_ratio and verbose:
         try:
@@ -665,12 +680,16 @@ def run_optimization_with_dataframe(model, processed_df, objective_reaction,
     """
     Run enzyme-constrained flux balance analysis using a processed dataframe.
 
+    If a reaction has multiple substrates (identified via Reaction_partners or CMPD_SMILES),
+    selects the substrate with the highest average kcat_mean value for that reaction.
+
     Parameters
     ----------
     model : cobra.Model or str
         COBRA model object or path to model file
     processed_df : pandas.DataFrame
-        DataFrame containing Reactions, Single_gene, SEQ, SMILES, and kcat_mean columns
+        DataFrame containing Reactions, Single_gene, SEQ, and kcat_mean columns.
+        Optional columns: Reaction_partners, CMPD_SMILES (for substrate selection)
     objective_reaction : str
         Reaction ID to maximize/minimize
     enzyme_upper_bound : float, optional
@@ -715,20 +734,77 @@ def run_optimization_with_dataframe(model, processed_df, objective_reaction,
     kcat_dict = {}
     gene_sequences_dict = {}
 
-    # Determine which kcat column to use (prefer 'kcat' if available, fallback to 'kcat_mean')
-    kcat_col = 'kcat' if 'kcat' in processed_df.columns else 'kcat_mean'
+    # Determine which kcat column to use (prefer 'kcat_updated' > 'kcat' > 'kcat_mean')
+    if 'kcat_updated' in processed_df.columns:
+        kcat_col = 'kcat_updated'
+    elif 'kcat' in processed_df.columns:
+        kcat_col = 'kcat'
+    else:
+        kcat_col = 'kcat_mean'
+        print("  [KCAT DEBUG] Using 'kcat_mean' column for optimization")
 
-    # OPTIMIZED: Filter valid rows first, then use vectorized operations
-    # This is MUCH faster than iterrows() for large DataFrames (398K rows)
+    if verbose:
+        # Show some example values to verify which column is being used
+        sample_data = processed_df[processed_df[kcat_col].notna()].head(3)
+        if 'kcat_updated' in processed_df.columns:
+            print("  [KCAT DEBUG] Sample kcat_mean vs kcat_updated values:")
+            for idx, row in sample_data.iterrows():
+                rxn, gene = row['Reactions'], row['Single_gene']
+                kcat_mean = row.get('kcat_mean', 'N/A')
+                kcat_updated = row.get('kcat_updated', 'N/A')
+                print(f"    {rxn}_{gene}: kcat_mean={kcat_mean:.3e}, kcat_updated={kcat_updated:.3e}")
+        else:
+            print(f"  [KCAT DEBUG] Sample {kcat_col} values:")
+            for idx, row in sample_data.iterrows():
+                rxn, gene = row['Reactions'], row['Single_gene']
+                kcat_val = row[kcat_col]
+                print(f"    {rxn}_{gene}: {kcat_col}={kcat_val:.3e}")
+
+    # Filter valid rows first
     valid_rows = processed_df[processed_df[kcat_col].notna() & processed_df['SEQ'].notna()].copy()
 
-    # Build kcat_dict using vectorized operations
+    # Apply the same substrate selection logic as in annotate_model_with_kcat_and_gpr
+    # Process each reaction separately to handle substrate selection
+    filtered_rows_list = []
+
+    for rxn_id, subdf in valid_rows.groupby('Reactions'):
+        # If multiple substrates exist, find the one with highest average kcat_mean
+        # Try 'Reaction_partners' first, fall back to 'CMPD_SMILES'
+        substrate_col = None
+        if 'Reaction_partners' in subdf.columns:
+            substrate_col = 'Reaction_partners'
+        elif 'CMPD_SMILES' in subdf.columns:
+            substrate_col = 'CMPD_SMILES'
+
+        if substrate_col and len(subdf[substrate_col].unique()) > 1:
+            # Group by substrate to calculate average kcat_mean for each substrate
+            substrate_avg_kcats = {}
+            for substrate, substrate_df in subdf.groupby(substrate_col):
+                valid_kcats = substrate_df[kcat_col].dropna()
+                if len(valid_kcats) > 0:
+                    substrate_avg_kcats[substrate] = valid_kcats.mean()
+
+            # Select substrate with highest average kcat_mean
+            if substrate_avg_kcats:
+                best_substrate = max(substrate_avg_kcats, key=substrate_avg_kcats.get)
+                # Filter dataframe to only include rows with the best substrate
+                subdf = subdf[subdf[substrate_col] == best_substrate].copy()
+
+        filtered_rows_list.append(subdf)
+
+    # Combine all filtered rows
+    if filtered_rows_list:
+        filtered_rows = pd.concat(filtered_rows_list, ignore_index=True)
+    else:
+        filtered_rows = valid_rows
+
+    # Build kcat_dict using vectorized operations on filtered data
     # Group by (Reactions, Single_gene) and take the mean kcat if duplicates exist
-    grouped = valid_rows.groupby(['Reactions', 'Single_gene'])[kcat_col].mean()
+    grouped = filtered_rows.groupby(['Reactions', 'Single_gene'])[kcat_col].mean()
     kcat_dict = {key: [value] for key, value in grouped.items()}
 
     # Build gene_sequences_dict (take first sequence for each gene)
-    gene_seq_grouped = valid_rows.groupby('Single_gene')['SEQ'].first()
+    gene_seq_grouped = filtered_rows.groupby('Single_gene')['SEQ'].first()
     gene_sequences_dict = gene_seq_grouped.to_dict()
 
     if len(kcat_dict) > 0:

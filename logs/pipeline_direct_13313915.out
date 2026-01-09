@@ -1,0 +1,94 @@
+=========================================
+Job: kinGEMs General Pipeline (Direct)
+Job ID: 13313915
+Node: fc30458
+Current working directory: /project/def-mahadeva/ranaab/kinGEMs_v2
+Starting run at: Sun Nov 30 19:14:15 PST 2025
+=========================================
+
+Configuration: configs/iML1515_GEM_parallel_fva.json
+CPUs allocated: 10
+
+Updated FVA workers to match SLURM CPUs: 10
+Using temporary config: /tmp/tmp.RDNBSxBEjN.json
+
+Running kinGEMs pipeline...
+Loading configuration from: /tmp/tmp.RDNBSxBEjN.json
+
+======================================================================
+=== kinGEMs Pipeline for iML1515_GEM ===
+======================================================================
+Run ID: iML1515_GEM_20251130_8456
+Model type: Standard
+Organism: E coli
+Results directory: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/iML1515_GEM_20251130_8456
+Solver: glpk
+======================================================================
+
+=== Configuration Summary ===
+Config file: /tmp/tmp.RDNBSxBEjN.json
+Model name: iML1515_GEM
+Enzyme upper bound: 0.2
+Enable FVA: True
+Enable Biolog validation: False
+
+FVA Settings:
+  Parallel execution: True
+  Workers: 10
+  Method: dask
+
+Simulated Annealing Settings:
+  Temperature: 1.0
+  Cooling rate: 0.975
+  Min temperature: 0.001
+  Max iterations: 100
+  Max unchanged iterations: 5
+  Change threshold: 0.009
+  Biomass goal: 0.5
+======================================================================
+
+Biomass reaction: BIOMASS_Ec_iML1515_core_75p37M
+
+=== Step 1: Preparing model data ===
+  ✓ Found existing files, loading cached data:
+    - /project/6000502/ranaab/kinGEMs_v2/data/interim/iML1515_GEM/iML1515_GEM_substrates.csv
+    - /project/6000502/ranaab/kinGEMs_v2/data/interim/iML1515_GEM/iML1515_GEM_sequences.csv
+Warning: Model has 8 validation errors
+  Model: 1516 genes, 2712 reactions
+
+=== Step 2: Merging substrate and sequence data ===
+  ✓ Found existing file, loading cached data:
+    - /project/6000502/ranaab/kinGEMs_v2/data/interim/iML1515_GEM/iML1515_GEM_merged_data.csv
+  Merged data: 12229 rows
+  Found predictions file: X06A_kinGEMs_ecoli_iML1515_predictions.csv
+
+=== Step 3: Processing CPI-Pred kcat values & annotating model ===
+  ✓ Found existing file, loading cached data:
+    - /project/6000502/ranaab/kinGEMs_v2/data/processed/iML1515_GEM/iML1515_GEM_processed_data.csv
+  Processed data: 33657 rows
+  Reactions with kcat: 2136/2712
+
+=== Step 4: Running optimization ===
+  Running standard COBRApy FBA (no enzyme constraints)...
+    COBRApy biomass: 0.8770
+  Running kinGEMs enzyme-constrained optimization...
+    kinGEMs biomass: 0.0089
+
+  Comparison:
+    Standard FBA:           0.8770
+    Enzyme-constrained FBA: 0.0089
+    Reduction due to enzyme budget: 99.0%
+  Cleaning up optimization memory...
+  Using standard model - may need additional constraint processing
+
+=== Step 5: Running simulated annealing ===
+  Configuration:
+    - Temperature: 1.0
+    - Cooling rate: 0.975
+    - Max iterations: 100
+    - Max unchanged iterations: 5
+    - Change threshold: 0.009
+    - Biomass goal: 0.5
+  Starting optimization...
+
+  Iter 1/100: biomass=0.010621, temp=1.0000  Iter 2/100: biomass=0.019486, temp=0.9750  Iter 3/100: biomass=0.037620, temp=0.9506  Iter 4/100: biomass=0.062000, temp=0.9269  Iter 5/100: biomass=0.074514, temp=0.9037  Iter 6/100: biomass=0.093587, temp=0.8811  Iter 7/100: biomass=0.113227, temp=0.8591  Iter 8/100: biomass=0.132678, temp=0.8376  Iter 9/100: biomass=0.153174, temp=0.8167  Iter 10/100: biomass=0.174189, temp=0.7962  Iter 11/100: biomass=0.189962, temp=0.7763  Iter 12/100: biomass=0.207770, temp=0.7569  Iter 13/100: biomass=0.222875, temp=0.7380  Iter 14/100: biomass=0.236884, temp=0.7195  Iter 15/100: biomass=0.250984, temp=0.7016  Iter 16/100: biomass=0.265295, temp=0.6840  Iter 17/100: biomass=0.281054, temp=0.6669  Iter 18/100: biomass=0.292777, temp=0.6502  Iter 19/100: biomass=0.306603, temp=0.6340  Iter 20/100: biomass=0.316236, temp=0.6181  Iter 21/100: biomass=0.329604, temp=0.6027  Iter 22/100: biomass=0.340536, temp=0.5876  Iter 23/100: biomass=0.350664, temp=0.5729  Iter 24/100: biomass=0.359399, temp=0.5586  Iter 25/100: biomass=0.369512, temp=0.5446  Iter 26/100: biomass=0.378661, temp=0.5310  Iter 27/100: biomass=0.390868, temp=0.5177  Iter 28/100: biomass=0.399998, temp=0.5048  Iter 29/100: biomass=0.409099, temp=0.4922  Iter 30/100: biomass=0.419447, temp=0.4799  Iter 31/100: biomass=0.425407, temp=0.4679  Iter 32/100: biomass=0.435958, temp=0.4562  Iter 33/100: biomass=0.445201, temp=0.4448  Iter 34/100: biomass=0.456034, temp=0.4337  Iter 35/100: biomass=0.464037, temp=0.4228  Iter 36/100: biomass=0.472707, temp=0.4123  Iter 37/100: biomass=0.481435, temp=0.4019  Iter 38/100: biomass=0.489760, temp=0.3919  Iter 39/100: biomass=0.495980, temp=0.3821

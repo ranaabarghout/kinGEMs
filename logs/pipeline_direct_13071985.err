@@ -1,0 +1,16 @@
+2025-11-28 19:15:09.171 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+Traceback (most recent call last):
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_pipeline.py", line 813, in <module>
+    main()
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_pipeline.py", line 654, in main
+    (solution_value, df_FBA, gene_sequences_dict, _) = run_optimization_with_dataframe(
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/kinGEMs/modeling/optimize.py", line 1337, in run_optimization_with_dataframe
+    tuple
+         
+  File "/project/6000502/ranaab/kinGEMs_v2/kinGEMs/modeling/optimize.py", line 1050, in run_optimization
+    # OPTIMIZED: Vectorized molecular weight calculation using cached function
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/pyomo/opt/base/solvers.py", line 654, in solve
+    raise ApplicationError("Solver (%s) did not exit normally" % self.name)
+pyomo.common.errors.ApplicationError: Solver (glpk) did not exit normally

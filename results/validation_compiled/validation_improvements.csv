@@ -1,4 +1,4 @@
 ,Δ Pearson r,Δ Spearman r,Δ RMSE,% RMSE change
-Baseline → Pre-tuning,0.0375,0.0358,-0.5503,-55.7864
-Baseline → Post-tuning,0.0141,0.0123,-0.5302,-53.7546
-Pre-tuning → Post-tuning,-0.0234,-0.0235,0.02,4.5954
+Baseline → Pre-tuning,0.0483,0.007,-0.5093,-51.6294
+Baseline → Post-tuning,-0.0049,0.0007,-0.3667,-37.1752
+Pre-tuning → Post-tuning,-0.0531,-0.0063,0.1426,29.8824
