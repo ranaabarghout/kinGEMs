@@ -1,0 +1,98 @@
+=========================================
+Job: kinGEMs General Pipeline (Direct)
+Job ID: 6535189
+Node: c41
+Current working directory: /scratch/chinasse/kinGEMs_v2
+Starting run at: Fri Jan  9 11:38:40 AM EST 2026
+=========================================
+
+Configuration: configs/fluxomics_iML1515_GEM.json
+CPUs allocated: 8
+
+Updated FVA workers to match SLURM CPUs: 8
+Using temporary config: /tmp/tmp.XpIrprwbl2.json
+
+Running kinGEMs pipeline...
+Loading configuration from: /tmp/tmp.XpIrprwbl2.json
+
+======================================================================
+=== kinGEMs Pipeline for iML1515_GEM ===
+======================================================================
+Run ID: iML1515_GEM_20260109_1331
+Model type: Standard
+Organism: E coli
+Results directory: /scratch/chinasse/kinGEMs_v2/results/tuning_results/iML1515_GEM_20260109_1331
+Solver: glpk
+======================================================================
+
+=== Configuration Summary ===
+Config file: /tmp/tmp.XpIrprwbl2.json
+Model name: iML1515_GEM
+Enzyme upper bound: 0.25
+Enable FVA: True
+Enable Biolog validation: False
+
+FVA Settings:
+  Parallel execution: True
+  Biomass constraint ratio: 0.9
+  Workers: 8
+  Method: dask
+
+Simulated Annealing Settings:
+  Temperature: 100
+  Cooling rate: 0.95
+  Min temperature: 0.001
+  Max iterations: 1000
+  Max unchanged iterations: 50
+  Change threshold: 0.001
+  Biomass goal: 0.2
+  Top enzymes to tune: 20
+======================================================================
+
+Biomass reaction: BIOMASS_Ec_iML1515_core_75p37M
+
+=== Step 1: Preparing model data ===
+  ✓ Found existing files, loading cached data:
+    - /scratch/chinasse/kinGEMs_v2/data/interim/iML1515_GEM/iML1515_GEM_substrates.csv
+    - /scratch/chinasse/kinGEMs_v2/data/interim/iML1515_GEM/iML1515_GEM_sequences.csv
+Warning: Model has 8 validation errors
+  Model: 1516 genes, 3375 reactions
+
+=== Step 2: Merging substrate and sequence data ===
+  ✓ Found existing file, loading cached data:
+    - /scratch/chinasse/kinGEMs_v2/data/interim/iML1515_GEM/iML1515_GEM_merged_data.csv
+  Merged data: 12229 rows
+  Found predictions file: X06A_kinGEMs_ecoli_iML1515_predictions.csv
+
+=== Step 3: Processing CPI-Pred kcat values & annotating model ===
+  ✓ Found existing file, loading cached data:
+    - /scratch/chinasse/kinGEMs_v2/data/processed/iML1515_GEM/iML1515_GEM_processed_data.csv
+  Processed data: 33934 rows
+  Reactions with kcat: 2136/3375
+
+=== Step 4: Running optimization ===
+  Running standard COBRApy FBA (no enzyme constraints)...
+  Applying medium conditions (fixed fluxes) to COBRApy model:
+    Fixed EX_glc__D_e: -9.99998
+    Fixed EX_so4_e: -0.175297
+    Fixed EX_o2_e: -14.2804
+    Fixed EX_nh4_e: -5.23859
+    COBRApy biomass: 1.7798
+  Running kinGEMs enzyme-constrained optimization...
+
+Memory Usage Statistics:
+6535189                                       
+6535189.bat+                                  
+6535189.ext+                                  
+Peak memory usage:            
+
+Results disk usage:
+48M	results/tuning_results/iML1515_GEM_20251202_5046
+50M	results/tuning_results/iML1515_GEM_20251202_5571
+48M	results/tuning_results/iML1515_GEM_20251202_9484
+48M	results/tuning_results/iML1515_GEM_20251202_9856
+0	results/tuning_results/iML1515_GEM_20260109_1331
+=========================================
+Finished at: Fri Jan  9 11:39:22 AM EST 2026
+Exit code: 1
+=========================================
