@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from scipy import stats
+from scipy.stats import pearsonr, spearmanr
 
 from .config import ensure_dir_exists
 

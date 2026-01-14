@@ -1,11 +1,24 @@
 {
   "model_name": "iML1515_GEM",
   "organism": "E coli",
-  "biomass_reaction": "BIOMASS_Ec_iML1515_core_75p37M",
-  "enzyme_upper_bound": 0.2,
+  "biomass_reaction": null,
+  "enzyme_upper_bound": 0.34,
   "solver": "glpk",
-  "enable_fva": false,
+  "enable_fva": true,
   "enable_biolog_validation": false,
+
+  "fva": {
+    "parallel": true,
+    "workers": 4,
+    "chunk_size": 50,
+    "method": "dask",
+    "opt_ratio": 0.9,
+    "_comment_opt_ratio": "Fraction of optimal biomass to constrain during FVA (0.9 = 90% of optimal)",
+    "_comment_method": "Options: 'dask' (distributed, scalable) or 'multiprocessing' (simpler, single-machine)",
+    "_comment_workers": "Set to null for auto-detection (uses all CPU cores)",
+    "_comment_chunk_size": "Number of reactions per task. null = auto-calculate. Larger = less overhead but less load balancing"
+  },
+  
   "medium": {
     "EX_glc__D_e": -9.99998,
     "EX_so4_e": -0.175297,
@@ -13,15 +26,31 @@
     "EX_nh4_e": -5.23859
   },
   "medium_upper_bound": true,
+
   "simulated_annealing": {
-    "temperature": 1.0,
-    "cooling_rate": 0.975,
+    "temperature": 100,
+    "cooling_rate": 0.95,
     "min_temperature": 0.001,
-    "max_iterations": 100,
-    "max_unchanged_iterations": 5,
-    "change_threshold": 0.009,
-    "biomass_goal": 0.8,
-    "n_top_enzymes": 65,
-    "verbose": false
+    "max_iterations": 1000,
+    "max_unchanged_iterations": 50,
+    "change_threshold": 0.001,
+    "biomass_goal": 0.2,
+    "n_top_enzymes": 20,
+    "verbose": false,
+    "adaptive_strategies": {
+      "enable_restart": true,
+      "restart_threshold": 0.001,
+      "restart_frequency": 100,
+      "enable_dynamic_step_size": false,
+      "step_size_reduction": 0.8,
+      "enable_multi_objective": false
+    },
+    "_comment_aggressive": "AGGRESSIVE SETTINGS - larger perturbations and longer search",
+    "_comment_temperature": "High starting temp (100) for large initial exploration",
+    "_comment_cooling_rate": "Moderate cooling (0.95) for thorough exploration",
+    "_comment_change_threshold": "Standard threshold (0.1%) for meaningful improvements",
+    "_comment_biomass_goal": "Target goal of 0.2 biomass",
+    "_comment_n_top_enzymes": "Fewer enzymes (20) to focus on most impactful bottlenecks",
+    "_comment_restart": "Enable restart mechanism to escape local optima"
   }
 }
