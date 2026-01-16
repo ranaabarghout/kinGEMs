@@ -1,0 +1,3 @@
+2026-01-08 17:21:23.748 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+slurmstepd: error: *** JOB 18104543 ON fc30408 CANCELLED AT 2026-01-09T18:21:08 DUE TO TIME LIMIT ***
+slurmstepd: error: Detected 1 oom_kill event in StepId=18104543.batch. Some of the step tasks have been OOM Killed.

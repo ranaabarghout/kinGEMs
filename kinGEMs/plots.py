@@ -5,7 +5,6 @@ This module provides functions for visualizing results from kinGEMs analyses,
 including flux distributions, enzyme usage, and parameter optimization progress.
 """
 
-import math
 import os
 
 import matplotlib.pyplot as plt
@@ -14,143 +13,6 @@ import pandas as pd
 import seaborn as sns
 
 from .config import ensure_dir_exists
-
-
-def plot_kcat_comparison(original_df, optimized_df, top_targets, output_path=None):
-    """
-    Create before/after comparison plots for kcat values modified during simulated annealing.
-
-    Parameters
-    ----------
-    original_df : pandas.DataFrame
-        Original processed data with initial kcat values
-    optimized_df : pandas.DataFrame
-        Optimized data with tuned kcat values
-    top_targets : pandas.DataFrame
-        DataFrame with top enzymes that were targeted for optimization
-    output_path : str, optional
-        Path to save the plot. If None, plots are not saved.
-    """
-    # Create reaction_gene identifier for merging
-    original_df = original_df.copy()
-    optimized_df = optimized_df.copy()
-
-    original_df['reaction_gene'] = original_df['Reactions'].astype(str) + '_' + original_df['Single_gene'].astype(str)
-    optimized_df['reaction_gene'] = optimized_df['Reactions'].astype(str) + '_' + optimized_df['Single_gene'].astype(str)
-
-    # Get the reaction_gene identifiers from top targets
-    top_targets_copy = top_targets.copy()
-    top_targets_copy['reaction_gene'] = top_targets_copy['Reactions'].astype(str) + '_' + top_targets_copy['Single_gene'].astype(str)
-    target_reaction_genes = set(top_targets_copy['reaction_gene'])
-
-    # Merge original and optimized data
-    kcat_col = 'kcat_mean' if 'kcat_mean' in original_df.columns else 'kcat'
-    comparison_df = original_df[['reaction_gene', 'Reactions', 'Single_gene', kcat_col]].merge(
-        optimized_df[['reaction_gene', kcat_col]],
-        on='reaction_gene',
-        suffixes=('_original', '_optimized')
-    )
-
-    # Filter to only entries that were actually targeted for optimization
-    comparison_df = comparison_df[comparison_df['reaction_gene'].isin(target_reaction_genes)]
-
-    # Calculate fold changes
-    comparison_df['fold_change'] = comparison_df[f'{kcat_col}_optimized'] / comparison_df[f'{kcat_col}_original']
-    comparison_df['log2_fold_change'] = comparison_df['fold_change'].apply(lambda x: math.log2(x) if x > 0 else 0)
-
-    # Filter out entries with no significant change (fold change between 0.9 and 1.1)
-    significant_changes = comparison_df[
-        (comparison_df['fold_change'] < 0.9) | (comparison_df['fold_change'] > 1.1)
-    ].copy()
-
-    if len(significant_changes) == 0:
-        print("No significant kcat changes detected during optimization.")
-        return
-
-    # Create a comprehensive figure with multiple subplots
-    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-    fig.suptitle('kcat Values: Before vs. After Simulated Annealing', fontsize=16, fontweight='bold')
-
-    # 1. Scatter plot: Before vs. After (log scale)
-    ax1 = axes[0, 0]
-    ax1.scatter(significant_changes[f'{kcat_col}_original'],
-                significant_changes[f'{kcat_col}_optimized'],
-                alpha=0.6, s=50, c='steelblue')
-
-    # Add diagonal line for reference (no change)
-    min_val = min(significant_changes[f'{kcat_col}_original'].min(),
-                  significant_changes[f'{kcat_col}_optimized'].min())
-    max_val = max(significant_changes[f'{kcat_col}_original'].max(),
-                  significant_changes[f'{kcat_col}_optimized'].max())
-
-    ax1.plot([min_val, max_val], [min_val, max_val], 'r--', alpha=0.5, label='No change')
-    ax1.set_xscale('log')
-    ax1.set_yscale('log')
-    ax1.set_xlabel('Original kcat (s⁻¹)')
-    ax1.set_ylabel('Optimized kcat (s⁻¹)')
-    ax1.set_title('Before vs. After Comparison')
-    ax1.grid(True, alpha=0.3)
-    ax1.legend()
-
-    # 2. Histogram of fold changes
-    ax2 = axes[0, 1]
-    ax2.hist(significant_changes['fold_change'], bins=30, alpha=0.7, color='lightcoral', edgecolor='black')
-    ax2.axvline(x=1, color='red', linestyle='--', alpha=0.7, label='No change')
-    ax2.set_xlabel('Fold Change (Optimized/Original)')
-    ax2.set_ylabel('Frequency')
-    ax2.set_title('Distribution of Fold Changes')
-    ax2.grid(True, alpha=0.3)
-    ax2.legend()
-
-    # 3. Log2 fold change distribution
-    ax3 = axes[1, 0]
-    ax3.hist(significant_changes['log2_fold_change'], bins=30, alpha=0.7, color='lightgreen', edgecolor='black')
-    ax3.axvline(x=0, color='red', linestyle='--', alpha=0.7, label='No change')
-    ax3.set_xlabel('Log₂ Fold Change')
-    ax3.set_ylabel('Frequency')
-    ax3.set_title('Log₂ Fold Change Distribution')
-    ax3.grid(True, alpha=0.3)
-    ax3.legend()
-
-    # 4. Top 20 most changed enzymes (bar plot)
-    ax4 = axes[1, 1]
-    top_changed = significant_changes.nlargest(20, 'fold_change')[['reaction_gene', 'fold_change']].copy()
-    if len(top_changed) > 0:
-        ax4.barh(range(len(top_changed)), top_changed['fold_change'], color='gold', alpha=0.8)
-        ax4.set_yticks(range(len(top_changed)))
-        ax4.set_yticklabels([rg.replace('_', '\n') for rg in top_changed['reaction_gene']], fontsize=8)
-        ax4.axvline(x=1, color='red', linestyle='--', alpha=0.7, label='No change')
-        ax4.set_xlabel('Fold Change')
-        ax4.set_title('Top 20 Most Increased kcat Values')
-        ax4.grid(True, alpha=0.3, axis='x')
-        ax4.legend()
-
-    plt.tight_layout()
-
-    # Save plot if output path provided
-    if output_path:
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
-        print(f"  Saved kcat comparison plot to: {output_path}")
-
-    plt.close()
-
-    # Print summary statistics
-    print("\n  kcat Optimization Summary:")
-    print(f"    Total entries targeted: {len(target_reaction_genes)}")
-    print(f"    Entries with significant changes: {len(significant_changes)}")
-    print(f"    Average fold change: {significant_changes['fold_change'].mean():.2f}")
-    print(f"    Median fold change: {significant_changes['fold_change'].median():.2f}")
-    print(f"    Max fold increase: {significant_changes['fold_change'].max():.2f}")
-    print(f"    Max fold decrease: {significant_changes['fold_change'].min():.2f}")
-
-    # Show top 5 most increased and decreased
-    print("\n    Top 5 most increased kcat values:")
-    for _, row in significant_changes.nlargest(5, 'fold_change').iterrows():
-        print(f"      {row['reaction_gene']}: {row['fold_change']:.2f}x")
-
-    print("\n    Top 5 most decreased kcat values:")
-    for _, row in significant_changes.nsmallest(5, 'fold_change').iterrows():
-        print(f"      {row['reaction_gene']}: {row['fold_change']:.2f}x")
 
 
 def set_plotting_style(style="whitegrid"):
@@ -379,20 +241,23 @@ def plot_kcat_distribution(kcat_df, output_path=None, figsize=(10, 6), show=Fals
 
     return fig
 
-def plot_kcat_comparison(original_df, optimized_df, top_targets, output_path=None):
+def plot_kcat_comparison(original_kcat_df, optimized_kcat_df, output_path=None,
+                        figsize=(12, 10), show=False):
     """
-    Create before/after comparison plots for kcat values modified during simulated annealing.
+    Compare original and optimized kcat values.
 
     Parameters
     ----------
-    original_df : pandas.DataFrame
-        Original processed data with initial kcat values
-    optimized_df : pandas.DataFrame
-        Optimized data with tuned kcat values
-    top_targets : pandas.DataFrame
-        DataFrame with top enzymes that were targeted for optimization
+    original_kcat_df : pandas.DataFrame
+        DataFrame with original kcat values
+    optimized_kcat_df : pandas.DataFrame
+        DataFrame with optimized kcat values
     output_path : str, optional
-        Path to save the plot. If None, plots are not saved.
+        Path to save the figure
+    figsize : tuple, optional
+        Figure size (width, height)
+    show : bool, optional
+        Whether to display the plot
 
     Returns
     -------
@@ -402,127 +267,50 @@ def plot_kcat_comparison(original_df, optimized_df, top_targets, output_path=Non
     # Set the plotting style
     set_plotting_style()
 
-    # Create reaction_gene identifier for merging
-    original_df = original_df.copy()
-    optimized_df = optimized_df.copy()
+    # Prepare the data
+    original = original_kcat_df['kcat (1/hr)'].dropna()
+    optimized = optimized_kcat_df['kcat (1/hr)'].dropna()
 
-    original_df['reaction_gene'] = original_df['Reactions'].astype(str) + '_' + original_df['Single_gene'].astype(str)
-    optimized_df['reaction_gene'] = optimized_df['Reactions'].astype(str) + '_' + optimized_df['Single_gene'].astype(str)
+    # Create combined dataframe for seaborn
+    combined_data = pd.DataFrame({
+        'kcat (1/hr)': pd.concat([original, optimized]),
+        'Type': ['Original kcats'] * len(original) + ['Optimized kcats'] * len(optimized),
+    })
 
-    # Get the reaction_gene identifiers from top targets
-    top_targets_copy = top_targets.copy()
-    top_targets_copy['reaction_gene'] = top_targets_copy['Reactions'].astype(str) + '_' + top_targets_copy['Single_gene'].astype(str)
-    target_reaction_genes = set(top_targets_copy['reaction_gene'])
+    # Create figure with subplots
+    fig, axes = plt.subplots(3, 1, figsize=figsize)
 
-    # Merge original and optimized data
-    kcat_col = 'kcat_mean' if 'kcat_mean' in original_df.columns else 'kcat'
-    comparison_df = original_df[['reaction_gene', 'Reactions', 'Single_gene', kcat_col]].merge(
-        optimized_df[['reaction_gene', kcat_col]],
-        on='reaction_gene',
-        suffixes=('_original', '_optimized')
-    )
+    # 1. Boxplot comparison
+    sns.boxplot(x='kcat (1/hr)', y='Type', data=combined_data, ax=axes[0])
+    axes[0].set_xscale('log')
+    axes[0].set_title('Comparison of kcat Distributions')
+    axes[0].set_xlabel('kcat (1/hr), log scale')
+    axes[0].set_ylabel('')
 
-    # Filter to only entries that were actually targeted for optimization
-    comparison_df = comparison_df[comparison_df['reaction_gene'].isin(target_reaction_genes)]
+    # 2. Histograms
+    sns.histplot(original, bins=30, kde=True, ax=axes[1], color='orange', label='Original')
+    axes[1].set_xscale('log')
+    axes[1].set_title('Original kcat Distribution')
+    axes[1].set_xlabel('kcat (1/hr), log scale')
+    axes[1].set_ylabel('Count')
 
-    # Calculate fold changes
-    comparison_df['fold_change'] = comparison_df[f'{kcat_col}_optimized'] / comparison_df[f'{kcat_col}_original']
-    comparison_df['log2_fold_change'] = comparison_df['fold_change'].apply(lambda x: math.log2(x) if x > 0 else 0)
+    sns.histplot(optimized, bins=30, kde=True, ax=axes[2], color='blue', label='Optimized')
+    axes[2].set_xscale('log')
+    axes[2].set_title('Optimized kcat Distribution')
+    axes[2].set_xlabel('kcat (1/hr), log scale')
+    axes[2].set_ylabel('Count')
 
-    # Filter out entries with no significant change (fold change between 0.9 and 1.1)
-    significant_changes = comparison_df[
-        (comparison_df['fold_change'] < 0.9) | (comparison_df['fold_change'] > 1.1)
-    ].copy()
-
-    if len(significant_changes) == 0:
-        print("No significant kcat changes detected during optimization.")
-        return None
-
-    # Create a comprehensive figure with multiple subplots
-    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
-    fig.suptitle('kcat Values: Before vs. After Simulated Annealing', fontsize=16, fontweight='bold')
-
-    # 1. Scatter plot: Before vs. After (log scale)
-    ax1 = axes[0, 0]
-    ax1.scatter(significant_changes[f'{kcat_col}_original'],
-                significant_changes[f'{kcat_col}_optimized'],
-                alpha=0.6, s=50, c='steelblue')
-
-    # Add diagonal line for reference (no change)
-    min_val = min(significant_changes[f'{kcat_col}_original'].min(),
-                  significant_changes[f'{kcat_col}_optimized'].min())
-    max_val = max(significant_changes[f'{kcat_col}_original'].max(),
-                  significant_changes[f'{kcat_col}_optimized'].max())
-
-    ax1.plot([min_val, max_val], [min_val, max_val], 'r--', alpha=0.5, label='No change')
-    ax1.set_xscale('log')
-    ax1.set_yscale('log')
-    ax1.set_xlabel('Original kcat (s⁻¹)')
-    ax1.set_ylabel('Optimized kcat (s⁻¹)')
-    ax1.set_title('Before vs. After Comparison')
-    ax1.grid(True, alpha=0.3)
-    ax1.legend()
-
-    # 2. Histogram of fold changes
-    ax2 = axes[0, 1]
-    ax2.hist(significant_changes['fold_change'], bins=30, alpha=0.7, color='lightcoral', edgecolor='black')
-    ax2.axvline(x=1, color='red', linestyle='--', alpha=0.7, label='No change')
-    ax2.set_xlabel('Fold Change (Optimized/Original)')
-    ax2.set_ylabel('Frequency')
-    ax2.set_title('Distribution of Fold Changes')
-    ax2.grid(True, alpha=0.3)
-    ax2.legend()
-
-    # 3. Log2 fold change distribution
-    ax3 = axes[1, 0]
-    ax3.hist(significant_changes['log2_fold_change'], bins=30, alpha=0.7, color='lightgreen', edgecolor='black')
-    ax3.axvline(x=0, color='red', linestyle='--', alpha=0.7, label='No change')
-    ax3.set_xlabel('Log₂ Fold Change')
-    ax3.set_ylabel('Frequency')
-    ax3.set_title('Log₂ Fold Change Distribution')
-    ax3.grid(True, alpha=0.3)
-    ax3.legend()
-
-    # 4. Top 20 most changed enzymes (bar plot)
-    ax4 = axes[1, 1]
-    top_changed = significant_changes.nlargest(20, 'fold_change')[['reaction_gene', 'fold_change']].copy()
-    if len(top_changed) > 0:
-        ax4.barh(range(len(top_changed)), top_changed['fold_change'], color='gold', alpha=0.8)
-        ax4.set_yticks(range(len(top_changed)))
-        ax4.set_yticklabels([rg.replace('_', '\n') for rg in top_changed['reaction_gene']], fontsize=8)
-        ax4.axvline(x=1, color='red', linestyle='--', alpha=0.7, label='No change')
-        ax4.set_xlabel('Fold Change')
-        ax4.set_title('Top 20 Most Increased kcat Values')
-        ax4.grid(True, alpha=0.3, axis='x')
-        ax4.legend()
-
+    # Adjust layout
     plt.tight_layout()
 
-    # Save plot if output path provided
+    # Save if output path provided
     if output_path:
         ensure_dir_exists(os.path.dirname(output_path))
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
-        print(f"  Saved kcat comparison plot to: {output_path}")
 
-    plt.close()
-
-    # Print summary statistics
-    print("\n  kcat Optimization Summary:")
-    print(f"    Total entries targeted: {len(target_reaction_genes)}")
-    print(f"    Entries with significant changes: {len(significant_changes)}")
-    print(f"    Average fold change: {significant_changes['fold_change'].mean():.2f}")
-    print(f"    Median fold change: {significant_changes['fold_change'].median():.2f}")
-    print(f"    Max fold increase: {significant_changes['fold_change'].max():.2f}")
-    print(f"    Max fold decrease: {significant_changes['fold_change'].min():.2f}")
-
-    # Show top 5 most increased and decreased
-    print("\n    Top 5 most increased kcat values:")
-    for _, row in significant_changes.nlargest(5, 'fold_change').iterrows():
-        print(f"      {row['reaction_gene']}: {row['fold_change']:.2f}x")
-
-    print("\n    Top 5 most decreased kcat values:")
-    for _, row in significant_changes.nsmallest(5, 'fold_change').iterrows():
-        print(f"      {row['reaction_gene']}: {row['fold_change']:.2f}x")
+    # Show if requested
+    if show:
+        plt.show()
 
     return fig
 
@@ -1022,32 +810,78 @@ def plot_kcat_distribution_comparison(old_kcats, new_kcats, merged_kcats, output
         plt.savefig(os.path.join(output_dir, f"{prefix}kcat_scatter.png"), dpi=300, bbox_inches='tight')
 
 def calculate_flux_metrics(fva_df):
-    """Calculate both Flux Variability (FVi) and Flux Variability Range (FVR).
+    """Calculate Flux Variability (FVi) as absolute flux range.
 
-    FVi = (max - min) / (max + min + ε) - Relative variability (0-1 scale) for reaction i
-    FVR = |max - min| - Absolute flux range
+    For irreversible models where reactions are split into forward and reverse
+    directions (marked with '_reverse' suffix), this function combines them back
+    into the original reversible reaction space before calculating FVi.
+
+    FVi = |max - min| - Absolute flux range for reaction i
 
     Parameters
     ----------
     fva_df : pandas.DataFrame
-        DataFrame with FVA results containing 'Min Solutions' and 'Max Solutions' columns
+        DataFrame with FVA results containing 'Min Solutions' and 'Max Solutions' columns.
+        Index should contain reaction IDs.
 
     Returns
     -------
-    tuple
-        (fvi, fvr) as pandas Series
+    pandas.Series
+        FVi values (absolute flux ranges) for combined reactions
     """
-    max_flux = fva_df['Max Solutions']
-    min_flux = fva_df['Min Solutions']
+    # Create a copy to avoid modifying the original
+    df = fva_df.copy()
 
-    # Calculate FVR (Flux Variability Range) - absolute difference
-    fvr = (max_flux - min_flux).abs()
+    # Ensure the index contains reaction IDs (strings)
+    if 'Reactions' in df.columns:
+        df = df.set_index('Reactions')
 
-    # Calculate FVi (Flux Variability for reaction i) - normalized relative variability
-    fvi =  fvr #(max_flux - min_flux) / (max_flux + min_flux + 1e-10)
-    # fvi =  #fvi.replace([np.inf, -np.inf], 0).fillna(0)
+    # Identify forward and reverse reaction pairs
+    # Convert index to strings to handle any non-string types
+    reverse_reactions = [rxn for rxn in df.index if isinstance(rxn, str) and rxn.endswith('_reverse')]
+    forward_reactions = [rxn.replace('_reverse', '') for rxn in reverse_reactions]
 
-    return fvi, fvr
+    # Check which forward reactions actually exist
+    existing_pairs = [(fwd, rev) for fwd, rev in zip(forward_reactions, reverse_reactions)
+                      if fwd in df.index]
+
+    combined_data = {}
+    processed_reactions = set()
+
+    # Process paired reactions (forward and reverse)
+    for fwd_id, rev_id in existing_pairs:
+        if fwd_id in processed_reactions or rev_id in processed_reactions:
+            continue
+
+        # Get flux ranges for forward and reverse
+        fwd_min = df.loc[fwd_id, 'Min Solutions']
+        fwd_max = df.loc[fwd_id, 'Max Solutions']
+        rev_min = df.loc[rev_id, 'Min Solutions']
+        rev_max = df.loc[rev_id, 'Max Solutions']
+
+        # Convert back to reversible reaction space:
+        # Forward flux is positive, reverse flux is negative
+        # Combined min = fwd_min - rev_max
+        # Combined max = fwd_max - rev_min
+        combined_min = fwd_min - rev_max
+        combined_max = fwd_max - rev_min
+
+        # Calculate FVi for the combined reaction
+        combined_fvi = abs(combined_max - combined_min)
+        combined_data[fwd_id] = combined_fvi
+
+        processed_reactions.add(fwd_id)
+        processed_reactions.add(rev_id)
+
+    # Process unpaired reactions (already irreversible or not split)
+    for rxn_id in df.index:
+        if rxn_id not in processed_reactions:
+            # Standard calculation for non-split reactions
+            fvi = abs(df.loc[rxn_id, 'Max Solutions'] - df.loc[rxn_id, 'Min Solutions'])
+            combined_data[rxn_id] = fvi
+
+    # Return as Series with combined reaction IDs
+    return pd.Series(combined_data)
 
 
 def plot_fva_ablation_cumulative(fva_results_dict, biomass_dict, model_name,
@@ -1055,6 +889,10 @@ def plot_fva_ablation_cumulative(fva_results_dict, biomass_dict, model_name,
                                 legend_position='upper left', enhanced=True):
     """
     Create cumulative FVi distribution plot for FVA ablation study.
+
+    For irreversible models, split reactions (forward and reverse) are automatically
+    combined before plotting, ensuring fair comparison across baseline and enzyme-
+    constrained models.
 
     Parameters
     ----------
@@ -1103,7 +941,7 @@ def plot_fva_ablation_cumulative(fva_results_dict, biomass_dict, model_name,
     fvi_stats = {}
 
     for label, fva_df in fva_results_dict.items():
-        fvi, _ = calculate_flux_metrics(fva_df)
+        fvi = calculate_flux_metrics(fva_df)
         # Filter out zero values for log plotting
         fvi_nonzero = fvi[fvi > 1e-15]
         if len(fvi_nonzero) == 0:
@@ -1185,6 +1023,10 @@ def plot_fva_ablation_boxplot(fva_results_dict, model_name, output_path=None,
     """
     Create box plot of FVi distributions for FVA ablation study.
 
+    For irreversible models, split reactions (forward and reverse) are automatically
+    combined before plotting, ensuring fair comparison across baseline and enzyme-
+    constrained models.
+
     Parameters
     ----------
     fva_results_dict : dict
@@ -1222,7 +1064,7 @@ def plot_fva_ablation_boxplot(fva_results_dict, model_name, output_path=None,
     }
 
     for label, fva_df in fva_results_dict.items():
-        fvi, fvr = calculate_flux_metrics(fva_df)
+        fvi = calculate_flux_metrics(fva_df)
         # Use log scale for better visualization, filter zeros
         fvi_nonzero = fvi[fvi > 1e-15]
         if len(fvi_nonzero) > 0:
@@ -1240,105 +1082,6 @@ def plot_fva_ablation_boxplot(fva_results_dict, model_name, output_path=None,
     ax.set_title(f'{model_name}: Distribution of Flux Variability (FVi) by Constraint Level', fontsize=14)
     ax.grid(True, alpha=0.3, axis='y')
     plt.xticks(rotation=45, ha='right')
-    plt.tight_layout()
-
-    # Save if output path provided
-    if output_path:
-        ensure_dir_exists(os.path.dirname(output_path))
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
-
-    # Show if requested
-    if show:
-        plt.show()
-
-    return fig
-
-
-def plot_fva_ablation_violinplot(fva_results_dict, model_name, output_path=None,
-                                 figsize=(14, 8), show=False):
-    """
-    Create violin plot of FVi distributions for FVA ablation study.
-
-    Parameters
-    ----------
-    fva_results_dict : dict
-        Dictionary with level labels as keys and FVA DataFrames as values
-    model_name : str
-        Name of the model for plot title
-    output_path : str, optional
-        Path to save the figure
-    figsize : tuple, optional
-        Figure size (width, height)
-    show : bool, optional
-        Whether to display the plot
-
-    Returns
-    -------
-    matplotlib.figure.Figure
-        The plot figure
-    """
-    set_plotting_style()
-
-    fig, ax = plt.subplots(figsize=figsize)
-
-    # Prepare data for violin plot
-    fvi_data = []
-    labels = []
-    colors_list = []
-
-    colors = {
-        'Level 1: Baseline GEM': '#1f77b4',
-        'Level 2: Single Enzyme': '#ff7f0e',
-        'Level 3a: + Isoenzymes': '#2ca02c',
-        'Level 3b: + Complexes': '#d62728',
-        'Level 3c: + Promiscuous': '#9467bd',
-        'Level 4: All Constraints': '#8c564b',
-        'Level 5: Post-Tuned': '#e377c2'
-    }
-
-    for label, fva_df in fva_results_dict.items():
-        fvi, fvr = calculate_flux_metrics(fva_df)
-        # Use log scale for better visualization, filter zeros
-        fvi_nonzero = fvi[fvi > 1e-15]
-        if len(fvi_nonzero) > 0:
-            fvi_data.append(np.log10(fvi_nonzero))
-            labels.append(label.replace('Level ', 'L').replace(': ', '\n'))
-            colors_list.append(colors[label])
-
-    # Create violin plot
-    parts = ax.violinplot(fvi_data, positions=range(len(fvi_data)), showmeans=True,
-                         showmedians=True, showextrema=True)
-
-    # Color the violin plots
-    for i, (pc, color) in enumerate(zip(parts['bodies'], colors_list)):
-        pc.set_facecolor(color)
-        pc.set_alpha(0.7)
-        pc.set_edgecolor('black')
-        pc.set_linewidth(1)
-
-    # Color other elements
-    parts['cmeans'].set_colors(['black'])
-    parts['cmedians'].set_colors(['red'])
-    parts['cbars'].set_colors(['black'])
-    parts['cmaxes'].set_colors(['black'])
-    parts['cmins'].set_colors(['black'])
-
-    # Set x-axis labels
-    ax.set_xticks(range(len(labels)))
-    ax.set_xticklabels(labels, rotation=45, ha='right')
-
-    ax.set_ylabel('log₁₀(FVi)', fontsize=13)
-    ax.set_title(f'{model_name}: Flux Variability Distribution (Violin Plot)', fontsize=15, fontweight='bold')
-    ax.grid(True, alpha=0.3, axis='y')
-
-    # Add legend for mean and median lines
-    from matplotlib.lines import Line2D
-    legend_elements = [
-        Line2D([0], [0], color='black', lw=2, label='Mean'),
-        Line2D([0], [0], color='red', lw=2, label='Median')
-    ]
-    ax.legend(handles=legend_elements, loc='upper right', fontsize=11)
-
     plt.tight_layout()
 
     # Save if output path provided
@@ -1445,6 +1188,10 @@ def generate_fva_ablation_summary_statistics(fva_results_dict, biomass_dict, out
     """
     Generate summary statistics table for FVA ablation study.
 
+    For irreversible models, split reactions (forward and reverse) are automatically
+    combined before calculating statistics, ensuring consistent reaction counts across
+    baseline and enzyme-constrained models.
+
     Parameters
     ----------
     fva_results_dict : dict
@@ -1457,12 +1204,14 @@ def generate_fva_ablation_summary_statistics(fva_results_dict, biomass_dict, out
     Returns
     -------
     pandas.DataFrame
-        DataFrame with summary statistics
+        DataFrame with summary statistics, including both original and combined
+        reaction counts for comparison
     """
     summary_data = []
 
     for label, fva_df in fva_results_dict.items():
-        fvi, fvr = calculate_flux_metrics(fva_df)
+        fvi = calculate_flux_metrics(fva_df)
+        fvr = fvi  # FVi is the same as FVR (absolute difference)
         biomass = biomass_dict[label]
 
         # Flag reactions with high flux variability range (potential issues)
@@ -1475,7 +1224,8 @@ def generate_fva_ablation_summary_statistics(fva_results_dict, biomass_dict, out
         summary_data.append({
             'Level': label,
             'Biomass (1/hr)': biomass,
-            'N Reactions': len(fva_df),
+            'N Reactions (original)': len(fva_df),
+            'N Reactions (combined)': len(fvi),
             'Mean FVi': fvi.mean(),
             'Median FVi': fvi.median(),
             'Std FVi': fvi.std(),
@@ -1548,15 +1298,7 @@ def create_fva_ablation_dashboard(fva_results_dict, biomass_dict, model_name,
     )
     results['boxplot'] = boxplot_fig
 
-    # 3. Violin plot of FVi distributions
-    violinplot_fig = plot_fva_ablation_violinplot(
-        fva_results_dict, model_name,
-        output_path=os.path.join(output_dir, f'{prefix}_violinplot.png'),
-        show=show
-    )
-    results['violinplot'] = violinplot_fig
-
-    # 4. Biomass progression plot
+    # 3. Biomass progression plot
     biomass_fig = plot_biomass_progression(
         fva_results_dict, biomass_dict, model_name,
         output_path=os.path.join(output_dir, f'{prefix}_biomass_progression.png'),
@@ -1564,7 +1306,7 @@ def create_fva_ablation_dashboard(fva_results_dict, biomass_dict, model_name,
     )
     results['biomass_plot'] = biomass_fig
 
-    # 5. Summary statistics
+    # 4. Summary statistics
     summary_df = generate_fva_ablation_summary_statistics(
         fva_results_dict, biomass_dict,
         output_path=os.path.join(output_dir, f'{prefix}_summary.csv')
@@ -1578,7 +1320,6 @@ def create_fva_ablation_dashboard(fva_results_dict, biomass_dict, model_name,
     print("Generated files:")
     print(f"  - {prefix}_cumulative.png (enhanced plot)")
     print(f"  - {prefix}_boxplot.png (distribution analysis)")
-    print(f"  - {prefix}_violinplot.png (distribution density)")
     print(f"  - {prefix}_biomass_progression.png (biomass vs constraints)")
     print(f"  - {prefix}_summary.csv (summary statistics)")
 
@@ -1592,6 +1333,10 @@ def plot_cumulative_fvi_distribution(fva_dataframes, labels, output_path=None,
 
     This creates the standard FVi cumulative distribution plot used throughout kinGEMs,
     with proper styling, horizontal reference line at 0.5, and biomass information.
+
+    For irreversible models, split reactions (forward and reverse) are automatically
+    combined before plotting, ensuring fair comparison across baseline and enzyme-
+    constrained models.
 
     Parameters
     ----------
@@ -1628,7 +1373,7 @@ def plot_cumulative_fvi_distribution(fva_dataframes, labels, output_path=None,
 
     for i, (df, label) in enumerate(zip(fva_dataframes, labels)):
         # Calculate FVi using standard method
-        fvi, _ = calculate_flux_metrics(df)
+        fvi = calculate_flux_metrics(df)
 
         # Filter out invalid values
         fvi_values = fvi.values
