@@ -92,6 +92,7 @@ def run_optimization(
     model,
     kcat_dict,
     objective_reaction,
+    objective_coeffs = None,
     gene_sequences_dict=None,
     enzyme_upper_bound=0.125,
     enzyme_ratio=True,
@@ -126,22 +127,6 @@ def run_optimization(
         )
     else:
         mod = model
-    
-    # 1a) Apply medium conditions if provided
-    if medium is not None:
-        for rxn_id, flux_value in medium.items():
-            try:
-                rxn = mod.reactions.get_by_id(rxn_id)
-                rxn.lower_bound = flux_value
-                if medium_upper_bound:
-                    rxn.upper_bound = flux_value
-                if verbose:
-                    if medium_upper_bound:
-                        print(f"  Fixed {rxn_id}: lower={flux_value}, upper={flux_value}")
-                    else:
-                        print(f"  Set {rxn_id}: lower={flux_value}, upper={rxn.upper_bound}")
-            except KeyError:
-                print(f"  Warning: Reaction provided '{rxn_id}' was not found in model")
 
     # 1a) Apply medium conditions if provided
     if medium is not None:
@@ -160,10 +145,16 @@ def run_optimization(
                 print(f"  Warning: Reaction provided '{rxn_id}' was not found in model")
 
     # 2) Initial flux guess
-    # print("Step 2: Getting initial flux guess...")
-    mod.objective = objective_reaction
-    if verbose:
-        print("Model objective:", mod.objective)
+    if objective_coeffs is None:
+        mod.objective = objective_reaction
+        if verbose:
+            print("Model objective:", mod.objective)
+    else:
+        for rxn in mod.reactions:
+            rxn.objective_coefficient = 0.0
+        for rid, coef in obj_cobjective_coeffsoef.items():
+            mod.reactions.get_by_id(rid).objective_coefficient = float(coef)
+
     cobra_sol = mod.optimize()
     flux0 = cobra_sol.fluxes.to_dict()
 
@@ -201,7 +192,10 @@ def run_optimization(
     #         else:
     #             print(f"  {rxn_id} NOT FOUND in lb or ub dict!")
     #     print("=== END DIAGNOSTIC ===\n")
-    obj_coef = {r.id: (1.0 if r.id == objective_reaction else 0.0) for r in mod.reactions} #obj_coef = {r.id: r.objective_coefficient for r in mod.reactions}
+    if objective_coeffs is None:
+        obj_coef = {r.id: (1.0 if r.id == objective_reaction else 0.0) for r in mod.reactions} #obj_coef = {r.id: r.objective_coefficient for r in mod.reactions}
+    else:
+        obj_coef = {r.id: float(objective_coeffs.get(r.id, 0.0)) for r in mod.reactions}
     met_index = {m: i for i, m in enumerate(mets)}
     rxn_index = {r: j for j, r in enumerate(rxns)}
 
@@ -581,7 +575,7 @@ def run_optimization(
     records = [('flux', r, m.v[r].value) for r in m.R]
     records += [('enzyme', g, m.E[g].value) for g in m.G]
     df_FBA = pd.DataFrame(records, columns=['Variable','Index','Value'])
-    
+
     # DIAGNOSTIC: Print exchange reaction fluxes if medium was provided
     if medium is not None:
         print("\n=== DIAGNOSTIC: Exchange reaction fluxes after optimization ===")
@@ -593,18 +587,6 @@ def run_optimization(
                 print(f"  {rxn_id}: NOT FOUND in optimization results")
         print(f"Objective value: {sol_val:.6f}")
         print("=== END DIAGNOSTIC ===\n")
-
-    # DIAGNOSTIC: Print exchange reaction fluxes if medium was provided
-    # if medium is not None:
-    #     print("\n=== DIAGNOSTIC: Exchange reaction fluxes after optimization ===")
-    #     for rxn_id in medium.keys():
-    #         flux_val = m.v[rxn_id].value if rxn_id in m.R else None
-    #         if flux_val is not None:
-    #             print(f"  {rxn_id}: flux = {flux_val:.4f} (bound was {medium[rxn_id]:.4f})")
-    #         else:
-    #             print(f"  {rxn_id}: NOT FOUND in optimization results")
-    #     print(f"Objective value: {sol_val:.6f}")
-    #     print("=== END DIAGNOSTIC ===\n")
 
     return sol_val, df_FBA, gene_sequences_dict, m
 
@@ -671,7 +653,7 @@ def create_descriptive_filename(objective_reaction, enzyme_upper_bound, maximiza
         return filename
 
 
-def run_optimization_with_dataframe(model, processed_df, objective_reaction,
+def run_optimization_with_dataframe(model, processed_df, objective_reaction, objective_coeffs = None,
                     enzyme_upper_bound=0.125, enzyme_ratio=True, maximization=True,
                     multi_enzyme_off=False, isoenzymes_off=False,
                     promiscuous_off=False, complexes_off=False,
@@ -692,6 +674,8 @@ def run_optimization_with_dataframe(model, processed_df, objective_reaction,
         Optional columns: Reaction_partners, CMPD_SMILES (for substrate selection)
     objective_reaction : str
         Reaction ID to maximize/minimize
+    objective_coeffs : dict, optional
+        Dictionary mapping reaction IDs to their objective coefficients.
     enzyme_upper_bound : float, optional
         Upper bound for total enzyme concentration
     enzyme_ratio : bool, optional
@@ -814,6 +798,7 @@ def run_optimization_with_dataframe(model, processed_df, objective_reaction,
         model=model,
         kcat_dict=kcat_dict,
         objective_reaction=objective_reaction,
+        objective_coeffs=objective_coeffs,
         gene_sequences_dict=gene_sequences_dict,
         enzyme_upper_bound=enzyme_upper_bound,
         maximization=maximization,

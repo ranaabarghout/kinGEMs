@@ -19,6 +19,7 @@
     "_comment_chunk_size": "Number of reactions per task. null = auto-calculate. Larger = less overhead but less load balancing"
   },
 
+
   "simulated_annealing": {
     "temperature": 100,
     "cooling_rate": 0.95,

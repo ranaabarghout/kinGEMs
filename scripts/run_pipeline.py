@@ -486,6 +486,7 @@ def main():
     temp_model = cobra.io.read_sbml_model(model_path)
     biomass_reaction = config.get('biomass_reaction') or determine_biomass_reaction(temp_model)
     print(f"\nBiomass reaction: {biomass_reaction}")
+    print(f"\nBaseline growth: {temp_model.slim_optimize():.4f}")
 
     # === Step 1: Prepare model data ===
     print("\n=== Step 1: Preparing model data ===")
@@ -499,6 +500,7 @@ def main():
         # orig_model = model.copy()  # Keep original for comparison
         # Convert to irreversible for proper enzyme constraint handling
         model = convert_to_irreversible(model)
+        print("  ✓ Loaded model and converted to irreversible reactions. Biomass: {:.4f}".format(model.slim_optimize()))
     else:
         if FORCE_REGENERATE:
             print("  ⟳ Regenerating model data (--force flag)")
@@ -600,6 +602,7 @@ def main():
         for rxn_id, flux_value in medium_temp.items():
             try:
                 rxn = model.reactions.get_by_id(rxn_id)
+                print(f"   Original fluxes for reaction {rxn_id}: LB={rxn.lower_bound}, UB={rxn.upper_bound}")
                 rxn.lower_bound = flux_value
                 if medium_upper_bound_temp:
                     rxn.upper_bound = flux_value

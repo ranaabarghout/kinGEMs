@@ -1,6 +1,8 @@
 # import libraries
 import copy
 import os
+import signal
+from contextlib import contextmanager
 
 import numpy as np
 import pandas as pd
@@ -8,6 +10,43 @@ from sklearn.metrics import confusion_matrix as confusion_matrix
 
 from kinGEMs.config import ECOLI_VALIDATION_DIR
 from kinGEMs.modeling.optimize import run_optimization_with_dataframe
+
+
+class TimeoutException(Exception):
+    """Exception raised when an optimization times out."""
+    pass
+
+
+@contextmanager
+def time_limit(seconds, description="operation"):
+    """
+    Context manager that raises TimeoutException if code block exceeds time limit.
+
+    Parameters
+    ----------
+    seconds : int
+        Maximum time allowed in seconds
+    description : str
+        Description of the operation for error messages
+
+    Raises
+    ------
+    TimeoutException
+        If the code block exceeds the time limit
+    """
+    def signal_handler(signum, frame):
+        raise TimeoutException(f"{description} exceeded {seconds}s timeout")
+
+    # Set the signal handler and alarm
+    old_handler = signal.signal(signal.SIGALRM, signal_handler)
+    signal.alarm(seconds)
+
+    try:
+        yield
+    finally:
+        # Cancel the alarm and restore the old handler
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, old_handler)
 
 
 def prepare_model(model, handle_irreversible=True):
@@ -713,35 +752,43 @@ def _simulate_gene_carbon(model, processed_df, gene, carbon_idx, carbon_name,
         # Check wild-type growth before knockout
         if mode == 'baseline':
             try:
-                wild_type_growth = model.slim_optimize()
+                with time_limit(300, "Wild-type baseline optimization"):
+                    wild_type_growth = model.slim_optimize()
                 if np.isnan(wild_type_growth):
                     wild_type_growth = 0.0
                 print(f"    - Wild-type growth (before knockout): {wild_type_growth:.6f}")
+            except TimeoutException as te:
+                wild_type_growth = 0.0
+                print(f"    - Wild-type growth (before knockout): {wild_type_growth:.6f} (timeout: {te})")
             except Exception:
                 wild_type_growth = 0.0
                 print(f"    - Wild-type growth (before knockout): {wild_type_growth:.6f} (failed)")
         else:  # enzyme-constrained
             try:
-                wt_solution_value, _, _, _ = run_optimization_with_dataframe(
-                    model=model,
-                    processed_df=processed_df,
-                    objective_reaction=objective_reaction,
-                    enzyme_upper_bound=enzyme_upper_bound,
-                    enzyme_ratio=True,
-                    maximization=True,
-                    multi_enzyme_off=False,
-                    isoenzymes_off=False,
-                    promiscuous_off=False,
-                    complexes_off=False,
-                    output_dir=None,
-                    save_results=False,
-                    print_reaction_conditions=False,
-                    verbose=False,
-                    solver_name=solver_name
-                )
+                with time_limit(600, "Wild-type enzyme-constrained optimization"):
+                    wt_solution_value, _, _, _ = run_optimization_with_dataframe(
+                        model=model,
+                        processed_df=processed_df,
+                        objective_reaction=objective_reaction,
+                        enzyme_upper_bound=enzyme_upper_bound,
+                        enzyme_ratio=True,
+                        maximization=True,
+                        multi_enzyme_off=False,
+                        isoenzymes_off=False,
+                        promiscuous_off=False,
+                        complexes_off=False,
+                        output_dir=None,
+                        save_results=False,
+                        print_reaction_conditions=False,
+                        verbose=False,
+                        solver_name=solver_name
+                    )
                 if wt_solution_value is None or np.isnan(wt_solution_value):
                     wt_solution_value = 0.0
                 print(f"    - Wild-type growth (before knockout): {wt_solution_value:.6f}")
+            except TimeoutException as te:
+                wt_solution_value = 0.0
+                print(f"    - Wild-type growth (before knockout): {wt_solution_value:.6f} (timeout: {te})")
             except Exception:
                 wt_solution_value = 0.0
                 print(f"    - Wild-type growth (before knockout): {wt_solution_value:.6f} (failed)")
@@ -775,7 +822,8 @@ def _simulate_gene_carbon(model, processed_df, gene, carbon_idx, carbon_name,
     if mode == 'baseline':
         print(f"    - Running baseline GEM simulation for gene {gene}, carbon {carbon_idx}")
         try:
-            solution = model.slim_optimize()
+            with time_limit(300, f"Baseline optimization for {gene}"):
+                solution = model.slim_optimize()
             if np.isnan(solution):
                 solution = 0.0
             print(f"    - Baseline result: {solution:.6f}")
@@ -813,31 +861,35 @@ def _simulate_gene_carbon(model, processed_df, gene, carbon_idx, carbon_name,
 
             print(f"  ✅ Completed {mode} simulation: Gene {gene} × Carbon {carbon_name} → {solution:.6f}")
             return (gene, carbon_idx, solution, improvement_info)
-        except Exception:
-            print("    ❌ Baseline simulation failed")
+        except TimeoutException as te:
+            print(f"    ⏱️ Baseline simulation timed out: {te}")
+            return (gene, carbon_idx, 0.0, None)
+        except Exception as e:
+            print(f"    ❌ Baseline simulation failed: {str(e)[:100]}")
             return (gene, carbon_idx, 0.0, None)
 
     else:  # enzyme-constrained
         print(f"    🔬 Running enzyme-constrained GEM simulation for gene {gene}, carbon {carbon_idx}")
         try:
             # Try with the provided solver first
-            solution_value, _, _, _ = run_optimization_with_dataframe(
-                model=model,
-                processed_df=processed_df,
-                objective_reaction=objective_reaction,
-                enzyme_upper_bound=enzyme_upper_bound,
-                enzyme_ratio=True,
-                maximization=True,
-                multi_enzyme_off=False,
-                isoenzymes_off=False,
-                promiscuous_off=False,
-                complexes_off=False,
-                output_dir=None,
-                save_results=False,
-                print_reaction_conditions=False,
-                verbose=False,
-                solver_name=solver_name
-            )
+            with time_limit(600, f"Enzyme-constrained optimization for {gene}"):
+                solution_value, _, _, _ = run_optimization_with_dataframe(
+                    model=model,
+                    processed_df=processed_df,
+                    objective_reaction=objective_reaction,
+                    enzyme_upper_bound=enzyme_upper_bound,
+                    enzyme_ratio=True,
+                    maximization=True,
+                    multi_enzyme_off=False,
+                    isoenzymes_off=False,
+                    promiscuous_off=False,
+                    complexes_off=False,
+                    output_dir=None,
+                    save_results=False,
+                    print_reaction_conditions=False,
+                    verbose=False,
+                    solver_name=solver_name
+                )
             if solution_value is None or np.isnan(solution_value):
                 solution_value = 0.0
             print(f"    - Enzyme-constrained result: {solution_value:.6f}")
@@ -875,6 +927,66 @@ def _simulate_gene_carbon(model, processed_df, gene, carbon_idx, carbon_name,
 
             print(f"  ✅ Completed {mode} simulation: Gene {gene} × Carbon {carbon_name} → {solution_value:.6f}")
             return (gene, carbon_idx, solution_value, improvement_info)
+        except TimeoutException as te:
+            print(f"    ⏱️ Enzyme-constrained simulation timed out with {solver_name}: {te}")
+
+            # Try with a different solver if GLPK times out
+            if solver_name.lower() == 'glpk':
+                print("    🔄 Retrying with CPLEX solver (shorter timeout)...")
+                try:
+                    with time_limit(300, f"CPLEX retry for {gene}"):
+                        solution_value, _, _, _ = run_optimization_with_dataframe(
+                            model=model,
+                            processed_df=processed_df,
+                            objective_reaction=objective_reaction,
+                            enzyme_upper_bound=enzyme_upper_bound,
+                            enzyme_ratio=True,
+                            maximization=True,
+                            multi_enzyme_off=False,
+                            isoenzymes_off=False,
+                            promiscuous_off=False,
+                            complexes_off=False,
+                            output_dir=None,
+                            save_results=False,
+                            print_reaction_conditions=False,
+                            verbose=False,
+                            solver_name='cplex'
+                        )
+                    if solution_value is None or np.isnan(solution_value):
+                        solution_value = 0.0
+                    print(f"    - Enzyme-constrained result (CPLEX): {solution_value:.6f}")
+
+                    # Calculate growth improvement for CPLEX success
+                    try:
+                        if 'wt_solution_value' in locals() and wt_solution_value > 0:
+                            change = ((solution_value - wt_solution_value) / wt_solution_value) * 100
+                            if change > 1.0:
+                                print(f"    🌟 GROWTH IMPROVEMENT DETECTED: {change:.2f}% increase!")
+                                print(f"       Wild-type: {wt_solution_value:.6f} → Knockout: {solution_value:.6f}")
+                                gene_obj = model.genes.get_by_id(gene)
+                                associated_reactions = [r.id for r in gene_obj.reactions if r.id != objective_reaction]
+                                improvement_info = {
+                                    'gene': gene,
+                                    'carbon_source': carbon_name,
+                                    'carbon_idx': carbon_idx,
+                                    'wild_type_growth': wt_solution_value,
+                                    'knockout_growth': solution_value,
+                                    'percent_increase': change,
+                                    'associated_reactions': associated_reactions,
+                                    'mode': mode
+                                }
+                    except Exception as e:
+                        print(f"    - Error calculating growth change: {e}")
+
+                    print(f"  ✅ Completed {mode} simulation: Gene {gene} × Carbon {carbon_name} → {solution_value:.6f}")
+                    return (gene, carbon_idx, solution_value, improvement_info)
+                except TimeoutException as te2:
+                    print(f"    ⏱️ CPLEX also timed out: {te2}")
+                except Exception as e2:
+                    print(f"    ❌ CPLEX also failed: {str(e2)[:100]}...")
+
+            print("    ⚠️ Returning 0.0 for timed-out simulation")
+            return (gene, carbon_idx, 0.0, None)
         except Exception as e:
             print(f"    ❌ Enzyme-constrained simulation failed with {solver_name}: {str(e)[:100]}...")
 
@@ -882,7 +994,8 @@ def _simulate_gene_carbon(model, processed_df, gene, carbon_idx, carbon_name,
             if solver_name.lower() == 'glpk':
                 print("    🔄 Retrying with CPLEX solver...")
                 try:
-                    solution_value, _, _, _ = run_optimization_with_dataframe(
+                    with time_limit(600, f"CPLEX retry for {gene}"):
+                        solution_value, _, _, _ = run_optimization_with_dataframe(
                         model=model,
                         processed_df=processed_df,
                         objective_reaction=objective_reaction,
@@ -936,6 +1049,8 @@ def _simulate_gene_carbon(model, processed_df, gene, carbon_idx, carbon_name,
 
                     print(f"  ✅ Completed {mode} simulation: Gene {gene} × Carbon {carbon_name} → {solution_value:.6f}")
                     return (gene, carbon_idx, solution_value, improvement_info)
+                except TimeoutException as te2:
+                    print(f"    ⏱️ CPLEX also timed out: {te2}")
                 except Exception as e2:
                     print(f"    ❌ CPLEX also failed: {str(e2)[:100]}...")
 

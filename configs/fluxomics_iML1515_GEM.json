@@ -2,7 +2,7 @@
   "model_name": "iML1515_GEM",
   "organism": "E coli",
   "biomass_reaction": null,
-  "enzyme_upper_bound": 0.34,
+  "enzyme_upper_bound": 0.25,
   "solver": "glpk",
   "enable_fva": true,
   "enable_biolog_validation": false,
@@ -18,12 +18,11 @@
     "_comment_workers": "Set to null for auto-detection (uses all CPU cores)",
     "_comment_chunk_size": "Number of reactions per task. null = auto-calculate. Larger = less overhead but less load balancing"
   },
-  
   "medium": {
-    "EX_glc__D_e": -9.99998,
-    "EX_so4_e": -0.175297,
-    "EX_o2_e": -14.2804,
-    "EX_nh4_e": -5.23859
+    "EX_glc__D_e_reverse": 9.99998,
+    "EX_so4_e_reverse": 0.175297,
+    "EX_o2_e_reverse": 14.2804,
+    "EX_nh4_e_reverse": 5.23859
   },
   "medium_upper_bound": true,
 
