@@ -1,0 +1,208 @@
+=========================================
+Job: kinGEMs General Pipeline (Direct)
+Job ID: 19802251
+Node: fc30560
+Current working directory: /project/def-mahadeva/ranaab/kinGEMs_v2
+Starting run at: Tue Jan 20 15:01:55 PST 2026
+=========================================
+
+Configuration: configs/iML1515_GEM_parallel_fva.json
+CPUs allocated: 8
+
+Updated FVA workers to match SLURM CPUs: 8
+Using temporary config: /tmp/tmp.XHoXBgBD83.json
+
+Running kinGEMs pipeline...
+Loading configuration from: /tmp/tmp.XHoXBgBD83.json
+
+======================================================================
+=== kinGEMs Pipeline for iML1515_GEM ===
+======================================================================
+Run ID: iML1515_GEM_20260120_5422
+Model type: Standard
+Organism: E coli
+Results directory: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/iML1515_GEM_20260120_5422
+Solver: glpk
+======================================================================
+
+=== Configuration Summary ===
+Config file: /tmp/tmp.XHoXBgBD83.json
+Model name: iML1515_GEM
+Enzyme upper bound: 0.25
+Enable FVA: True
+Enable Biolog validation: False
+
+FVA Settings:
+  Parallel execution: True
+  Biomass constraint ratio: 0.9
+  Workers: 8
+  Method: dask
+
+Simulated Annealing Settings:
+  Temperature: 100
+  Cooling rate: 0.95
+  Min temperature: 0.001
+  Max iterations: 1000
+  Max unchanged iterations: 50
+  Change threshold: 0.001
+  Biomass goal: 0.2
+  Top enzymes to tune: 20
+======================================================================
+
+Biomass reaction: BIOMASS_Ec_iML1515_core_75p37M
+
+Baseline growth: 0.8770
+
+=== Step 1: Preparing model data ===
+  ✓ Found existing files, loading cached data:
+    - /project/6000502/ranaab/kinGEMs_v2/data/interim/iML1515_GEM/iML1515_GEM_substrates.csv
+    - /project/6000502/ranaab/kinGEMs_v2/data/interim/iML1515_GEM/iML1515_GEM_sequences.csv
+Warning: Model has 8 validation errors
+  ✓ Loaded model and converted to irreversible reactions. Biomass: 0.8770
+Warning: Model has 8 validation errors
+  Model: 1516 genes, 3682 reactions
+
+=== Step 2: Merging substrate and sequence data ===
+  ✓ Found existing file, loading cached data:
+    - /project/6000502/ranaab/kinGEMs_v2/data/interim/iML1515_GEM/iML1515_GEM_merged_data.csv
+  Merged data: 12229 rows
+  Found predictions file: X06A_kinGEMs_ecoli_iML1515_predictions.csv
+
+=== Step 3: Processing CPI-Pred kcat values & annotating model ===
+  ✓ Found existing file, loading cached data:
+    - /project/6000502/ranaab/kinGEMs_v2/data/processed/iML1515_GEM/iML1515_GEM_processed_data.csv
+  Processed data: 11789 rows
+  Reactions with kcat: 2701/3682
+
+=== Step 4: Running optimization ===
+  Running standard COBRApy FBA (no enzyme constraints)...
+    COBRApy biomass: 0.8770
+  Running kinGEMs enzyme-constrained optimization...
+    kinGEMs biomass: 0.0230
+
+  Comparison:
+    Standard FBA:           0.8770
+    Enzyme-constrained FBA: 0.0230
+    Reduction due to enzyme budget: 97.4%
+  Using standard model - may need additional constraint processing
+
+=== Step 5: Running simulated annealing ===
+  Configuration:
+    - Temperature: 100
+    - Cooling rate: 0.95
+    - Max iterations: 1000
+    - Max unchanged iterations: 50
+    - Change threshold: 0.001
+    - Biomass goal: 0.2
+    - Top enzymes to tune: 20
+  Starting optimization...
+
+  [KCAT DEBUG] Sample kcat_mean vs kcat_updated values:
+    ALATA_D2_b2551: kcat_mean=4.310e+00, kcat_updated=4.310e+00
+    ALATA_D2_b0870: kcat_mean=7.364e-01, kcat_updated=7.364e-01
+    ALATA_D2_b2551: kcat_mean=3.861e+00, kcat_updated=3.861e+00
+GLPSOL--GLPK LP/MIP Solver 5.0
+Parameter(s) specified in the command line:
+ --tmlim 300 --write /tmp/tmp42ffolgy.glpk.raw --wglp /tmp/tmpo7j69fsk.glpk.glp
+ --cpxlp /tmp/tmp7pcrfibw.pyomo.lp
+Reading problem data from '/tmp/tmp7pcrfibw.pyomo.lp'...
+6586 rows, 5199 columns, 30644 non-zeros
+55611 lines were read
+Writing problem data to '/tmp/tmpo7j69fsk.glpk.glp'...
+50825 lines were written
+GLPK Simplex Optimizer 5.0
+6586 rows, 5199 columns, 30644 non-zeros
+Preprocessing...
+5963 rows, 4351 columns, 27888 non-zeros
+Scaling...
+ A: min|aij| =  4.198e-10  max|aij| =  2.382e+09  ratio =  5.674e+18
+GM: min|aij| =  1.276e-02  max|aij| =  7.835e+01  ratio =  6.139e+03
+EQ: min|aij| =  1.629e-04  max|aij| =  1.000e+00  ratio =  6.139e+03
+Constructing initial basis...
+Size of triangular part is 5810
+      0: obj =  -0.000000000e+00 inf =   1.883e+01 (21)
+   1087: obj =  -0.000000000e+00 inf =   7.840e-15 (0) 7
+Perturbing LP to avoid stalling [1297]...
+Removing LP perturbation [2404]...
+Warning: numerical instability (primal simplex, phase I)
+   2449: obj =   9.226430199e-03 inf =   5.113e-07 (0) 12
+*  2456: obj =   9.226430758e-03 inf =   5.113e-07 (0)
+OPTIMAL LP SOLUTION FOUND
+Time used:   0.3 secs
+Memory used: 9.6 Mb (10108355 bytes)
+Writing basic solution to '/tmp/tmp42ffolgy.glpk.raw'...
+11794 lines were written
+  [DEBUG] Iter 1: Optimization succeeded! biomass=9.226431e-03
+  Iter 1/1000: biomass=0.009226, temp=100.0000  [KCAT DEBUG] Sample kcat_mean vs kcat_updated values:
+    ALATA_D2_b2551: kcat_mean=4.310e+00, kcat_updated=4.310e+00
+    ALATA_D2_b0870: kcat_mean=7.364e-01, kcat_updated=7.364e-01
+    ALATA_D2_b2551: kcat_mean=3.861e+00, kcat_updated=3.861e+00
+GLPSOL--GLPK LP/MIP Solver 5.0
+Parameter(s) specified in the command line:
+ --tmlim 300 --write /tmp/tmpex03eawb.glpk.raw --wglp /tmp/tmpo5vz2igf.glpk.glp
+ --cpxlp /tmp/tmpi30gv2nx.pyomo.lp
+Reading problem data from '/tmp/tmpi30gv2nx.pyomo.lp'...
+6586 rows, 5199 columns, 30644 non-zeros
+55611 lines were read
+Writing problem data to '/tmp/tmpo5vz2igf.glpk.glp'...
+50825 lines were written
+GLPK Simplex Optimizer 5.0
+6586 rows, 5199 columns, 30644 non-zeros
+Preprocessing...
+5963 rows, 4351 columns, 27888 non-zeros
+Scaling...
+ A: min|aij| =  4.198e-10  max|aij| =  2.382e+09  ratio =  5.674e+18
+GM: min|aij| =  1.276e-02  max|aij| =  7.835e+01  ratio =  6.139e+03
+EQ: min|aij| =  1.629e-04  max|aij| =  1.000e+00  ratio =  6.139e+03
+Constructing initial basis...
+Size of triangular part is 5810
+      0: obj =  -0.000000000e+00 inf =   1.701e+01 (21)
+Perturbing LP to avoid stalling [435]...
+   1196: obj =  -0.000000000e+00 inf =   7.277e-07 (0) 7
+Removing LP perturbation [2411]...
+   2413: obj =   5.880552917e-02 inf =   2.892e-07 (0) 10
+OPTIMAL LP SOLUTION FOUND
+Time used:   0.3 secs
+Memory used: 9.6 Mb (10108355 bytes)
+Writing basic solution to '/tmp/tmpex03eawb.glpk.raw'...
+11794 lines were written
+  [DEBUG] Iter 2: Optimization succeeded! biomass=5.880553e-02
+    - IMPROVEMENT: +537.359%
+  Iter 2/1000: biomass=0.058806, temp=95.0000  [KCAT DEBUG] Sample kcat_mean vs kcat_updated values:
+    ALATA_D2_b2551: kcat_mean=4.310e+00, kcat_updated=4.310e+00
+    ALATA_D2_b0870: kcat_mean=7.364e-01, kcat_updated=7.364e-01
+    ALATA_D2_b2551: kcat_mean=3.861e+00, kcat_updated=3.861e+00
+GLPSOL--GLPK LP/MIP Solver 5.0
+Parameter(s) specified in the command line:
+ --tmlim 300 --write /tmp/tmpt0yvmxlh.glpk.raw --wglp /tmp/tmp7u4vj8lq.glpk.glp
+ --cpxlp /tmp/tmp6v1h6e74.pyomo.lp
+Reading problem data from '/tmp/tmp6v1h6e74.pyomo.lp'...
+6586 rows, 5199 columns, 30644 non-zeros
+55611 lines were read
+Writing problem data to '/tmp/tmp7u4vj8lq.glpk.glp'...
+50825 lines were written
+GLPK Simplex Optimizer 5.0
+6586 rows, 5199 columns, 30644 non-zeros
+Preprocessing...
+5963 rows, 4351 columns, 27888 non-zeros
+Scaling...
+ A: min|aij| =  4.198e-10  max|aij| =  2.382e+09  ratio =  5.674e+18
+GM: min|aij| =  1.276e-02  max|aij| =  7.835e+01  ratio =  6.139e+03
+EQ: min|aij| =  1.629e-04  max|aij| =  1.000e+00  ratio =  6.139e+03
+Constructing initial basis...
+Size of triangular part is 5810
+      0: obj =  -0.000000000e+00 inf =   1.748e+01 (21)
+    944: obj =  -0.000000000e+00 inf =   2.975e-15 (0) 6
+Perturbing LP to avoid stalling [1153]...
+Removing LP perturbation [2476]...
+   2480: obj =   3.819212585e-02 inf =   4.381e-07 (0) 15
+OPTIMAL LP SOLUTION FOUND
+Time used:   0.3 secs
+Memory used: 9.6 Mb (10108355 bytes)
+Writing basic solution to '/tmp/tmpt0yvmxlh.glpk.raw'...
+11794 lines were written
+  [DEBUG] Iter 3: Optimization succeeded! biomass=3.819213e-02
+  Iter 3/1000: biomass=0.038192, temp=90.2500  [DEBUG] Iter 4: Optimization succeeded! biomass=5.844571e-02
+    - IMPROVEMENT: +53.031%
+  Iter 4/1000: biomass=0.058446, temp=85.7375  [DEBUG] Iter 5: Optimization succeeded! biomass=3.451490e-02
+  Iter 5/1000: biomass=0.034515, temp=81.4506  Iter 6/1000: biomass=0.043692, temp=77.3781  Iter 7/1000: biomass=0.067754, temp=73.5092  Iter 8/1000: biomass=0.038249, temp=69.8337  Iter 9/1000: biomass=0.039011, temp=66.3420  Iter 10/1000: biomass=0.055392, temp=63.0249  Iter 11/1000: biomass=0.031692, temp=59.8737  Iter 12/1000: biomass=0.030961, temp=56.8800  Iter 13/1000: biomass=0.072350, temp=54.0360  Iter 14/1000: biomass=0.066943, temp=51.3342  Iter 15/1000: biomass=0.137980, temp=48.7675  Iter 16/1000: biomass=0.081555, temp=46.3291  Iter 17/1000: biomass=0.077236, temp=44.0127  Iter 18/1000: biomass=0.046262, temp=41.8120  Iter 19/1000: biomass=0.109758, temp=39.7214  Iter 20/1000: biomass=0.055940, temp=37.7354  Iter 21/1000: biomass=0.072278, temp=35.8486  Iter 22/1000: biomass=0.103788, temp=34.0562  Iter 23/1000: biomass=0.105102, temp=32.3534  Iter 24/1000: biomass=0.104371, temp=30.7357  Iter 25/1000: biomass=0.102969, temp=29.1989  Iter 26/1000: biomass=0.084080, temp=27.7390  Iter 27/1000: biomass=0.072049, temp=26.3520  Iter 28/1000: biomass=0.061837, temp=25.0344  Iter 29/1000: biomass=0.082660, temp=23.7827  Iter 30/1000: biomass=0.084040, temp=22.5936  Iter 31/1000: biomass=0.049920, temp=21.4639  Iter 32/1000: biomass=0.056745, temp=20.3907

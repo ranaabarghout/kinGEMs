@@ -1,0 +1,857 @@
+2026-01-20 10:15:10.954 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+Loading configuration from: configs/e_coli_core.json
+
+======================================================================
+=== kinGEMs Pipeline for e_coli_core ===
+======================================================================
+Run ID: e_coli_core_20260120_3128
+Model type: Standard
+Organism: E coli
+Results directory: /project/def-mahadeva/ranaab/kinGEMs_v2/results/tuning_results/e_coli_core_20260120_3128
+Solver: glpk
+======================================================================
+
+=== Configuration Summary ===
+Config file: configs/e_coli_core.json
+Model name: e_coli_core
+Enzyme upper bound: 0.25
+Enable FVA: True
+Enable Biolog validation: False
+
+FVA Settings:
+  Parallel execution: True
+  Biomass constraint ratio: 0.9
+  Workers: 4
+  Method: dask
+
+Simulated Annealing Settings:
+  Temperature: 100
+  Cooling rate: 0.95
+  Min temperature: 0.001
+  Max iterations: 1000
+  Max unchanged iterations: 50
+  Change threshold: 0.001
+  Biomass goal: 0.2
+  Top enzymes to tune: 20
+======================================================================
+
+Biomass reaction: BIOMASS_Ecoli_core_w_GAM
+
+Baseline growth: 0.8739
+
+=== Step 1: Preparing model data ===
+  ✓ Found existing files, loading cached data:
+    - /project/def-mahadeva/ranaab/kinGEMs_v2/data/interim/e_coli_core/e_coli_core_substrates.csv
+    - /project/def-mahadeva/ranaab/kinGEMs_v2/data/interim/e_coli_core/e_coli_core_sequences.csv
+Warning: Model has 8 validation errors
+  ✓ Loaded model and converted to irreversible reactions. Biomass: 0.8739
+Warning: Model has 8 validation errors
+  Model: 137 genes, 155 reactions
+
+=== Step 2: Merging substrate and sequence data ===
+  ✓ Found existing file, loading cached data:
+    - /project/def-mahadeva/ranaab/kinGEMs_v2/data/interim/e_coli_core/e_coli_core_merged_data.csv
+  Merged data: 605 rows
+  Found predictions file: X06A_kinGEMs_ecoli_core_predictions.csv
+
+=== Step 3: Processing CPI-Pred kcat values & annotating model ===
+  ✓ Found existing file, loading cached data:
+    - /project/def-mahadeva/ranaab/kinGEMs_v2/data/processed/e_coli_core/e_coli_core_processed_data.csv
+  Processed data: 541 rows
+  Reactions with kcat: 100/155
+
+=== Step 4: Running optimization ===
+  Running standard COBRApy FBA (no enzyme constraints)...
+    COBRApy biomass: 0.8739
+  Running kinGEMs enzyme-constrained optimization...
+    kinGEMs biomass: 0.0133
+
+  Comparison:
+    Standard FBA:           0.8739
+    Enzyme-constrained FBA: 0.0133
+    Reduction due to enzyme budget: 98.5%
+  Using standard model - may need additional constraint processing
+
+=== Step 5: Running simulated annealing ===
+  Configuration:
+    - Temperature: 100
+    - Cooling rate: 0.95
+    - Max iterations: 1000
+    - Max unchanged iterations: 50
+    - Change threshold: 0.001
+    - Biomass goal: 0.2
+    - Top enzymes to tune: 20
+  Starting optimization...
+
+  [KCAT DEBUG] Sample kcat_mean vs kcat_updated values:
+    PFK_b3916: kcat_mean=1.402e+00, kcat_updated=1.402e+00
+    PFK_b1723: kcat_mean=3.857e+00, kcat_updated=3.857e+00
+    PFK_b3916: kcat_mean=6.370e-01, kcat_updated=1.402e+00
+GLPSOL--GLPK LP/MIP Solver 5.0
+Parameter(s) specified in the command line:
+ --tmlim 300 --write /tmp/tmp0nf39ihs.glpk.raw --wglp /tmp/tmpb0ixax7t.glpk.glp
+ --cpxlp /tmp/tmpycubyn4p.pyomo.lp
+Reading problem data from '/tmp/tmpycubyn4p.pyomo.lp'...
+339 rows, 293 columns, 1368 non-zeros
+2688 lines were read
+Writing problem data to '/tmp/tmpb0ixax7t.glpk.glp'...
+2427 lines were written
+GLPK Simplex Optimizer 5.0
+339 rows, 293 columns, 1368 non-zeros
+Preprocessing...
+321 rows, 255 columns, 1276 non-zeros
+Scaling...
+ A: min|aij| =  2.093e-08  max|aij| =  4.778e+07  ratio =  2.283e+15
+GM: min|aij| =  1.351e-01  max|aij| =  7.404e+00  ratio =  5.482e+01
+EQ: min|aij| =  1.832e-02  max|aij| =  1.000e+00  ratio =  5.458e+01
+Constructing initial basis...
+Size of triangular part is 309
+      0: obj =  -0.000000000e+00 inf =   3.094e-01 (7)
+    158: obj =  -0.000000000e+00 inf =   1.696e-03 (2) 1
+LP HAS NO PRIMAL FEASIBLE SOLUTION
+glp_simplex: unable to recover undefined or non-optimal solution
+If you need actual output for non-optimal solution, use --nopresol
+Time used:   0.0 secs
+Memory used: 0.5 Mb (570987 bytes)
+Writing basic solution to '/tmp/tmp0nf39ihs.glpk.raw'...
+641 lines were written
+  [DEBUG] Iter 1: Optimization failed (biomass=None)
+    - Perturbed 10 enzymes with increases ranging 0-2%
+    - This suggests even small increases overwhelm constraints
+  Iter 1/1000: biomass=0.013277, temp=100.0000  [KCAT DEBUG] Sample kcat_mean vs kcat_updated values:
+    PFK_b3916: kcat_mean=1.402e+00, kcat_updated=1.402e+00
+    PFK_b1723: kcat_mean=3.857e+00, kcat_updated=3.857e+00
+    PFK_b3916: kcat_mean=6.370e-01, kcat_updated=1.402e+00
+GLPSOL--GLPK LP/MIP Solver 5.0
+Parameter(s) specified in the command line:
+ --tmlim 300 --write /tmp/tmp52rp4r3y.glpk.raw --wglp /tmp/tmpc1nvfxdl.glpk.glp
+ --cpxlp /tmp/tmp48ex_cqs.pyomo.lp
+Reading problem data from '/tmp/tmp48ex_cqs.pyomo.lp'...
+339 rows, 293 columns, 1368 non-zeros
+2688 lines were read
+Writing problem data to '/tmp/tmpc1nvfxdl.glpk.glp'...
+2427 lines were written
+GLPK Simplex Optimizer 5.0
+339 rows, 293 columns, 1368 non-zeros
+Preprocessing...
+321 rows, 255 columns, 1276 non-zeros
+Scaling...
+ A: min|aij| =  2.093e-08  max|aij| =  4.778e+07  ratio =  2.283e+15
+GM: min|aij| =  1.350e-01  max|aij| =  7.406e+00  ratio =  5.484e+01
+EQ: min|aij| =  1.831e-02  max|aij| =  1.000e+00  ratio =  5.461e+01
+Constructing initial basis...
+Size of triangular part is 309
+      0: obj =  -0.000000000e+00 inf =   3.102e-01 (7)
+    122: obj =  -0.000000000e+00 inf =   7.458e-18 (0) 1
+*   196: obj =   2.388320458e-02 inf =   9.180e-17 (0)
+OPTIMAL LP SOLUTION FOUND
+Time used:   0.0 secs
+Memory used: 0.5 Mb (570987 bytes)
+Writing basic solution to '/tmp/tmp52rp4r3y.glpk.raw'...
+641 lines were written
+  [DEBUG] Iter 2: Optimization succeeded! biomass=2.388320e-02
+    - IMPROVEMENT: +79.878%
+  Iter 2/1000: biomass=0.023883, temp=95.0000  [KCAT DEBUG] Sample kcat_mean vs kcat_updated values:
+    PFK_b3916: kcat_mean=1.402e+00, kcat_updated=1.402e+00
+    PFK_b1723: kcat_mean=3.857e+00, kcat_updated=3.857e+00
+    PFK_b3916: kcat_mean=6.370e-01, kcat_updated=1.402e+00
+GLPSOL--GLPK LP/MIP Solver 5.0
+Parameter(s) specified in the command line:
+ --tmlim 300 --write /tmp/tmp_2qv7z_s.glpk.raw --wglp /tmp/tmp2fnb6e11.glpk.glp
+ --cpxlp /tmp/tmpri437nzs.pyomo.lp
+Reading problem data from '/tmp/tmpri437nzs.pyomo.lp'...
+339 rows, 293 columns, 1368 non-zeros
+2688 lines were read
+Writing problem data to '/tmp/tmp2fnb6e11.glpk.glp'...
+2427 lines were written
+GLPK Simplex Optimizer 5.0
+339 rows, 293 columns, 1368 non-zeros
+Preprocessing...
+321 rows, 255 columns, 1276 non-zeros
+Scaling...
+ A: min|aij| =  2.093e-08  max|aij| =  4.778e+07  ratio =  2.283e+15
+GM: min|aij| =  1.278e-01  max|aij| =  7.823e+00  ratio =  6.120e+01
+EQ: min|aij| =  1.692e-02  max|aij| =  1.000e+00  ratio =  5.909e+01
+Constructing initial basis...
+Size of triangular part is 309
+      0: obj =  -0.000000000e+00 inf =   3.514e-01 (7)
+    133: obj =  -0.000000000e+00 inf =   8.310e-04 (2) 1
+LP HAS NO PRIMAL FEASIBLE SOLUTION
+glp_simplex: unable to recover undefined or non-optimal solution
+If you need actual output for non-optimal solution, use --nopresol
+Time used:   0.0 secs
+Memory used: 0.5 Mb (570987 bytes)
+Writing basic solution to '/tmp/tmp_2qv7z_s.glpk.raw'...
+641 lines were written
+  [DEBUG] Iter 3: Optimization failed (biomass=None)
+    - Perturbed 12 enzymes with increases ranging 0-2%
+    - This suggests even small increases overwhelm constraints
+  Iter 3/1000: biomass=0.023883, temp=90.2500  [DEBUG] Iter 4: Optimization succeeded! biomass=6.768913e-03
+  Iter 4/1000: biomass=0.006769, temp=85.7375  [DEBUG] Iter 5: Optimization failed (biomass=None)
+    - Perturbed 12 enzymes with increases ranging 0-2%
+    - This suggests even small increases overwhelm constraints
+  Iter 5/1000: biomass=0.006769, temp=81.4506  Iter 6/1000: biomass=0.006769, temp=77.3781  Iter 7/1000: biomass=0.006769, temp=73.5092  Iter 8/1000: biomass=0.012516, temp=69.8337  Iter 9/1000: biomass=0.012516, temp=66.3420  Iter 10/1000: biomass=0.001857, temp=63.0249  Iter 11/1000: biomass=0.001857, temp=59.8737  Iter 12/1000: biomass=0.043679, temp=56.8800  Iter 13/1000: biomass=0.040949, temp=54.0360  Iter 14/1000: biomass=0.061168, temp=51.3342  Iter 15/1000: biomass=0.105177, temp=48.7675  Iter 16/1000: biomass=0.075643, temp=46.3291  Iter 17/1000: biomass=0.041404, temp=44.0127  Iter 18/1000: biomass=0.041925, temp=41.8120  Iter 19/1000: biomass=0.032309, temp=39.7214  Iter 20/1000: biomass=0.067439, temp=37.7354  Iter 21/1000: biomass=0.067197, temp=35.8486  Iter 22/1000: biomass=0.039442, temp=34.0562  Iter 23/1000: biomass=0.024345, temp=32.3534  Iter 24/1000: biomass=0.021488, temp=30.7357  Iter 25/1000: biomass=0.022897, temp=29.1989  Iter 26/1000: biomass=0.031371, temp=27.7390  Iter 27/1000: biomass=0.016506, temp=26.3520  Iter 28/1000: biomass=0.016506, temp=25.0344  Iter 29/1000: biomass=0.001386, temp=23.7827  Iter 30/1000: biomass=0.014253, temp=22.5936  Iter 31/1000: biomass=0.014253, temp=21.4639  Iter 32/1000: biomass=0.029134, temp=20.3907  Iter 33/1000: biomass=0.054458, temp=19.3711  Iter 34/1000: biomass=0.051599, temp=18.4026  Iter 35/1000: biomass=0.056258, temp=17.4825  Iter 36/1000: biomass=0.053252, temp=16.6083  Iter 37/1000: biomass=0.075275, temp=15.7779  Iter 38/1000: biomass=0.033169, temp=14.9890  Iter 39/1000: biomass=0.035794, temp=14.2396  Iter 40/1000: biomass=0.015239, temp=13.5276  Iter 41/1000: biomass=0.057612, temp=12.8512  Iter 42/1000: biomass=0.022938, temp=12.2087  Iter 43/1000: biomass=0.027589, temp=11.5982  Iter 44/1000: biomass=0.018034, temp=11.0183  Iter 45/1000: biomass=0.017229, temp=10.4674  Iter 46/1000: biomass=0.016588, temp=9.9440  Iter 47/1000: biomass=0.022445, temp=9.4468  Iter 48/1000: biomass=0.049257, temp=8.9745  Iter 49/1000: biomass=0.012815, temp=8.5258  Iter 50/1000: biomass=0.012815, temp=8.0995  Iter 51/1000: biomass=0.038782, temp=7.6945  Iter 52/1000: biomass=0.005951, temp=7.3098  Iter 53/1000: biomass=0.067703, temp=6.9443  Iter 54/1000: biomass=0.069614, temp=6.5971  Iter 55/1000: biomass=0.074044, temp=6.2672  Iter 56/1000: biomass=0.088794, temp=5.9539  Iter 57/1000: biomass=0.088415, temp=5.6562  Iter 58/1000: biomass=0.036262, temp=5.3734  Iter 59/1000: biomass=0.098938, temp=5.1047  Iter 60/1000: biomass=0.004240, temp=4.8495  Iter 61/1000: biomass=0.027891, temp=4.6070  Iter 62/1000: biomass=0.025487, temp=4.3766  Iter 63/1000: biomass=0.100203, temp=4.1578  Iter 64/1000: biomass=0.091639, temp=3.9499  Iter 65/1000: biomass=0.054242, temp=3.7524  Iter 66/1000: biomass=0.093948, temp=3.5648  Iter 67/1000: biomass=0.084990, temp=3.3866  Iter 68/1000: biomass=0.030332, temp=3.2172  Iter 69/1000: biomass=0.065961, temp=3.0564  Iter 70/1000: biomass=0.031926, temp=2.9035  Iter 71/1000: biomass=0.057115, temp=2.7584  Iter 72/1000: biomass=0.052079, temp=2.6205  Iter 73/1000: biomass=0.038228, temp=2.4894  Iter 74/1000: biomass=0.056499, temp=2.3650  Iter 75/1000: biomass=0.087416, temp=2.2467  Iter 76/1000: biomass=0.075264, temp=2.1344  Iter 77/1000: biomass=0.068679, temp=2.0277  Iter 78/1000: biomass=0.070486, temp=1.9263  Iter 79/1000: biomass=0.010715, temp=1.8300  Iter 80/1000: biomass=0.010715, temp=1.7385  Iter 81/1000: biomass=0.002504, temp=1.6515  Iter 82/1000: biomass=0.002504, temp=1.5690  Iter 83/1000: biomass=0.002504, temp=1.4905  Iter 84/1000: biomass=0.002504, temp=1.4160  Iter 85/1000: biomass=0.011392, temp=1.3452  Iter 86/1000: biomass=0.075804, temp=1.2779  Iter 87/1000: biomass=0.077702, temp=1.2140  Iter 88/1000: biomass=0.037572, temp=1.1533  Iter 89/1000: biomass=0.038309, temp=1.0957  Iter 90/1000: biomass=0.030363, temp=1.0409  Iter 91/1000: biomass=0.036058, temp=0.9888  Iter 92/1000: biomass=0.037075, temp=0.9394  Iter 93/1000: biomass=0.089687, temp=0.8924  Iter 94/1000: biomass=0.075265, temp=0.8478  Iter 95/1000: biomass=0.071605, temp=0.8054  Iter 96/1000: biomass=0.081070, temp=0.7651  Iter 97/1000: biomass=0.077223, temp=0.7269  Iter 98/1000: biomass=0.058727, temp=0.6905  Iter 99/1000: biomass=0.031364, temp=0.6560  Iter 100/1000: biomass=0.070960, temp=0.6232  Iter 101/1000: biomass=0.004086, temp=0.5921  Iter 102/1000: biomass=0.042677, temp=0.5625  Iter 103/1000: biomass=0.006225, temp=0.5343  Iter 104/1000: biomass=0.009100, temp=0.5076  Iter 105/1000: biomass=0.009100, temp=0.4822  Iter 106/1000: biomass=0.009100, temp=0.4581  Iter 107/1000: biomass=0.009100, temp=0.4352  Iter 108/1000: biomass=0.014150, temp=0.4135  Iter 109/1000: biomass=0.034019, temp=0.3928  Iter 110/1000: biomass=0.034019, temp=0.3731  Iter 111/1000: biomass=0.068595, temp=0.3545  Iter 112/1000: biomass=0.058095, temp=0.3368  Iter 113/1000: biomass=0.044101, temp=0.3199  Iter 114/1000: biomass=0.072088, temp=0.3039  Iter 115/1000: biomass=0.067434, temp=0.2887  Iter 116/1000: biomass=0.070067, temp=0.2743  Iter 117/1000: biomass=0.070067, temp=0.2606  Iter 118/1000: biomass=0.068163, temp=0.2475  Iter 119/1000: biomass=0.068163, temp=0.2352  Iter 120/1000: biomass=0.068163, temp=0.2234  Iter 121/1000: biomass=0.068163, temp=0.2122  Iter 122/1000: biomass=0.034361, temp=0.2016  Iter 123/1000: biomass=0.085121, temp=0.1915  Iter 124/1000: biomass=0.050684, temp=0.1820  Iter 125/1000: biomass=0.037982, temp=0.1729  Iter 126/1000: biomass=0.072742, temp=0.1642  Iter 127/1000: biomass=0.089637, temp=0.1560  Iter 128/1000: biomass=0.067611, temp=0.1482  Iter 129/1000: biomass=0.049590, temp=0.1408  Iter 130/1000: biomass=0.064491, temp=0.1338  Iter 131/1000: biomass=0.050979, temp=0.1271  Iter 132/1000: biomass=0.056116, temp=0.1207  Iter 133/1000: biomass=0.026509, temp=0.1147  Iter 134/1000: biomass=0.026509, temp=0.1090  Iter 135/1000: biomass=0.037252, temp=0.1035  Iter 136/1000: biomass=0.038763, temp=0.0983  Iter 137/1000: biomass=0.041361, temp=0.0934  Iter 138/1000: biomass=0.040978, temp=0.0887  Iter 139/1000: biomass=0.057736, temp=0.0843  Iter 140/1000: biomass=0.060013, temp=0.0801  Iter 141/1000: biomass=0.080454, temp=0.0761  Iter 142/1000: biomass=0.080454, temp=0.0723  Iter 143/1000: biomass=0.102112, temp=0.0687  Iter 144/1000: biomass=0.075796, temp=0.0652  Iter 145/1000: biomass=0.068016, temp=0.0620  Iter 146/1000: biomass=0.088882, temp=0.0589  Iter 147/1000: biomass=0.072905, temp=0.0559  Iter 148/1000: biomass=0.042599, temp=0.0531  Iter 149/1000: biomass=0.018021, temp=0.0505  Iter 150/1000: biomass=0.060078, temp=0.0480  Iter 151/1000: biomass=0.060078, temp=0.0456  Iter 152/1000: biomass=0.060078, temp=0.0433  Iter 153/1000: biomass=0.075155, temp=0.0411  Iter 154/1000: biomass=0.073417, temp=0.0391  Iter 155/1000: biomass=0.073417, temp=0.0371  Iter 156/1000: biomass=0.085974, temp=0.0352  Iter 157/1000: biomass=0.064793, temp=0.0335  Iter 158/1000: biomass=0.043193, temp=0.0318  Iter 159/1000: biomass=0.085516, temp=0.0302  Iter 160/1000: biomass=0.087063, temp=0.0287  Iter 161/1000: biomass=0.059542, temp=0.0273  Iter 162/1000: biomass=0.059542, temp=0.0259  Iter 163/1000: biomass=0.074767, temp=0.0246  Iter 164/1000: biomass=0.062183, temp=0.0234  Iter 165/1000: biomass=0.079025, temp=0.0222  Iter 166/1000: biomass=0.079025, temp=0.0211  Iter 167/1000: biomass=0.079025, temp=0.0201  Iter 168/1000: biomass=0.053741, temp=0.0190  Iter 169/1000: biomass=0.068898, temp=0.0181  Iter 170/1000: biomass=0.085888, temp=0.0172  Iter 171/1000: biomass=0.085888, temp=0.0163  Iter 172/1000: biomass=0.093466, temp=0.0155  Iter 173/1000: biomass=0.093466, temp=0.0147  Iter 174/1000: biomass=0.093466, temp=0.0140  Iter 175/1000: biomass=0.083295, temp=0.0133  Iter 176/1000: biomass=0.071220, temp=0.0126  Iter 177/1000: biomass=0.071220, temp=0.0120  Iter 178/1000: biomass=0.071220, temp=0.0114  Iter 179/1000: biomass=0.071220, temp=0.0108  Iter 180/1000: biomass=0.071220, temp=0.0103  Iter 181/1000: biomass=0.071220, temp=0.0098  Iter 182/1000: biomass=0.071220, temp=0.0093  Iter 183/1000: biomass=0.071220, temp=0.0088  Iter 184/1000: biomass=0.071220, temp=0.0084  Iter 185/1000: biomass=0.071220, temp=0.0080  Iter 186/1000: biomass=0.071220, temp=0.0076  Iter 187/1000: biomass=0.066321, temp=0.0072  Iter 188/1000: biomass=0.060779, temp=0.0068  Iter 189/1000: biomass=0.096560, temp=0.0065  Iter 190/1000: biomass=0.120800, temp=0.0062  Iter 191/1000: biomass=0.135638, temp=0.0059  Iter 192/1000: biomass=0.135638, temp=0.0056  Iter 193/1000: biomass=0.135638, temp=0.0053  Iter 194/1000: biomass=0.135638, temp=0.0050  Iter 195/1000: biomass=0.123627, temp=0.0048  Iter 196/1000: biomass=0.123627, temp=0.0045  Iter 197/1000: biomass=0.123627, temp=0.0043  Iter 198/1000: biomass=0.123627, temp=0.0041  Iter 199/1000: biomass=0.123627, temp=0.0039  Iter 200/1000: biomass=0.123627, temp=0.0037  Iter 201/1000: biomass=0.123627, temp=0.0035  Iter 202/1000: biomass=0.123627, temp=0.0033  Iter 203/1000: biomass=0.123627, temp=0.0032  Iter 204/1000: biomass=0.123627, temp=0.0030  Iter 205/1000: biomass=0.123627, temp=0.0029  Iter 206/1000: biomass=0.123627, temp=0.0027  Iter 207/1000: biomass=0.123627, temp=0.0026  Iter 208/1000: biomass=0.123627, temp=0.0024  Iter 209/1000: biomass=0.123627, temp=0.0023  Iter 210/1000: biomass=0.123627, temp=0.0022  Iter 211/1000: biomass=0.123627, temp=0.0021  Iter 212/1000: biomass=0.123627, temp=0.0020  Iter 213/1000: biomass=0.123627, temp=0.0019  Iter 214/1000: biomass=0.123627, temp=0.0018  Iter 215/1000: biomass=0.123627, temp=0.0017  Iter 216/1000: biomass=0.123627, temp=0.0016  Iter 217/1000: biomass=0.123627, temp=0.0015  Iter 218/1000: biomass=0.123627, temp=0.0015  Iter 219/1000: biomass=0.123627, temp=0.0014  Iter 220/1000: biomass=0.123627, temp=0.0013  Iter 221/1000: biomass=0.123627, temp=0.0013  Iter 222/1000: biomass=0.123627, temp=0.0012  Iter 223/1000: biomass=0.123627, temp=0.0011  Iter 224/1000: biomass=0.123627, temp=0.0011  Iter 225/1000: biomass=0.123627, temp=0.0010
+
+  Annealing complete!
+  Initial biomass: 0.0133
+  Final biomass: 0.1236
+  Improvement: 831.1%
+  Total iterations: 226
+
+  Biomass progression:
+    Iter   0: 0.013277
+    Iter  22: 0.039442 (+197.06%)
+    Iter  44: 0.018034 (-54.28%)
+    Iter  66: 0.093948 (+420.96%)
+    Iter  88: 0.037572 (-60.01%)
+    Iter 110: 0.034019 (-9.46%)
+    Iter 132: 0.056116 (+64.95%)
+    Iter 154: 0.073417 (+30.83%)
+    Iter 176: 0.071220 (-2.99%)
+    Iter 198: 0.123627 (+73.59%)
+    Iter 220: 0.123627 (+0.00%)
+    Iter 225: 0.123627 (+0.00%)
+
+  Top 10 enzymes by mass contribution:
+        Reactions Single_gene  enzyme_mass
+0          ATPS4r       b3732     0.024220
+1  ATPS4r_reverse       b3732     0.024220
+2          ATPS4r       b3738     0.015746
+3  ATPS4r_reverse       b3738     0.015746
+4             FBA       b2925     0.013837
+5     FBA_reverse       b2925     0.013837
+6          ATPS4r       b3734     0.013583
+7  ATPS4r_reverse       b3734     0.013583
+8          ATPS4r       b3736     0.013156
+9  ATPS4r_reverse       b3736     0.013156
+
+  Saved merged DataFrame to: /project/def-mahadeva/ranaab/kinGEMs_v2/results/tuning_results/e_coli_core_20260120_3128/final_model_info.csv
+
+=== Step 6: Running Flux Variability Analysis ===
+  Using parallel FVA with 4 workers...
+  Parallel FVA configuration:
+    Method: dask
+    Workers: 4
+    Reactions: 155
+    Chunk size: 2
+    Number of chunks: 78
+    Estimated memory: ~0.0 GB
+
+  Running baseline optimization...
+  [KCAT DEBUG] Sample kcat_mean vs kcat_updated values:
+    PFK_b3916: kcat_mean=1.402e+00, kcat_updated=7.079e+00
+    PFK_b1723: kcat_mean=3.857e+00, kcat_updated=3.857e+00
+    PFK_b3916: kcat_mean=6.370e-01, kcat_updated=7.079e+00
+GLPSOL--GLPK LP/MIP Solver 5.0
+Parameter(s) specified in the command line:
+ --tmlim 300 --write /tmp/tmppyobeu0n.glpk.raw --wglp /tmp/tmppyba9ru_.glpk.glp
+ --cpxlp /tmp/tmpfesxpeo3.pyomo.lp
+Reading problem data from '/tmp/tmpfesxpeo3.pyomo.lp'...
+339 rows, 293 columns, 1368 non-zeros
+2688 lines were read
+Writing problem data to '/tmp/tmppyba9ru_.glpk.glp'...
+2427 lines were written
+GLPK Simplex Optimizer 5.0
+339 rows, 293 columns, 1368 non-zeros
+Preprocessing...
+321 rows, 255 columns, 1276 non-zeros
+Scaling...
+ A: min|aij| =  2.093e-08  max|aij| =  4.778e+07  ratio =  2.283e+15
+GM: min|aij| =  1.352e-01  max|aij| =  7.394e+00  ratio =  5.467e+01
+EQ: min|aij| =  1.838e-02  max|aij| =  1.000e+00  ratio =  5.442e+01
+Constructing initial basis...
+Size of triangular part is 309
+      0: obj =  -0.000000000e+00 inf =   3.072e-01 (7)
+    103: obj =  -0.000000000e+00 inf =   1.837e-16 (0)
+*   176: obj =   1.356376262e-01 inf =   2.933e-17 (0) 1
+OPTIMAL LP SOLUTION FOUND
+Time used:   0.0 secs
+Memory used: 0.5 Mb (570987 bytes)
+Writing basic solution to '/tmp/tmppyobeu0n.glpk.raw'...
+641 lines were written
+  Optimal biomass: 0.135638
+  Biomass constraint: 0.122074 ≤ biomass ≤ 0.135638 (opt_ratio=0.9)
+
+  Starting parallel FVA with 78 chunks...
+  FVA will analyze 155 reactions independently
+  Progress will be shown by chunk completion...
+2026-01-20 10:16:08.329 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-20 10:16:08.329 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-20 10:16:08.329 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-20 10:16:08.329 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+[FVA] Starting optimization for reaction: SUCOAS
+[FVA] Starting optimization for reaction: ACt2r
+[FVA] Starting optimization for reaction: PGK
+[FVA] Starting optimization for reaction: GLNabc
+[FVA] Starting optimization for reaction: ACt2r_reverse
+[FVA] Starting optimization for reaction: SUCOAS_reverse
+[FVA] Starting optimization for reaction: GLUDy
+[FVA] Starting optimization for reaction: PGK_reverse
+  [Chunk 46/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: GLUt2r_reverse
+  [Chunk 73/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: LDH_D_reverse
+  [Chunk  6/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: AKGt2r_reverse
+  [Chunk 62/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: TKT1_reverse
+[FVA] Starting optimization for reaction: GND
+[FVA] Starting optimization for reaction: MALS
+[FVA] Starting optimization for reaction: ALCD2x
+[FVA] Starting optimization for reaction: TKT2
+  [Chunk 49/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: TALA
+  [Chunk 76/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: G6PDH2r
+  [Chunk  9/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_co2_e_reverse
+  [Chunk 53/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: O2t_reverse
+[FVA] Starting optimization for reaction: TALA_reverse
+[FVA] Starting optimization for reaction: PDH
+[FVA] Starting optimization for reaction: G6PDH2r_reverse
+[FVA] Starting optimization for reaction: EX_etoh_e
+  [Chunk 74/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: BIOMASS_Ecoli_core_w_GAM
+  [Chunk 59/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: CO2t_reverse
+  [Chunk 43/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: NADTRHD
+  [Chunk 21/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: RPI_reverse
+[FVA] Starting optimization for reaction: CO2t
+[FVA] Starting optimization for reaction: CS
+[FVA] Starting optimization for reaction: NH4t
+[FVA] Starting optimization for reaction: SUCCt2_2
+  [Chunk 13/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_akg_e_reverse
+  [Chunk 57/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_ac_e_reverse
+  [Chunk 71/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PGM_reverse
+[FVA] Starting optimization for reaction: EX_acald_e
+[FVA] Starting optimization for reaction: PIt2r
+  [Chunk 12/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ACKr
+[FVA] Starting optimization for reaction: EX_co2_e
+[FVA] Starting optimization for reaction: ACKr_reverse
+  [Chunk 20/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ME2
+  [Chunk  3/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: NH4t_reverse
+  [Chunk 18/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_fru_e_reverse
+  [Chunk 64/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_lac__D_e_reverse
+[FVA] Starting optimization for reaction: NADH16
+[FVA] Starting optimization for reaction: O2t
+[FVA] Starting optimization for reaction: EX_fum_e
+[FVA] Starting optimization for reaction: EX_mal__L_e
+  [Chunk 56/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_h_e_reverse
+  [Chunk 24/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: FORt_reverse
+  [Chunk 58/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_nh4_e_reverse
+  [Chunk 31/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ACALDt
+[FVA] Starting optimization for reaction: FRD7
+[FVA] Starting optimization for reaction: ACALDt_reverse
+[FVA] Starting optimization for reaction: EX_lac__D_e
+[FVA] Starting optimization for reaction: EX_o2_e
+  [Chunk 30/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: MALt2_2
+  [Chunk 40/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ACALD
+  [Chunk 33/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: D_LACt2_reverse
+  [Chunk  2/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: CYTBD
+[FVA] Starting optimization for reaction: MDH
+[FVA] Starting optimization for reaction: ACALD_reverse
+[FVA] Starting optimization for reaction: ENO
+[FVA] Starting optimization for reaction: D_LACt2
+  [Chunk 54/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: GLCpts
+  [Chunk  1/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PYK
+  [Chunk 15/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: TPI_reverse
+[FVA] Starting optimization for reaction: GLNS
+  [Chunk 14/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: MDH_reverse
+[FVA] Starting optimization for reaction: PYRt2
+  [Chunk 78/78] ✓ Complete (1 reactions)
+[FVA] Starting optimization for reaction: THD2
+[FVA] Starting optimization for reaction: ME1
+  [Chunk 68/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_for_e_reverse
+  [Chunk 55/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PGI
+  [Chunk 45/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: FUM_reverse
+[FVA] Starting optimization for reaction: TKT1
+[FVA] Starting optimization for reaction: FUMt2_2
+[FVA] Starting optimization for reaction: EX_fru_e
+  [Chunk 75/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: FRUpts2
+  [Chunk 42/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: GLUSy
+[FVA] Starting optimization for reaction: PGI_reverse
+[FVA] Starting optimization for reaction: FUM
+  [Chunk 23/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_o2_e_reverse
+[FVA] Starting optimization for reaction: GLUt2r
+  [Chunk 61/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ADK1
+  [Chunk 41/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_pi_e_reverse
+[FVA] Starting optimization for reaction: EX_pi_e
+[FVA] Starting optimization for reaction: ADK1_reverse
+  [Chunk 48/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PIt2r_reverse
+[FVA] Starting optimization for reaction: EX_pyr_e
+  [Chunk 34/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: SUCCt3
+  [Chunk  7/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_etoh_e_reverse
+[FVA] Starting optimization for reaction: SUCDi
+[FVA] Starting optimization for reaction: EX_for_e
+[FVA] Starting optimization for reaction: PPC
+  [Chunk 35/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_succ_e_reverse
+  [Chunk 65/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_pyr_e_reverse
+[FVA] Starting optimization for reaction: FBA
+  [Chunk 72/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: GLUDy_reverse
+[FVA] Starting optimization for reaction: EX_succ_e
+  [Chunk 22/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: TKT2_reverse
+[FVA] Starting optimization for reaction: GLUN
+  [Chunk 37/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: FORt
+  [Chunk 36/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PYRt2_reverse
+[FVA] Starting optimization for reaction: TPI
+  [Chunk 47/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: RPE_reverse
+[FVA] Starting optimization for reaction: FORt2
+[FVA] Starting optimization for reaction: RPE
+  [Chunk 77/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ICL
+[FVA] Starting optimization for reaction: RPI
+  [Chunk 39/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: H2Ot
+[FVA] Starting optimization for reaction: LDH_D
+  [Chunk 69/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: FBA_reverse
+[FVA] Starting optimization for reaction: H2Ot_reverse
+[FVA] Starting optimization for reaction: FBP
+  [Chunk 52/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_h2o_e_reverse
+  [Chunk 38/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: AKGDH
+  [Chunk 70/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PGL
+  [Chunk 50/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_mal__L_e_reverse
+[FVA] Starting optimization for reaction: AKGt2r
+[FVA] Starting optimization for reaction: PGM
+[FVA] Starting optimization for reaction: EX_nh4_e
+[FVA] Starting optimization for reaction: EX_h_e
+  [Chunk  8/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_glu__L_e_reverse
+  [Chunk 63/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ENO_reverse
+  [Chunk 32/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ALCD2x_reverse
+  [Chunk 29/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_gln__L_e_reverse
+[FVA] Starting optimization for reaction: ETOHt2r
+[FVA] Starting optimization for reaction: ATPM
+[FVA] Starting optimization for reaction: EX_glu__L_e
+  [Chunk 16/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_fum_e_reverse
+[FVA] Starting optimization for reaction: EX_h2o_e
+  [Chunk 10/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ACONTb
+  [Chunk 27/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ETOHt2r_reverse
+[FVA] Starting optimization for reaction: EX_glc__D_e
+  [Chunk 28/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PTAr
+[FVA] Starting optimization for reaction: EX_ac_e
+[FVA] Starting optimization for reaction: PTAr_reverse
+  [Chunk 17/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PFK
+  [Chunk 67/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: GAPD
+[FVA] Starting optimization for reaction: ACONTb_reverse
+  [Chunk 25/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ACONTa
+[FVA] Starting optimization for reaction: GAPD_reverse
+  [Chunk  5/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PPCK
+[FVA] Starting optimization for reaction: ACONTa_reverse
+  [Chunk 44/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_glc__D_e_reverse
+[FVA] Starting optimization for reaction: PPS
+[FVA] Starting optimization for reaction: PFL
+  [Chunk  4/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_acald_e_reverse
+  [Chunk 66/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ICDHyr
+  [Chunk 60/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ATPS4r
+[FVA] Starting optimization for reaction: EX_akg_e
+[FVA] Starting optimization for reaction: ICDHyr_reverse
+[FVA] Starting optimization for reaction: ATPS4r_reverse
+[FVA] Starting optimization for reaction: EX_gln__L_e
+  [Chunk 11/78] ✓ Complete (2 reactions)
+  [Chunk 19/78] ✓ Complete (2 reactions)
+  [Chunk 51/78] ✓ Complete (2 reactions)
+  [Chunk 26/78] ✓ Complete (2 reactions)
+  Dask dashboard: http://127.0.0.1:8787/status
+
+  ✓ FVA Complete: 155 reactions processed
+    - Successful: 155
+    - Success rate: 100.0%
+    - Execution time: 0.8 minutes (45.1 seconds)
+    - Average time per reaction: 0.29 seconds
+
+  FVA results saved to: /project/def-mahadeva/ranaab/kinGEMs_v2/results/tuning_results/e_coli_core_20260120_3128/e_coli_core_fva_results.csv
+  kinGEMs FVA completed: 155 reactions analyzed
+  Running COBRApy FVA for comparison...
+  Using original model for COBRApy FVA
+  COBRApy FVA completed: 95 reactions analyzed and results saved to /project/def-mahadeva/ranaab/kinGEMs_v2/results/tuning_results/e_coli_core_20260120_3128/e_coli_core_cobra_fva_results.csv
+  Generating FVA plots...
+  Saved FVA flux range plot to: /project/def-mahadeva/ranaab/kinGEMs_v2/results/tuning_results/e_coli_core_20260120_3128/e_coli_core_fva_flux_range_plot.png
+
+FVi at cumulative probability = 0.5:
+  kinGEMs FVA: 3.0266
+  COBRApy FVA: 8.0459
+  Saved FVA cumulative plot to: /project/def-mahadeva/ranaab/kinGEMs_v2/results/tuning_results/e_coli_core_20260120_3128/e_coli_core_fva_cumulative_plot.png
+
+=== Step 6: Running Flux Variability Analysis ===
+  Using parallel FVA with 4 workers...
+  Parallel FVA configuration:
+    Method: dask
+    Workers: 4
+    Reactions: 155
+    Chunk size: 2
+    Number of chunks: 78
+    Estimated memory: ~0.0 GB
+
+  Running baseline optimization...
+  [KCAT DEBUG] Sample kcat values:
+    PFK_b3916: kcat=1.402e+00
+    PFK_b1723: kcat=3.857e+00
+    PFK_b3916: kcat=6.370e-01
+GLPSOL--GLPK LP/MIP Solver 5.0
+Parameter(s) specified in the command line:
+ --tmlim 300 --write /tmp/tmp1j_hwqqp.glpk.raw --wglp /tmp/tmppklj2s74.glpk.glp
+ --cpxlp /tmp/tmp68zx0cn3.pyomo.lp
+Reading problem data from '/tmp/tmp68zx0cn3.pyomo.lp'...
+339 rows, 293 columns, 1368 non-zeros
+2688 lines were read
+Writing problem data to '/tmp/tmppklj2s74.glpk.glp'...
+2427 lines were written
+GLPK Simplex Optimizer 5.0
+339 rows, 293 columns, 1368 non-zeros
+Preprocessing...
+321 rows, 255 columns, 1276 non-zeros
+Scaling...
+ A: min|aij| =  2.093e-08  max|aij| =  4.778e+07  ratio =  2.283e+15
+GM: min|aij| =  1.349e-01  max|aij| =  7.411e+00  ratio =  5.492e+01
+EQ: min|aij| =  1.829e-02  max|aij| =  1.000e+00  ratio =  5.469e+01
+Constructing initial basis...
+Size of triangular part is 309
+      0: obj =  -0.000000000e+00 inf =   3.121e-01 (7)
+    149: obj =  -0.000000000e+00 inf =   1.890e-17 (0) 1
+*   196: obj =   1.327744863e-02 inf =   4.242e-17 (0)
+OPTIMAL LP SOLUTION FOUND
+Time used:   0.0 secs
+Memory used: 0.5 Mb (570987 bytes)
+Writing basic solution to '/tmp/tmp1j_hwqqp.glpk.raw'...
+641 lines were written
+  Optimal biomass: 0.013277
+  Biomass constraint: 0.011950 ≤ biomass ≤ 0.013277 (opt_ratio=0.9)
+
+  Starting parallel FVA with 78 chunks...
+  FVA will analyze 155 reactions independently
+  Progress will be shown by chunk completion...
+2026-01-20 10:16:33.202 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-20 10:16:33.202 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-20 10:16:33.202 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-20 10:16:33.203 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+[FVA] Starting optimization for reaction: EX_glc__D_e_reverse
+[FVA] Starting optimization for reaction: PGM_reverse
+[FVA] Starting optimization for reaction: SUCCt3
+[FVA] Starting optimization for reaction: GLUt2r_reverse
+[FVA] Starting optimization for reaction: EX_gln__L_e
+[FVA] Starting optimization for reaction: PIt2r
+[FVA] Starting optimization for reaction: GND
+[FVA] Starting optimization for reaction: SUCDi
+  [Chunk 26/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_nh4_e_reverse
+  [Chunk 64/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_etoh_e_reverse
+  [Chunk 49/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_mal__L_e_reverse
+  [Chunk 72/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: RPI_reverse
+[FVA] Starting optimization for reaction: EX_o2_e
+[FVA] Starting optimization for reaction: EX_for_e
+[FVA] Starting optimization for reaction: EX_nh4_e
+[FVA] Starting optimization for reaction: SUCCt2_2
+  [Chunk 33/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: GAPD
+  [Chunk 22/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: SUCOAS
+  [Chunk 32/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: GLUDy_reverse
+  [Chunk 71/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PIt2r_reverse
+[FVA] Starting optimization for reaction: SUCOAS_reverse
+[FVA] Starting optimization for reaction: GLUN
+[FVA] Starting optimization for reaction: GAPD_reverse
+  [Chunk 73/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_lac__D_e_reverse
+[FVA] Starting optimization for reaction: PPC
+  [Chunk 47/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: FRUpts2
+  [Chunk 44/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ENO_reverse
+[FVA] Starting optimization for reaction: EX_mal__L_e
+[FVA] Starting optimization for reaction: FUM
+[FVA] Starting optimization for reaction: ETOHt2r
+  [Chunk 65/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_fum_e_reverse
+  [Chunk 31/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: G6PDH2r
+  [Chunk 41/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: GLCpts
+  [Chunk 16/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ETOHt2r_reverse
+[FVA] Starting optimization for reaction: EX_glc__D_e
+[FVA] Starting optimization for reaction: G6PDH2r_reverse
+[FVA] Starting optimization for reaction: GLNS
+[FVA] Starting optimization for reaction: EX_ac_e
+  [Chunk 25/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: BIOMASS_Ecoli_core_w_GAM
+[FVA] Starting optimization for reaction: CO2t
+  [Chunk 45/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_ac_e_reverse
+  [Chunk 43/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ALCD2x_reverse
+  [Chunk 17/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: FBA_reverse
+[FVA] Starting optimization for reaction: EX_acald_e
+[FVA] Starting optimization for reaction: ATPM
+[FVA] Starting optimization for reaction: FBP
+  [Chunk 18/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: CO2t_reverse
+  [Chunk 10/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_co2_e_reverse
+  [Chunk 12/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ATPS4r
+  [Chunk 38/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ACALDt
+[FVA] Starting optimization for reaction: CS
+[FVA] Starting optimization for reaction: EX_etoh_e
+[FVA] Starting optimization for reaction: ACALDt_reverse
+[FVA] Starting optimization for reaction: ATPS4r_reverse
+  [Chunk 21/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: THD2
+  [Chunk 11/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: H2Ot
+  [Chunk 13/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PPCK
+[FVA] Starting optimization for reaction: H2Ot_reverse
+  [Chunk  2/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: MALt2_2
+[FVA] Starting optimization for reaction: PPS
+[FVA] Starting optimization for reaction: TKT1
+[FVA] Starting optimization for reaction: MDH
+  [Chunk 66/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ICL
+  [Chunk 75/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_acald_e_reverse
+  [Chunk 54/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_succ_e_reverse
+  [Chunk 50/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PTAr
+[FVA] Starting optimization for reaction: LDH_D
+[FVA] Starting optimization for reaction: FBA
+[FVA] Starting optimization for reaction: EX_akg_e
+[FVA] Starting optimization for reaction: PTAr_reverse
+  [Chunk 52/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: O2t_reverse
+  [Chunk 19/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_o2_e_reverse
+  [Chunk 37/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: FORt
+  [Chunk 67/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_h2o_e_reverse
+[FVA] Starting optimization for reaction: EX_pi_e
+[FVA] Starting optimization for reaction: EX_h_e
+  [Chunk 34/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PFK
+[FVA] Starting optimization for reaction: PDH
+  [Chunk 29/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: TKT2_reverse
+[FVA] Starting optimization for reaction: FORt2
+  [Chunk 59/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: LDH_D_reverse
+[FVA] Starting optimization for reaction: MALS
+  [Chunk 39/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: CYTBD
+[FVA] Starting optimization for reaction: PFL
+[FVA] Starting optimization for reaction: TPI
+  [Chunk 53/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: RPE_reverse
+[FVA] Starting optimization for reaction: D_LACt2
+  [Chunk 60/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: TKT1_reverse
+  [Chunk 77/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: NADTRHD
+[FVA] Starting optimization for reaction: RPI
+[FVA] Starting optimization for reaction: TKT2
+  [Chunk 14/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: GLNabc
+[FVA] Starting optimization for reaction: NH4t
+  [Chunk 76/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: AKGt2r_reverse
+[FVA] Starting optimization for reaction: GLUDy
+  [Chunk 57/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_pyr_e_reverse
+  [Chunk 70/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PGK
+[FVA] Starting optimization for reaction: EX_succ_e
+[FVA] Starting optimization for reaction: PGK_reverse
+[FVA] Starting optimization for reaction: ALCD2x
+  [Chunk 62/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PYRt2_reverse
+  [Chunk  9/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ADK1
+  [Chunk 46/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PGI
+  [Chunk 36/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: D_LACt2_reverse
+[FVA] Starting optimization for reaction: RPE
+[FVA] Starting optimization for reaction: ADK1_reverse
+[FVA] Starting optimization for reaction: PGI_reverse
+[FVA] Starting optimization for reaction: ENO
+  [Chunk 69/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ACKr
+  [Chunk  7/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ACONTb
+  [Chunk 61/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: TPI_reverse
+  [Chunk 15/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_for_e_reverse
+[FVA] Starting optimization for reaction: ACONTb_reverse
+  [Chunk 78/78] ✓ Complete (1 reactions)
+[FVA] Starting optimization for reaction: FORt_reverse
+[FVA] Starting optimization for reaction: EX_fru_e
+  [Chunk  5/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: NH4t_reverse
+[FVA] Starting optimization for reaction: ACKr_reverse
+[FVA] Starting optimization for reaction: FRD7
+  [Chunk 23/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_glu__L_e_reverse
+  [Chunk  3/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_akg_e_reverse
+[FVA] Starting optimization for reaction: EX_co2_e
+[FVA] Starting optimization for reaction: O2t
+  [Chunk 20/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: FUM_reverse
+[FVA] Starting optimization for reaction: EX_h2o_e
+  [Chunk 40/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_gln__L_e_reverse
+  [Chunk 58/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: MDH_reverse
+[FVA] Starting optimization for reaction: FUMt2_2
+  [Chunk 28/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: AKGDH
+[FVA] Starting optimization for reaction: EX_glu__L_e
+[FVA] Starting optimization for reaction: ME1
+[FVA] Starting optimization for reaction: AKGt2r
+  [Chunk 55/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: TALA
+  [Chunk 27/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PGL
+[FVA] Starting optimization for reaction: TALA_reverse
+  [Chunk  8/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ACALD
+[FVA] Starting optimization for reaction: PGM
+  [Chunk 42/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: GLUSy
+[FVA] Starting optimization for reaction: ACALD_reverse
+  [Chunk 63/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ACt2r
+[FVA] Starting optimization for reaction: GLUt2r
+  [Chunk 48/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ME2
+[FVA] Starting optimization for reaction: ACt2r_reverse
+  [Chunk 74/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_pi_e_reverse
+[FVA] Starting optimization for reaction: NADH16
+[FVA] Starting optimization for reaction: EX_pyr_e
+  [Chunk 56/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PYK
+  [Chunk 35/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ICDHyr
+  [Chunk  1/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ACONTa
+[FVA] Starting optimization for reaction: PYRt2
+  [Chunk  6/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_fru_e_reverse
+[FVA] Starting optimization for reaction: ICDHyr_reverse
+[FVA] Starting optimization for reaction: ACONTa_reverse
+[FVA] Starting optimization for reaction: EX_fum_e
+  [Chunk  4/78] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_h_e_reverse
+[FVA] Starting optimization for reaction: EX_lac__D_e
+  [Chunk 51/78] ✓ Complete (2 reactions)
+  [Chunk 24/78] ✓ Complete (2 reactions)
+  [Chunk 68/78] ✓ Complete (2 reactions)
+  [Chunk 30/78] ✓ Complete (2 reactions)
+  Dask dashboard: http://127.0.0.1:8787/status
+
+  ✓ FVA Complete: 155 reactions processed
+    - Successful: 155
+    - Success rate: 100.0%
+    - Execution time: 0.3 minutes (18.8 seconds)
+    - Average time per reaction: 0.12 seconds
+
+  FVA results saved to: /project/def-mahadeva/ranaab/kinGEMs_v2/results/tuning_results/e_coli_core_20260120_3128/e_coli_core_pre_tuning_fva_results.csv
+  kinGEMs FVA completed: 155 reactions analyzed
+  Running COBRApy FVA for comparison...
+  Using original model for COBRApy FVA
+  COBRApy FVA completed: 95 reactions analyzed and results saved to /project/def-mahadeva/ranaab/kinGEMs_v2/results/tuning_results/e_coli_core_20260120_3128/e_coli_core_pre_tuning_cobra_fva_results.csv
+  Generating FVA plots...
+  Saved FVA flux range plot to: /project/def-mahadeva/ranaab/kinGEMs_v2/results/tuning_results/e_coli_core_20260120_3128/e_coli_core_pre_tuning_fva_flux_range_plot.png
+
+FVi at cumulative probability = 0.5:
+  kinGEMs FVA: 1.1486
+  COBRApy FVA: 8.0459
+  Saved FVA cumulative plot to: /project/def-mahadeva/ranaab/kinGEMs_v2/results/tuning_results/e_coli_core_20260120_3128/e_coli_core_pre_tuning_fva_cumulative_plot.png
+
+=== Step 7: Saving final model ===
+  Final GEM saved to: /project/def-mahadeva/ranaab/kinGEMs_v2/models/e_coli_core_20260120_3128.xml
+
+======================================================================
+=== Pipeline Complete ===
+======================================================================
+Run ID: e_coli_core_20260120_3128
+Model: e_coli_core (Standard)
+Initial biomass: 0.0133
+Final biomass: 0.1236
+Improvement: 831.1%
+Iterations: 226
+
+Results directory: /project/def-mahadeva/ranaab/kinGEMs_v2/results/tuning_results/e_coli_core_20260120_3128
+Final model: /project/def-mahadeva/ranaab/kinGEMs_v2/models/e_coli_core_20260120_3128.xml
+======================================================================

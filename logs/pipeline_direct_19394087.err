@@ -1,0 +1,23 @@
+2026-01-18 13:27:27.793 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-18 13:50:50.697 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-18 13:50:50.698 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-18 13:50:50.700 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-18 13:50:50.704 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-18 13:50:50.705 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-18 13:50:50.706 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-18 13:50:50.734 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-18 13:50:50.756 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+Traceback (most recent call last):
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_pipeline.py", line 792, in <module>
+    main()
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_pipeline.py", line 754, in main
+    run_fva_analysis(model, df_new, biomass_reaction, enzyme_upper_bound,
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_pipeline.py", line 298, in run_fva_analysis
+    plot_cumulative_fvi_distribution(
+  File "/project/6000502/ranaab/kinGEMs_v2/kinGEMs/plots.py", line 1376, in plot_cumulative_fvi_distribution
+    fvi = calculate_flux_metrics(df)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/kinGEMs/plots.py", line 880, in calculate_flux_metrics
+    fvi = abs(df.loc[rxn_id, 'Max Solutions'] - df.loc[rxn_id, 'Min Solutions'])
+              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+TypeError: unsupported operand type(s) for -: 'NoneType' and 'NoneType'

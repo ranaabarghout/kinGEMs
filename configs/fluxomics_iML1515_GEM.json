@@ -4,7 +4,7 @@
   "biomass_reaction": null,
   "enzyme_upper_bound": 0.25,
   "solver": "glpk",
-  "enable_fva": false,
+  "enable_fva": true,
   "enable_biolog_validation": false,
 
   "fva": {

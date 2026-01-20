@@ -1,0 +1,1258 @@
+2026-01-20 09:15:21.549 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-20 09:15:42,246 - kinGEMs.dataset - INFO - There are 72 substrates in the GEM.
+2026-01-20 09:15:42,508 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:42,508 - kinGEMs.dataset - INFO - Mapping substrate: atp_c
+2026-01-20 09:15:42,604 - kinGEMs.dataset - INFO - BiGG Name: ATP C10H12N5O13P3
+2026-01-20 09:15:42,630 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OP(=O)([O-])OP(=O)([O-])[O-])[C@@H](O)[C@H]1O
+2026-01-20 09:15:42,630 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:42,630 - kinGEMs.dataset - INFO - Mapping substrate: f6p_c
+2026-01-20 09:15:42,650 - kinGEMs.dataset - INFO - BiGG Name: D-Fructose 6-phosphate
+2026-01-20 09:15:42,677 - kinGEMs.dataset - INFO - SMILES found in SEED: O=P([O-])([O-])OC[C@H]1O[C@](O)(CO)[C@@H](O)[C@@H]1O
+2026-01-20 09:15:42,677 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:42,677 - kinGEMs.dataset - INFO - Mapping substrate: coa_c
+2026-01-20 09:15:42,696 - kinGEMs.dataset - INFO - BiGG Name: Coenzyme A
+2026-01-20 09:15:42,750 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:42,750 - kinGEMs.dataset - INFO - Mapping substrate: pyr_c
+2026-01-20 09:15:42,769 - kinGEMs.dataset - INFO - BiGG Name: Pyruvate
+2026-01-20 09:15:42,795 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: CC(=O)C(=O)[O-]
+2026-01-20 09:15:42,796 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:42,796 - kinGEMs.dataset - INFO - Mapping substrate: g6p_c
+2026-01-20 09:15:42,815 - kinGEMs.dataset - INFO - BiGG Name: D-Glucose 6-phosphate
+2026-01-20 09:15:42,842 - kinGEMs.dataset - INFO - SMILES found in SEED: O=P([O-])([O-])OC[C@H]1OC(O)[C@H](O)[C@@H](O)[C@@H]1O
+2026-01-20 09:15:42,842 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:42,842 - kinGEMs.dataset - INFO - Mapping substrate: 3pg_c
+2026-01-20 09:15:42,860 - kinGEMs.dataset - INFO - BiGG Name: 3-Phospho-D-glycerate
+2026-01-20 09:15:42,888 - kinGEMs.dataset - INFO - SMILES found in SEED: O=C([O-])[C@H](O)COP(=O)([O-])[O-]
+2026-01-20 09:15:42,888 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:42,888 - kinGEMs.dataset - INFO - Mapping substrate: 6pgl_c
+2026-01-20 09:15:42,905 - kinGEMs.dataset - INFO - BiGG Name: 6-phospho-D-glucono-1,5-lactone
+2026-01-20 09:15:42,933 - kinGEMs.dataset - INFO - SMILES found in SEED: O=C1O[C@H](COP(=O)([O-])[O-])[C@@H](O)[C@H](O)[C@H]1O
+2026-01-20 09:15:42,933 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:42,933 - kinGEMs.dataset - INFO - Mapping substrate: h2o_c
+2026-01-20 09:15:42,951 - kinGEMs.dataset - INFO - BiGG Name: H2O H2O
+2026-01-20 09:15:42,990 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:42,991 - kinGEMs.dataset - INFO - Mapping substrate: acald_c
+2026-01-20 09:15:43,008 - kinGEMs.dataset - INFO - BiGG Name: Acetaldehyde
+2026-01-20 09:15:43,035 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: CC=O
+2026-01-20 09:15:43,035 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:43,035 - kinGEMs.dataset - INFO - Mapping substrate: nad_c
+2026-01-20 09:15:43,053 - kinGEMs.dataset - INFO - BiGG Name: Nicotinamide adenine dinucleotide
+2026-01-20 09:15:43,080 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: NC(=O)c1ccc[n+]([C@@H]2O[C@H](COP(=O)([O-])OP(=O)([O-])OC[C@H]3O[C@@H](n4cnc5c(N)ncnc54)[C@H](O)[C@@H]3O)[C@@H](O)[C@H]2O)c1
+2026-01-20 09:15:43,080 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:43,080 - kinGEMs.dataset - INFO - Mapping substrate: akg_e
+2026-01-20 09:15:43,099 - kinGEMs.dataset - INFO - BiGG Name: 2-Oxoglutarate
+2026-01-20 09:15:43,125 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: O=C([O-])CCC(=O)C(=O)[O-]
+2026-01-20 09:15:43,125 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:43,125 - kinGEMs.dataset - INFO - Mapping substrate: h_e
+2026-01-20 09:15:43,145 - kinGEMs.dataset - INFO - BiGG Name: H+
+2026-01-20 09:15:43,171 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: [H+]
+2026-01-20 09:15:43,171 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:43,171 - kinGEMs.dataset - INFO - Mapping substrate: 2pg_c
+2026-01-20 09:15:43,190 - kinGEMs.dataset - INFO - BiGG Name: D-Glycerate 2-phosphate
+2026-01-20 09:15:43,216 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: O=C([O-])[C@@H](CO)OP(=O)([O-])[O-]
+2026-01-20 09:15:43,216 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:43,216 - kinGEMs.dataset - INFO - Mapping substrate: pi_e
+2026-01-20 09:15:43,235 - kinGEMs.dataset - INFO - BiGG Name: Phosphate
+2026-01-20 09:15:43,262 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: O=P([O-])([O-])O
+2026-01-20 09:15:43,262 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:43,262 - kinGEMs.dataset - INFO - Mapping substrate: etoh_c
+2026-01-20 09:15:43,280 - kinGEMs.dataset - INFO - BiGG Name: Ethanol
+2026-01-20 09:15:43,307 - kinGEMs.dataset - INFO - SMILES found in SEED: CCO
+2026-01-20 09:15:43,307 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:43,307 - kinGEMs.dataset - INFO - Mapping substrate: acald_e
+2026-01-20 09:15:43,325 - kinGEMs.dataset - INFO - BiGG Name: Acetaldehyde
+2026-01-20 09:15:43,351 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: CC=O
+2026-01-20 09:15:43,351 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:43,351 - kinGEMs.dataset - INFO - Mapping substrate: ac_c
+2026-01-20 09:15:43,370 - kinGEMs.dataset - INFO - BiGG Name: Acetate
+2026-01-20 09:15:43,396 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: CC(=O)[O-]
+2026-01-20 09:15:43,396 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:43,396 - kinGEMs.dataset - INFO - Mapping substrate: co2_c
+2026-01-20 09:15:43,415 - kinGEMs.dataset - INFO - BiGG Name: CO2 CO2
+2026-01-20 09:15:43,442 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: O=C=O
+2026-01-20 09:15:43,442 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:43,442 - kinGEMs.dataset - INFO - Mapping substrate: pep_c
+2026-01-20 09:15:43,460 - kinGEMs.dataset - INFO - BiGG Name: Phosphoenolpyruvate
+2026-01-20 09:15:43,487 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: C=C(OP(=O)([O-])[O-])C(=O)[O-]
+2026-01-20 09:15:43,487 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:43,487 - kinGEMs.dataset - INFO - Mapping substrate: cit_c
+2026-01-20 09:15:43,506 - kinGEMs.dataset - INFO - BiGG Name: Citrate
+2026-01-20 09:15:43,534 - kinGEMs.dataset - INFO - SMILES found in SEED: O=C([O-])CC(O)(CC(=O)[O-])C(=O)[O-]
+2026-01-20 09:15:43,534 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:43,534 - kinGEMs.dataset - INFO - Mapping substrate: acon_C_c
+2026-01-20 09:15:43,551 - kinGEMs.dataset - INFO - BiGG Name: Cis-Aconitate
+2026-01-20 09:15:43,578 - kinGEMs.dataset - INFO - SMILES found in SEED: O=C([O-])/C=C(/CC(=O)[O-])C(=O)[O-]
+2026-01-20 09:15:43,578 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:43,578 - kinGEMs.dataset - INFO - Mapping substrate: oaa_c
+2026-01-20 09:15:43,597 - kinGEMs.dataset - INFO - BiGG Name: Oxaloacetate
+2026-01-20 09:15:43,623 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: O=C([O-])CC(=O)C(=O)[O-]
+2026-01-20 09:15:43,623 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:43,623 - kinGEMs.dataset - INFO - Mapping substrate: ac_e
+2026-01-20 09:15:43,642 - kinGEMs.dataset - INFO - BiGG Name: Acetate
+2026-01-20 09:15:43,669 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: CC(=O)[O-]
+2026-01-20 09:15:43,669 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:43,669 - kinGEMs.dataset - INFO - Mapping substrate: amp_c
+2026-01-20 09:15:43,687 - kinGEMs.dataset - INFO - BiGG Name: AMP C10H12N5O7P
+2026-01-20 09:15:43,726 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:43,726 - kinGEMs.dataset - INFO - Mapping substrate: akg_c
+2026-01-20 09:15:43,745 - kinGEMs.dataset - INFO - BiGG Name: 2-Oxoglutarate
+2026-01-20 09:15:43,772 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: O=C([O-])CCC(=O)C(=O)[O-]
+2026-01-20 09:15:43,772 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:43,772 - kinGEMs.dataset - INFO - Mapping substrate: adp_c
+2026-01-20 09:15:43,791 - kinGEMs.dataset - INFO - BiGG Name: ADP C10H12N5O10P2
+2026-01-20 09:15:43,818 - kinGEMs.dataset - INFO - SMILES found in SEED: Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)([O-])OP(=O)([O-])O)[C@@H](O)[C@H]1O
+2026-01-20 09:15:43,818 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:43,818 - kinGEMs.dataset - INFO - Mapping substrate: pi_c
+2026-01-20 09:15:43,837 - kinGEMs.dataset - INFO - BiGG Name: Phosphate
+2026-01-20 09:15:43,863 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: O=P([O-])([O-])O
+2026-01-20 09:15:43,863 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:43,863 - kinGEMs.dataset - INFO - Mapping substrate: accoa_c
+2026-01-20 09:15:43,881 - kinGEMs.dataset - INFO - BiGG Name: Acetyl-CoA
+2026-01-20 09:15:43,908 - kinGEMs.dataset - INFO - SMILES found in SEED: CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)([O-])OP(=O)([O-])OC[C@H]1O[C@@H](n2cnc3c(N)ncnc32)[C@H](O)[C@@H]1OP(=O)([O-])[O-]
+2026-01-20 09:15:43,908 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:43,908 - kinGEMs.dataset - INFO - Mapping substrate: h_c
+2026-01-20 09:15:43,927 - kinGEMs.dataset - INFO - BiGG Name: H+
+2026-01-20 09:15:43,954 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: [H+]
+2026-01-20 09:15:43,954 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:43,954 - kinGEMs.dataset - INFO - Mapping substrate: e4p_c
+2026-01-20 09:15:43,972 - kinGEMs.dataset - INFO - BiGG Name: D-Erythrose 4-phosphate
+2026-01-20 09:15:43,999 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: O=C[C@H](O)[C@H](O)COP(=O)([O-])[O-]
+2026-01-20 09:15:43,999 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:43,999 - kinGEMs.dataset - INFO - Mapping substrate: g3p_c
+2026-01-20 09:15:44,018 - kinGEMs.dataset - INFO - BiGG Name: Glyceraldehyde 3-phosphate
+2026-01-20 09:15:44,045 - kinGEMs.dataset - INFO - SMILES found in SEED: O=CC(O)COP(=O)([O-])[O-]
+2026-01-20 09:15:44,045 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:44,045 - kinGEMs.dataset - INFO - Mapping substrate: gln__L_c
+2026-01-20 09:15:44,062 - kinGEMs.dataset - INFO - BiGG Name: L-Glutamine
+2026-01-20 09:15:44,088 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: NC(=O)CC[C@H]([NH3+])C(=O)[O-]
+2026-01-20 09:15:44,088 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:44,088 - kinGEMs.dataset - INFO - Mapping substrate: glu__L_c
+2026-01-20 09:15:44,105 - kinGEMs.dataset - INFO - BiGG Name: L-Glutamate
+2026-01-20 09:15:44,133 - kinGEMs.dataset - INFO - SMILES found in SEED: [NH3+]C(CCC(=O)[O-])C(=O)[O-]
+2026-01-20 09:15:44,133 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:44,133 - kinGEMs.dataset - INFO - Mapping substrate: nadph_c
+2026-01-20 09:15:44,150 - kinGEMs.dataset - INFO - BiGG Name: Nicotinamide adenine dinucleotide phosphate - reduced
+2026-01-20 09:15:44,177 - kinGEMs.dataset - INFO - SMILES found in SEED: NC(=O)C1=CN([C@@H]2O[C@H](COP(=O)([O-])OP(=O)([O-])OC[C@H]3O[C@@H](n4cnc5c(N)ncnc54)[C@H](OP(=O)([O-])[O-])[C@@H]3O)[C@@H](O)[C@H]2O)C=CC1
+2026-01-20 09:15:44,177 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:44,177 - kinGEMs.dataset - INFO - Mapping substrate: r5p_c
+2026-01-20 09:15:44,196 - kinGEMs.dataset - INFO - BiGG Name: Alpha-D-Ribose 5-phosphate
+2026-01-20 09:15:44,223 - kinGEMs.dataset - INFO - SMILES found in SEED: O=P([O-])([O-])OC[C@H]1O[C@H](O)[C@H](O)[C@@H]1O
+2026-01-20 09:15:44,224 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:44,224 - kinGEMs.dataset - INFO - Mapping substrate: pyr_e
+2026-01-20 09:15:44,242 - kinGEMs.dataset - INFO - BiGG Name: Pyruvate
+2026-01-20 09:15:44,268 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: CC(=O)C(=O)[O-]
+2026-01-20 09:15:44,268 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:44,268 - kinGEMs.dataset - INFO - Mapping substrate: co2_e
+2026-01-20 09:15:44,287 - kinGEMs.dataset - INFO - BiGG Name: CO2 CO2
+2026-01-20 09:15:44,313 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: O=C=O
+2026-01-20 09:15:44,313 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:44,313 - kinGEMs.dataset - INFO - Mapping substrate: ru5p__D_c
+2026-01-20 09:15:44,330 - kinGEMs.dataset - INFO - BiGG Name: D-Ribulose 5-phosphate
+2026-01-20 09:15:44,357 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: O=C(CO)[C@H](O)[C@H](O)COP(=O)([O-])[O-]
+2026-01-20 09:15:44,357 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:44,357 - kinGEMs.dataset - INFO - Mapping substrate: succ_e
+2026-01-20 09:15:44,376 - kinGEMs.dataset - INFO - BiGG Name: Succinate
+2026-01-20 09:15:44,402 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: O=C([O-])CCC(=O)[O-]
+2026-01-20 09:15:44,403 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:44,403 - kinGEMs.dataset - INFO - Mapping substrate: o2_c
+2026-01-20 09:15:44,422 - kinGEMs.dataset - INFO - BiGG Name: O2 O2
+2026-01-20 09:15:44,450 - kinGEMs.dataset - INFO - SMILES found in SEED: O=O
+2026-01-20 09:15:44,450 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:44,450 - kinGEMs.dataset - INFO - Mapping substrate: q8h2_c
+2026-01-20 09:15:44,469 - kinGEMs.dataset - INFO - BiGG Name: Ubiquinol-8
+2026-01-20 09:15:44,496 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: COc1c(O)c(C)c(C/C=C(\C)CC/C=C(\C)CC/C=C(\C)CC/C=C(\C)CC/C=C(\C)CC/C=C(\C)CC/C=C(\C)CCC=C(C)C)c(O)c1OC
+2026-01-20 09:15:44,496 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:44,496 - kinGEMs.dataset - INFO - Mapping substrate: lac__D_e
+2026-01-20 09:15:44,513 - kinGEMs.dataset - INFO - BiGG Name: D-Lactate
+2026-01-20 09:15:44,542 - kinGEMs.dataset - INFO - SMILES found in SEED: C[C@@H](O)C(=O)[O-]
+2026-01-20 09:15:44,542 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:44,542 - kinGEMs.dataset - INFO - Mapping substrate: succ_c
+2026-01-20 09:15:44,560 - kinGEMs.dataset - INFO - BiGG Name: Succinate
+2026-01-20 09:15:44,587 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: O=C([O-])CCC(=O)[O-]
+2026-01-20 09:15:44,587 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:44,587 - kinGEMs.dataset - INFO - Mapping substrate: etoh_e
+2026-01-20 09:15:44,605 - kinGEMs.dataset - INFO - BiGG Name: Ethanol
+2026-01-20 09:15:44,632 - kinGEMs.dataset - INFO - SMILES found in SEED: CCO
+2026-01-20 09:15:44,633 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:44,633 - kinGEMs.dataset - INFO - Mapping substrate: q8_c
+2026-01-20 09:15:44,652 - kinGEMs.dataset - INFO - BiGG Name: Ubiquinone-8
+2026-01-20 09:15:44,678 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: COC1=C(OC)C(=O)C(C/C=C(\C)CC/C=C(\C)CC/C=C(\C)CC/C=C(\C)CC/C=C(\C)CC/C=C(\C)CC/C=C(\C)CCC=C(C)C)=C(C)C1=O
+2026-01-20 09:15:44,678 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:44,678 - kinGEMs.dataset - INFO - Mapping substrate: s7p_c
+2026-01-20 09:15:44,697 - kinGEMs.dataset - INFO - BiGG Name: Sedoheptulose 7-phosphate
+2026-01-20 09:15:44,724 - kinGEMs.dataset - INFO - SMILES found in SEED: O=C(CO)[C@@H](O)[C@H](O)[C@H](O)[C@H](O)COP(=O)([O-])[O-]
+2026-01-20 09:15:44,724 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:44,724 - kinGEMs.dataset - INFO - Mapping substrate: nadh_c
+2026-01-20 09:15:44,742 - kinGEMs.dataset - INFO - BiGG Name: Nicotinamide adenine dinucleotide - reduced
+2026-01-20 09:15:44,769 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: NC(=O)C1=CN([C@@H]2O[C@H](COP(=O)([O-])OP(=O)([O-])OC[C@H]3O[C@@H](n4cnc5c(N)ncnc54)[C@H](O)[C@@H]3O)[C@@H](O)[C@H]2O)C=CC1
+2026-01-20 09:15:44,769 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:44,769 - kinGEMs.dataset - INFO - Mapping substrate: nadp_c
+2026-01-20 09:15:44,788 - kinGEMs.dataset - INFO - BiGG Name: Nicotinamide adenine dinucleotide phosphate
+2026-01-20 09:15:44,814 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: NC(=O)c1ccc[n+]([C@@H]2O[C@H](COP(=O)([O-])OP(=O)([O-])OC[C@H]3O[C@@H](n4cnc5c(N)ncnc54)[C@H](OP(=O)([O-])[O-])[C@@H]3O)[C@@H](O)[C@H]2O)c1
+2026-01-20 09:15:44,814 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:44,814 - kinGEMs.dataset - INFO - Mapping substrate: xu5p__D_c
+2026-01-20 09:15:44,831 - kinGEMs.dataset - INFO - BiGG Name: D-Xylulose 5-phosphate
+2026-01-20 09:15:44,858 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: O=C(CO)[C@@H](O)[C@H](O)COP(=O)([O-])[O-]
+2026-01-20 09:15:44,858 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:44,858 - kinGEMs.dataset - INFO - Mapping substrate: dhap_c
+2026-01-20 09:15:44,876 - kinGEMs.dataset - INFO - BiGG Name: Dihydroxyacetone phosphate
+2026-01-20 09:15:44,903 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: O=C(CO)COP(=O)([O-])[O-]
+2026-01-20 09:15:44,903 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:44,903 - kinGEMs.dataset - INFO - Mapping substrate: for_e
+2026-01-20 09:15:44,922 - kinGEMs.dataset - INFO - BiGG Name: Formate
+2026-01-20 09:15:44,949 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: O=C[O-]
+2026-01-20 09:15:44,949 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:44,949 - kinGEMs.dataset - INFO - Mapping substrate: fru_e
+2026-01-20 09:15:44,967 - kinGEMs.dataset - INFO - BiGG Name: D-Fructose
+2026-01-20 09:15:44,995 - kinGEMs.dataset - INFO - SMILES found in SEED: O=C(CO)[C@@H](O)[C@H](O)[C@H](O)CO
+2026-01-20 09:15:44,995 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:44,995 - kinGEMs.dataset - INFO - Mapping substrate: fum_e
+2026-01-20 09:15:45,014 - kinGEMs.dataset - INFO - BiGG Name: Fumarate
+2026-01-20 09:15:45,041 - kinGEMs.dataset - INFO - SMILES found in SEED: O=C([O-])/C=C/C(=O)[O-]
+2026-01-20 09:15:45,041 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:45,041 - kinGEMs.dataset - INFO - Mapping substrate: glc__D_e
+2026-01-20 09:15:45,059 - kinGEMs.dataset - INFO - BiGG Name: D-Glucose
+2026-01-20 09:15:45,086 - kinGEMs.dataset - INFO - SMILES found in SEED: O=C[C@H](O)[C@@H](O)[C@H](O)[C@H](O)CO
+2026-01-20 09:15:45,086 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:45,086 - kinGEMs.dataset - INFO - Mapping substrate: gln__L_e
+2026-01-20 09:15:45,103 - kinGEMs.dataset - INFO - BiGG Name: L-Glutamine
+2026-01-20 09:15:45,130 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: NC(=O)CC[C@H]([NH3+])C(=O)[O-]
+2026-01-20 09:15:45,130 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:45,130 - kinGEMs.dataset - INFO - Mapping substrate: glu__L_e
+2026-01-20 09:15:45,148 - kinGEMs.dataset - INFO - BiGG Name: L-Glutamate
+2026-01-20 09:15:45,175 - kinGEMs.dataset - INFO - SMILES found in SEED: [NH3+]C(CCC(=O)[O-])C(=O)[O-]
+2026-01-20 09:15:45,175 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:45,175 - kinGEMs.dataset - INFO - Mapping substrate: h2o_e
+2026-01-20 09:15:45,194 - kinGEMs.dataset - INFO - BiGG Name: H2O H2O
+2026-01-20 09:15:45,234 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:45,234 - kinGEMs.dataset - INFO - Mapping substrate: mal__L_e
+2026-01-20 09:15:45,252 - kinGEMs.dataset - INFO - BiGG Name: L-Malate
+2026-01-20 09:15:45,279 - kinGEMs.dataset - INFO - SMILES found in SEED: O=C([O-])C[C@H](O)C(=O)[O-]
+2026-01-20 09:15:45,279 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:45,279 - kinGEMs.dataset - INFO - Mapping substrate: nh4_e
+2026-01-20 09:15:45,298 - kinGEMs.dataset - INFO - BiGG Name: Ammonium
+2026-01-20 09:15:45,325 - kinGEMs.dataset - INFO - SMILES found in SEED: [NH4+]
+2026-01-20 09:15:45,325 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:45,325 - kinGEMs.dataset - INFO - Mapping substrate: o2_e
+2026-01-20 09:15:45,344 - kinGEMs.dataset - INFO - BiGG Name: O2 O2
+2026-01-20 09:15:45,371 - kinGEMs.dataset - INFO - SMILES found in SEED: O=O
+2026-01-20 09:15:45,371 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:45,371 - kinGEMs.dataset - INFO - Mapping substrate: fdp_c
+2026-01-20 09:15:45,390 - kinGEMs.dataset - INFO - BiGG Name: D-Fructose 1,6-bisphosphate
+2026-01-20 09:15:45,417 - kinGEMs.dataset - INFO - SMILES found in SEED: O=P([O-])([O-])OC[C@H]1OC(O)(COP(=O)([O-])[O-])[C@@H](O)[C@@H]1O
+2026-01-20 09:15:45,418 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:45,418 - kinGEMs.dataset - INFO - Mapping substrate: fum_c
+2026-01-20 09:15:45,436 - kinGEMs.dataset - INFO - BiGG Name: Fumarate
+2026-01-20 09:15:45,464 - kinGEMs.dataset - INFO - SMILES found in SEED: O=C([O-])/C=C/C(=O)[O-]
+2026-01-20 09:15:45,464 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:45,464 - kinGEMs.dataset - INFO - Mapping substrate: nh4_c
+2026-01-20 09:15:45,483 - kinGEMs.dataset - INFO - BiGG Name: Ammonium
+2026-01-20 09:15:45,511 - kinGEMs.dataset - INFO - SMILES found in SEED: [NH4+]
+2026-01-20 09:15:45,511 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:45,511 - kinGEMs.dataset - INFO - Mapping substrate: 6pgc_c
+2026-01-20 09:15:45,529 - kinGEMs.dataset - INFO - BiGG Name: 6-Phospho-D-gluconate
+2026-01-20 09:15:45,556 - kinGEMs.dataset - INFO - SMILES found in SEED: O=C([O-])[C@H](O)[C@@H](O)[C@H](O)[C@H](O)COP(=O)([O-])[O-]
+2026-01-20 09:15:45,556 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:45,556 - kinGEMs.dataset - INFO - Mapping substrate: icit_c
+2026-01-20 09:15:45,574 - kinGEMs.dataset - INFO - BiGG Name: Isocitrate
+2026-01-20 09:15:45,601 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: O=C([O-])CC(C(=O)[O-])C(O)C(=O)[O-]
+2026-01-20 09:15:45,601 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:45,601 - kinGEMs.dataset - INFO - Mapping substrate: lac__D_c
+2026-01-20 09:15:45,618 - kinGEMs.dataset - INFO - BiGG Name: D-Lactate
+2026-01-20 09:15:45,645 - kinGEMs.dataset - INFO - SMILES found in SEED: C[C@@H](O)C(=O)[O-]
+2026-01-20 09:15:45,645 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:45,645 - kinGEMs.dataset - INFO - Mapping substrate: glx_c
+2026-01-20 09:15:45,664 - kinGEMs.dataset - INFO - BiGG Name: Glyoxylate
+2026-01-20 09:15:45,690 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: O=CC(=O)[O-]
+2026-01-20 09:15:45,690 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:45,690 - kinGEMs.dataset - INFO - Mapping substrate: mal__L_c
+2026-01-20 09:15:45,707 - kinGEMs.dataset - INFO - BiGG Name: L-Malate
+2026-01-20 09:15:45,734 - kinGEMs.dataset - INFO - SMILES found in SEED: O=C([O-])C[C@H](O)C(=O)[O-]
+2026-01-20 09:15:45,734 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:45,734 - kinGEMs.dataset - INFO - Mapping substrate: 13dpg_c
+2026-01-20 09:15:45,752 - kinGEMs.dataset - INFO - BiGG Name: 3-Phospho-D-glyceroyl phosphate
+2026-01-20 09:15:45,779 - kinGEMs.dataset - INFO - SMILES found in SEED: O=C(OP(=O)([O-])[O-])[C@H](O)COP(=O)([O-])[O-]
+2026-01-20 09:15:45,779 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:45,779 - kinGEMs.dataset - INFO - Mapping substrate: actp_c
+2026-01-20 09:15:45,798 - kinGEMs.dataset - INFO - BiGG Name: Acetyl phosphate
+2026-01-20 09:15:45,824 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: CC(=O)OP(=O)([O-])[O-]
+2026-01-20 09:15:45,824 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:45,824 - kinGEMs.dataset - INFO - Mapping substrate: succoa_c
+2026-01-20 09:15:45,841 - kinGEMs.dataset - INFO - BiGG Name: Succinyl-CoA
+2026-01-20 09:15:45,869 - kinGEMs.dataset - INFO - SMILES found in SEED: CC(C)(COP(=O)([O-])OP(=O)([O-])OC[C@H]1O[C@@H](n2cnc3c(N)ncnc32)[C@H](O)[C@@H]1OP(=O)([O-])[O-])[C@@H](O)C(=O)NCCC(=O)NCCSC(=O)CCC(=O)[O-]
+2026-01-20 09:15:45,869 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:45,869 - kinGEMs.dataset - INFO - Mapping substrate: for_c
+2026-01-20 09:15:45,887 - kinGEMs.dataset - INFO - BiGG Name: Formate
+2026-01-20 09:15:45,914 - kinGEMs.dataset - INFO - SMILES found in MetaNetX: O=C[O-]
+2026-01-20 09:15:46,103 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:46,103 - kinGEMs.dataset - INFO - Mapping substrate: coa_c
+2026-01-20 09:15:46,841 - kinGEMs.dataset - INFO - Found SMILES via Cactus for coa: CC(C)(CO[P](O)(=O)O[P](O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O[P](O)(O)=O)n2cnc3c(N)ncnc23)[C@@H](O)C(=O)NCCC(=O)NCCS
+2026-01-20 09:15:47,019 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:47,019 - kinGEMs.dataset - INFO - Mapping substrate: h2o_c
+2026-01-20 09:15:47,252 - kinGEMs.dataset - INFO - Found SMILES via Cactus for h2o: O
+2026-01-20 09:15:47,429 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:47,429 - kinGEMs.dataset - INFO - Mapping substrate: amp_c
+2026-01-20 09:15:48,009 - kinGEMs.dataset - INFO - Found SMILES via Cactus for amp: Nc1ncnc2n(cnc12)C3OC(CO[P](O)(O)=O)C(O)C3O
+2026-01-20 09:15:48,186 - kinGEMs.dataset - INFO - -----------------------------
+2026-01-20 09:15:48,187 - kinGEMs.dataset - INFO - Mapping substrate: h2o_e
+2026-01-20 09:15:48,414 - kinGEMs.dataset - INFO - Found SMILES via Cactus for h2o: O
+2026-01-20 09:15:50,375 - root - WARNING - No sequence found for gene s0001
+2026-01-20 09:16:28,259 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:16:28,467 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+Loading configuration from: configs/e_coli_core.json
+
+======================================================================
+=== kinGEMs Pipeline for e_coli_core ===
+======================================================================
+Run ID: e_coli_core_20260120_4907
+Model type: Standard
+Organism: E coli
+Results directory: /project/def-mahadeva/ranaab/kinGEMs_v2/results/tuning_results/e_coli_core_20260120_4907
+Solver: glpk
+⚠️  Force regenerate mode: will regenerate all intermediate files
+======================================================================
+
+=== Configuration Summary ===
+Config file: configs/e_coli_core.json
+Model name: e_coli_core
+Enzyme upper bound: 0.25
+Enable FVA: True
+Enable Biolog validation: False
+
+FVA Settings:
+  Parallel execution: True
+  Biomass constraint ratio: 0.9
+  Workers: 4
+  Method: dask
+
+Simulated Annealing Settings:
+  Temperature: 100
+  Cooling rate: 0.95
+  Min temperature: 0.001
+  Max iterations: 1000
+  Max unchanged iterations: 50
+  Change threshold: 0.001
+  Biomass goal: 0.2
+  Top enzymes to tune: 20
+======================================================================
+
+Biomass reaction: BIOMASS_Ecoli_core_w_GAM
+
+Baseline growth: 0.8739
+
+=== Step 1: Preparing model data ===
+  ⟳ Regenerating model data (--force flag)
+Warning: Model has 8 validation errors
+Loaded model with 95 reactions and 72 metabolites
+Converted to irreversible model with 142 reactions
+Extracted 265 substrate-reaction-direction pairs
+Mapped metabolites to SMILES (265 found)
+Retrieved 136 protein sequences
+  ✓ Generated and saved substrates and sequences
+Warning: Model has 8 validation errors
+  Model: 137 genes, 142 reactions
+
+=== Step 2: Merging substrate and sequence data ===
+  ⟳ Regenerating merged data (--force flag)
+  ✓ Generated and saved merged data
+  Merged data: 605 rows
+  Found predictions file: X06A_kinGEMs_ecoli_core_predictions.csv
+
+=== Step 3: Processing CPI-Pred kcat values & annotating model ===
+  ⟳ Regenerating processed data (--force flag)
+  ✓ Generated and saved processed data
+  Processed data: 541 rows
+  Reactions with kcat: 100/142
+
+=== Step 4: Running optimization ===
+  Running standard COBRApy FBA (no enzyme constraints)...
+    COBRApy biomass: 0.8739
+  Running kinGEMs enzyme-constrained optimization...
+    kinGEMs biomass: 0.0133
+
+  Comparison:
+    Standard FBA:           0.8739
+    Enzyme-constrained FBA: 0.0133
+    Reduction due to enzyme budget: 98.5%
+  Using standard model - may need additional constraint processing
+
+=== Step 5: Running simulated annealing ===
+  Configuration:
+    - Temperature: 100
+    - Cooling rate: 0.95
+    - Max iterations: 1000
+    - Max unchanged iterations: 50
+    - Change threshold: 0.001
+    - Biomass goal: 0.2
+    - Top enzymes to tune: 20
+  Starting optimization...
+
+  [KCAT DEBUG] Sample kcat_mean vs kcat_updated values:
+    PFK_b3916: kcat_mean=1.402e+00, kcat_updated=1.402e+00
+    PFK_b1723: kcat_mean=3.857e+00, kcat_updated=3.857e+00
+    PFK_b3916: kcat_mean=6.370e-01, kcat_updated=1.402e+00
+GLPSOL--GLPK LP/MIP Solver 5.0
+Parameter(s) specified in the command line:
+ --tmlim 300 --write /tmp/tmprngf1mew.glpk.raw --wglp /tmp/tmpsmx1tjfz.glpk.glp
+ --cpxlp /tmp/tmppp5t19mw.pyomo.lp
+Reading problem data from '/tmp/tmppp5t19mw.pyomo.lp'...
+339 rows, 280 columns, 1355 non-zeros
+2662 lines were read
+Writing problem data to '/tmp/tmpsmx1tjfz.glpk.glp'...
+2388 lines were written
+GLPK Simplex Optimizer 5.0
+339 rows, 280 columns, 1355 non-zeros
+Preprocessing...
+321 rows, 255 columns, 1276 non-zeros
+Scaling...
+ A: min|aij| =  2.093e-08  max|aij| =  4.778e+07  ratio =  2.283e+15
+GM: min|aij| =  1.349e-01  max|aij| =  7.411e+00  ratio =  5.492e+01
+EQ: min|aij| =  1.829e-02  max|aij| =  1.000e+00  ratio =  5.469e+01
+Constructing initial basis...
+Size of triangular part is 309
+      0: obj =  -0.000000000e+00 inf =   3.121e-01 (7)
+    157: obj =  -0.000000000e+00 inf =   7.754e-17 (0) 1
+*   204: obj =   3.430784857e-03 inf =   2.352e-14 (0)
+OPTIMAL LP SOLUTION FOUND
+Time used:   0.0 secs
+Memory used: 0.5 Mb (562955 bytes)
+Writing basic solution to '/tmp/tmprngf1mew.glpk.raw'...
+628 lines were written
+  [DEBUG] Iter 1: Optimization succeeded! biomass=3.430785e-03
+  Iter 1/1000: biomass=0.003431, temp=100.0000  [KCAT DEBUG] Sample kcat_mean vs kcat_updated values:
+    PFK_b3916: kcat_mean=1.402e+00, kcat_updated=1.712e+00
+    PFK_b1723: kcat_mean=3.857e+00, kcat_updated=3.857e+00
+    PFK_b3916: kcat_mean=6.370e-01, kcat_updated=1.712e+00
+GLPSOL--GLPK LP/MIP Solver 5.0
+Parameter(s) specified in the command line:
+ --tmlim 300 --write /tmp/tmpayii3q34.glpk.raw --wglp /tmp/tmploz5i1ad.glpk.glp
+ --cpxlp /tmp/tmpsnale9y0.pyomo.lp
+Reading problem data from '/tmp/tmpsnale9y0.pyomo.lp'...
+339 rows, 280 columns, 1355 non-zeros
+2662 lines were read
+Writing problem data to '/tmp/tmploz5i1ad.glpk.glp'...
+2388 lines were written
+GLPK Simplex Optimizer 5.0
+339 rows, 280 columns, 1355 non-zeros
+Preprocessing...
+321 rows, 255 columns, 1276 non-zeros
+Scaling...
+ A: min|aij| =  2.093e-08  max|aij| =  4.778e+07  ratio =  2.283e+15
+GM: min|aij| =  1.349e-01  max|aij| =  7.411e+00  ratio =  5.492e+01
+EQ: min|aij| =  1.829e-02  max|aij| =  1.000e+00  ratio =  5.469e+01
+Constructing initial basis...
+Size of triangular part is 309
+      0: obj =  -0.000000000e+00 inf =   3.121e-01 (7)
+    123: obj =  -0.000000000e+00 inf =   9.316e-17 (0) 1
+*   190: obj =   1.036968742e-02 inf =   2.144e-17 (0)
+OPTIMAL LP SOLUTION FOUND
+Time used:   0.0 secs
+Memory used: 0.5 Mb (562955 bytes)
+Writing basic solution to '/tmp/tmpayii3q34.glpk.raw'...
+628 lines were written
+  [DEBUG] Iter 2: Optimization succeeded! biomass=1.036969e-02
+    - IMPROVEMENT: +202.254%
+  Iter 2/1000: biomass=0.010370, temp=95.0000  [KCAT DEBUG] Sample kcat_mean vs kcat_updated values:
+    PFK_b3916: kcat_mean=1.402e+00, kcat_updated=1.712e+00
+    PFK_b1723: kcat_mean=3.857e+00, kcat_updated=3.857e+00
+    PFK_b3916: kcat_mean=6.370e-01, kcat_updated=1.712e+00
+GLPSOL--GLPK LP/MIP Solver 5.0
+Parameter(s) specified in the command line:
+ --tmlim 300 --write /tmp/tmpbak0xs4w.glpk.raw --wglp /tmp/tmpdijidals.glpk.glp
+ --cpxlp /tmp/tmpi0jwzd9n.pyomo.lp
+Reading problem data from '/tmp/tmpi0jwzd9n.pyomo.lp'...
+339 rows, 280 columns, 1355 non-zeros
+2662 lines were read
+Writing problem data to '/tmp/tmpdijidals.glpk.glp'...
+2388 lines were written
+GLPK Simplex Optimizer 5.0
+339 rows, 280 columns, 1355 non-zeros
+Preprocessing...
+321 rows, 255 columns, 1276 non-zeros
+Scaling...
+ A: min|aij| =  2.093e-08  max|aij| =  4.778e+07  ratio =  2.283e+15
+GM: min|aij| =  1.350e-01  max|aij| =  7.406e+00  ratio =  5.484e+01
+EQ: min|aij| =  1.831e-02  max|aij| =  1.000e+00  ratio =  5.461e+01
+Constructing initial basis...
+Size of triangular part is 309
+      0: obj =  -0.000000000e+00 inf =   3.102e-01 (7)
+    130: obj =  -0.000000000e+00 inf =   2.239e-17 (0) 1
+*   199: obj =   3.702933053e-02 inf =   1.723e-17 (0)
+OPTIMAL LP SOLUTION FOUND
+Time used:   0.0 secs
+Memory used: 0.5 Mb (562955 bytes)
+Writing basic solution to '/tmp/tmpbak0xs4w.glpk.raw'...
+628 lines were written
+  [DEBUG] Iter 3: Optimization succeeded! biomass=3.702933e-02
+    - IMPROVEMENT: +257.092%
+  Iter 3/1000: biomass=0.037029, temp=90.2500  [DEBUG] Iter 4: Optimization succeeded! biomass=6.843956e-02
+    - IMPROVEMENT: +84.825%
+  Iter 4/1000: biomass=0.068440, temp=85.7375  [DEBUG] Iter 5: Optimization succeeded! biomass=7.851426e-02
+    - IMPROVEMENT: +14.721%
+  Iter 5/1000: biomass=0.078514, temp=81.4506  Iter 6/1000: biomass=0.043840, temp=77.3781  Iter 7/1000: biomass=0.075346, temp=73.5092  Iter 8/1000: biomass=0.052689, temp=69.8337  Iter 9/1000: biomass=0.077866, temp=66.3420  Iter 10/1000: biomass=0.090047, temp=63.0249  Iter 11/1000: biomass=0.092648, temp=59.8737  Iter 12/1000: biomass=0.089223, temp=56.8800  Iter 13/1000: biomass=0.092671, temp=54.0360  Iter 14/1000: biomass=0.085539, temp=51.3342  Iter 15/1000: biomass=0.080669, temp=48.7675  Iter 16/1000: biomass=0.057812, temp=46.3291  Iter 17/1000: biomass=0.034076, temp=44.0127  Iter 18/1000: biomass=0.032996, temp=41.8120  Iter 19/1000: biomass=0.051370, temp=39.7214  Iter 20/1000: biomass=0.026753, temp=37.7354  Iter 21/1000: biomass=0.029492, temp=35.8486  Iter 22/1000: biomass=0.045549, temp=34.0562  Iter 23/1000: biomass=0.073591, temp=32.3534  Iter 24/1000: biomass=0.082623, temp=30.7357  Iter 25/1000: biomass=0.081698, temp=29.1989  Iter 26/1000: biomass=0.075860, temp=27.7390  Iter 27/1000: biomass=0.032581, temp=26.3520  Iter 28/1000: biomass=0.035989, temp=25.0344  Iter 29/1000: biomass=0.021045, temp=23.7827  Iter 30/1000: biomass=0.046558, temp=22.5936  Iter 31/1000: biomass=0.031334, temp=21.4639  Iter 32/1000: biomass=0.021075, temp=20.3907  Iter 33/1000: biomass=0.001733, temp=19.3711  Iter 34/1000: biomass=0.001733, temp=18.4026  Iter 35/1000: biomass=0.001733, temp=17.4825  Iter 36/1000: biomass=0.018282, temp=16.6083  Iter 37/1000: biomass=0.089488, temp=15.7779  Iter 38/1000: biomass=0.070737, temp=14.9890  Iter 39/1000: biomass=0.042646, temp=14.2396  Iter 40/1000: biomass=0.058480, temp=13.5276  Iter 41/1000: biomass=0.025335, temp=12.8512  Iter 42/1000: biomass=0.027840, temp=12.2087  Iter 43/1000: biomass=0.038324, temp=11.5982  Iter 44/1000: biomass=0.082270, temp=11.0183  Iter 45/1000: biomass=0.062861, temp=10.4674  Iter 46/1000: biomass=0.048291, temp=9.9440  Iter 47/1000: biomass=0.022449, temp=9.4468  Iter 48/1000: biomass=0.049838, temp=8.9745  Iter 49/1000: biomass=0.019680, temp=8.5258  Iter 50/1000: biomass=0.019680, temp=8.0995  Iter 51/1000: biomass=0.019680, temp=7.6945  Iter 52/1000: biomass=0.019680, temp=7.3098  Iter 53/1000: biomass=0.061663, temp=6.9443  Iter 54/1000: biomass=0.098341, temp=6.5971  Iter 55/1000: biomass=0.098341, temp=6.2672  Iter 56/1000: biomass=0.087286, temp=5.9539  Iter 57/1000: biomass=0.087286, temp=5.6562  Iter 58/1000: biomass=0.087286, temp=5.3734  Iter 59/1000: biomass=0.087286, temp=5.1047  Iter 60/1000: biomass=0.087286, temp=4.8495  Iter 61/1000: biomass=0.087286, temp=4.6070  Iter 62/1000: biomass=0.031588, temp=4.3766  Iter 63/1000: biomass=0.031322, temp=4.1578  Iter 64/1000: biomass=0.060955, temp=3.9499  Iter 65/1000: biomass=0.067117, temp=3.7524  Iter 66/1000: biomass=0.069238, temp=3.5648  Iter 67/1000: biomass=0.057252, temp=3.3866  Iter 68/1000: biomass=0.048951, temp=3.2172  Iter 69/1000: biomass=0.030196, temp=3.0564  Iter 70/1000: biomass=0.069291, temp=2.9035  Iter 71/1000: biomass=0.045820, temp=2.7584  Iter 72/1000: biomass=0.019755, temp=2.6205  Iter 73/1000: biomass=0.042991, temp=2.4894  Iter 74/1000: biomass=0.032898, temp=2.3650  Iter 75/1000: biomass=0.055124, temp=2.2467  Iter 76/1000: biomass=0.045040, temp=2.1344  Iter 77/1000: biomass=0.007822, temp=2.0277  Iter 78/1000: biomass=0.007822, temp=1.9263  Iter 79/1000: biomass=0.007822, temp=1.8300  Iter 80/1000: biomass=0.007822, temp=1.7385  Iter 81/1000: biomass=0.007822, temp=1.6515  Iter 82/1000: biomass=0.024302, temp=1.5690  Iter 83/1000: biomass=0.018628, temp=1.4905  Iter 84/1000: biomass=0.047503, temp=1.4160  Iter 85/1000: biomass=0.091573, temp=1.3452  Iter 86/1000: biomass=0.102290, temp=1.2779  Iter 87/1000: biomass=0.076463, temp=1.2140  Iter 88/1000: biomass=0.076635, temp=1.1533  Iter 89/1000: biomass=0.053624, temp=1.0957  Iter 90/1000: biomass=0.044010, temp=1.0409  Iter 91/1000: biomass=0.043193, temp=0.9888  Iter 92/1000: biomass=0.048441, temp=0.9394  Iter 93/1000: biomass=0.059055, temp=0.8924  Iter 94/1000: biomass=0.070777, temp=0.8478  Iter 95/1000: biomass=0.118602, temp=0.8054  Iter 96/1000: biomass=0.113321, temp=0.7651  Iter 97/1000: biomass=0.051599, temp=0.7269  Iter 98/1000: biomass=0.063905, temp=0.6905  Iter 99/1000: biomass=0.044152, temp=0.6560  Iter 100/1000: biomass=0.048216, temp=0.6232  Iter 101/1000: biomass=0.052906, temp=0.5921  Iter 102/1000: biomass=0.072294, temp=0.5625  Iter 103/1000: biomass=0.010345, temp=0.5343  Iter 104/1000: biomass=0.014841, temp=0.5076  Iter 105/1000: biomass=0.018698, temp=0.4822  Iter 106/1000: biomass=0.044116, temp=0.4581  Iter 107/1000: biomass=0.003286, temp=0.4352  Iter 108/1000: biomass=0.065568, temp=0.4135  Iter 109/1000: biomass=0.071478, temp=0.3928  Iter 110/1000: biomass=0.062330, temp=0.3731  Iter 111/1000: biomass=0.081455, temp=0.3545  Iter 112/1000: biomass=0.083820, temp=0.3368  Iter 113/1000: biomass=0.066592, temp=0.3199  Iter 114/1000: biomass=0.070486, temp=0.3039  Iter 115/1000: biomass=0.086768, temp=0.2887  Iter 116/1000: biomass=0.025082, temp=0.2743  Iter 117/1000: biomass=0.025082, temp=0.2606  Iter 118/1000: biomass=0.052440, temp=0.2475  Iter 119/1000: biomass=0.050491, temp=0.2352  Iter 120/1000: biomass=0.066337, temp=0.2234  Iter 121/1000: biomass=0.066337, temp=0.2122  Iter 122/1000: biomass=0.066337, temp=0.2016  Iter 123/1000: biomass=0.066337, temp=0.1915  Iter 124/1000: biomass=0.086394, temp=0.1820  Iter 125/1000: biomass=0.099269, temp=0.1729  Iter 126/1000: biomass=0.059010, temp=0.1642  Iter 127/1000: biomass=0.059010, temp=0.1560  Iter 128/1000: biomass=0.026017, temp=0.1482  Iter 129/1000: biomass=0.037596, temp=0.1408  Iter 130/1000: biomass=0.037596, temp=0.1338  Iter 131/1000: biomass=0.012095, temp=0.1271  Iter 132/1000: biomass=0.035176, temp=0.1207  Iter 133/1000: biomass=0.007345, temp=0.1147  Iter 134/1000: biomass=0.007703, temp=0.1090  Iter 135/1000: biomass=0.012626, temp=0.1035  Iter 136/1000: biomass=0.014584, temp=0.0983  Iter 137/1000: biomass=0.014584, temp=0.0934  Iter 138/1000: biomass=0.014584, temp=0.0887  Iter 139/1000: biomass=0.020381, temp=0.0843  Iter 140/1000: biomass=0.020381, temp=0.0801  Iter 141/1000: biomass=0.020381, temp=0.0761  Iter 142/1000: biomass=0.038759, temp=0.0723  Iter 143/1000: biomass=0.039069, temp=0.0687  Iter 144/1000: biomass=0.037589, temp=0.0652  Iter 145/1000: biomass=0.045335, temp=0.0620  Iter 146/1000: biomass=0.063307, temp=0.0589  Iter 147/1000: biomass=0.063307, temp=0.0559  Iter 148/1000: biomass=0.063307, temp=0.0531  Iter 149/1000: biomass=0.049353, temp=0.0505  Iter 150/1000: biomass=0.041076, temp=0.0480  Iter 151/1000: biomass=0.018336, temp=0.0456  Iter 152/1000: biomass=0.033402, temp=0.0433  Iter 153/1000: biomass=0.027682, temp=0.0411  Iter 154/1000: biomass=0.031179, temp=0.0391  Iter 155/1000: biomass=0.097685, temp=0.0371  Iter 156/1000: biomass=0.115327, temp=0.0352  Iter 157/1000: biomass=0.115327, temp=0.0335  Iter 158/1000: biomass=0.112422, temp=0.0318  Iter 159/1000: biomass=0.104771, temp=0.0302  Iter 160/1000: biomass=0.104771, temp=0.0287  Iter 161/1000: biomass=0.104771, temp=0.0273  Iter 162/1000: biomass=0.104771, temp=0.0259  Iter 163/1000: biomass=0.104771, temp=0.0246  Iter 164/1000: biomass=0.104771, temp=0.0234  Iter 165/1000: biomass=0.054993, temp=0.0222  Iter 166/1000: biomass=0.054993, temp=0.0211  Iter 167/1000: biomass=0.061591, temp=0.0201  Iter 168/1000: biomass=0.061591, temp=0.0190  Iter 169/1000: biomass=0.080362, temp=0.0181  Iter 170/1000: biomass=0.080362, temp=0.0172  Iter 171/1000: biomass=0.080362, temp=0.0163  Iter 172/1000: biomass=0.080362, temp=0.0155  Iter 173/1000: biomass=0.080362, temp=0.0147  Iter 174/1000: biomass=0.080362, temp=0.0140  Iter 175/1000: biomass=0.080362, temp=0.0133  Iter 176/1000: biomass=0.080362, temp=0.0126  Iter 177/1000: biomass=0.080362, temp=0.0120  Iter 178/1000: biomass=0.080362, temp=0.0114  Iter 179/1000: biomass=0.080362, temp=0.0108  Iter 180/1000: biomass=0.080362, temp=0.0103  Iter 181/1000: biomass=0.080362, temp=0.0098  Iter 182/1000: biomass=0.080362, temp=0.0093  Iter 183/1000: biomass=0.107987, temp=0.0088  Iter 184/1000: biomass=0.107987, temp=0.0084  Iter 185/1000: biomass=0.107987, temp=0.0080  Iter 186/1000: biomass=0.109674, temp=0.0076  Iter 187/1000: biomass=0.109674, temp=0.0072  Iter 188/1000: biomass=0.109674, temp=0.0068  Iter 189/1000: biomass=0.109674, temp=0.0065  Iter 190/1000: biomass=0.113257, temp=0.0062  Iter 191/1000: biomass=0.113257, temp=0.0059  Iter 192/1000: biomass=0.113257, temp=0.0056  Iter 193/1000: biomass=0.113257, temp=0.0053  Iter 194/1000: biomass=0.113257, temp=0.0050  Iter 195/1000: biomass=0.113257, temp=0.0048  Iter 196/1000: biomass=0.113257, temp=0.0045  Iter 197/1000: biomass=0.113257, temp=0.0043  Iter 198/1000: biomass=0.113257, temp=0.0041  Iter 199/1000: biomass=0.113257, temp=0.0039  Iter 200/1000: biomass=0.113257, temp=0.0037  Iter 201/1000: biomass=0.113257, temp=0.0035  Iter 202/1000: biomass=0.113257, temp=0.0033  Iter 203/1000: biomass=0.113257, temp=0.0032  Iter 204/1000: biomass=0.113257, temp=0.0030  Iter 205/1000: biomass=0.113257, temp=0.0029  Iter 206/1000: biomass=0.113257, temp=0.0027  Iter 207/1000: biomass=0.113257, temp=0.0026  Iter 208/1000: biomass=0.113257, temp=0.0024  Iter 209/1000: biomass=0.113257, temp=0.0023  Iter 210/1000: biomass=0.113257, temp=0.0022  Iter 211/1000: biomass=0.113257, temp=0.0021  Iter 212/1000: biomass=0.113257, temp=0.0020  Iter 213/1000: biomass=0.113257, temp=0.0019  Iter 214/1000: biomass=0.113257, temp=0.0018  Iter 215/1000: biomass=0.113257, temp=0.0017  Iter 216/1000: biomass=0.113257, temp=0.0016  Iter 217/1000: biomass=0.113257, temp=0.0015  Iter 218/1000: biomass=0.113257, temp=0.0015  Iter 219/1000: biomass=0.113257, temp=0.0014  Iter 220/1000: biomass=0.113257, temp=0.0013  Iter 221/1000: biomass=0.113257, temp=0.0013  Iter 222/1000: biomass=0.113257, temp=0.0012  Iter 223/1000: biomass=0.113257, temp=0.0011  Iter 224/1000: biomass=0.113257, temp=0.0011  Iter 225/1000: biomass=0.113257, temp=0.0010
+
+  Annealing complete!
+  Initial biomass: 0.0133
+  Final biomass: 0.1133
+  Improvement: 753.0%
+  Total iterations: 226
+
+  Biomass progression:
+    Iter   0: 0.013277
+    Iter  22: 0.045549 (+243.05%)
+    Iter  44: 0.082270 (+80.62%)
+    Iter  66: 0.069238 (-15.84%)
+    Iter  88: 0.076635 (+10.68%)
+    Iter 110: 0.062330 (-18.67%)
+    Iter 132: 0.035176 (-43.57%)
+    Iter 154: 0.031179 (-11.36%)
+    Iter 176: 0.080362 (+157.74%)
+    Iter 198: 0.113257 (+40.93%)
+    Iter 220: 0.113257 (+0.00%)
+    Iter 225: 0.113257 (+0.00%)
+
+  Top 10 enzymes by mass contribution:
+        Reactions Single_gene  enzyme_mass
+0          ATPS4r       b3732     0.024220
+1  ATPS4r_reverse       b3732     0.024220
+2          ATPS4r       b3738     0.015746
+3  ATPS4r_reverse       b3738     0.015746
+4             FBA       b2925     0.013837
+5     FBA_reverse       b2925     0.013837
+6          ATPS4r       b3734     0.013583
+7  ATPS4r_reverse       b3734     0.013583
+8          ATPS4r       b3736     0.013156
+9  ATPS4r_reverse       b3736     0.013156
+
+  Saved merged DataFrame to: /project/def-mahadeva/ranaab/kinGEMs_v2/results/tuning_results/e_coli_core_20260120_4907/final_model_info.csv
+
+=== Step 6: Running Flux Variability Analysis ===
+  Using parallel FVA with 4 workers...
+  Parallel FVA configuration:
+    Method: dask
+    Workers: 4
+    Reactions: 142
+    Chunk size: 2
+    Number of chunks: 71
+    Estimated memory: ~0.0 GB
+
+  Running baseline optimization...
+  [KCAT DEBUG] Sample kcat_mean vs kcat_updated values:
+    PFK_b3916: kcat_mean=1.402e+00, kcat_updated=7.079e+00
+    PFK_b1723: kcat_mean=3.857e+00, kcat_updated=3.857e+00
+    PFK_b3916: kcat_mean=6.370e-01, kcat_updated=7.079e+00
+GLPSOL--GLPK LP/MIP Solver 5.0
+Parameter(s) specified in the command line:
+ --tmlim 300 --write /tmp/tmpa1cl6_sv.glpk.raw --wglp /tmp/tmph2vx4_ve.glpk.glp
+ --cpxlp /tmp/tmpc6agz11f.pyomo.lp
+Reading problem data from '/tmp/tmpc6agz11f.pyomo.lp'...
+339 rows, 280 columns, 1355 non-zeros
+2662 lines were read
+Writing problem data to '/tmp/tmph2vx4_ve.glpk.glp'...
+2388 lines were written
+GLPK Simplex Optimizer 5.0
+339 rows, 280 columns, 1355 non-zeros
+Preprocessing...
+321 rows, 255 columns, 1276 non-zeros
+Scaling...
+ A: min|aij| =  2.093e-08  max|aij| =  4.778e+07  ratio =  2.283e+15
+GM: min|aij| =  1.352e-01  max|aij| =  7.394e+00  ratio =  5.467e+01
+EQ: min|aij| =  1.838e-02  max|aij| =  1.000e+00  ratio =  5.442e+01
+Constructing initial basis...
+Size of triangular part is 309
+      0: obj =  -0.000000000e+00 inf =   3.072e-01 (7)
+    113: obj =  -0.000000000e+00 inf =   5.046e-18 (0) 1
+*   169: obj =   1.186020688e-01 inf =   2.145e-17 (0)
+OPTIMAL LP SOLUTION FOUND
+Time used:   0.0 secs
+Memory used: 0.5 Mb (562955 bytes)
+Writing basic solution to '/tmp/tmpa1cl6_sv.glpk.raw'...
+628 lines were written
+  Optimal biomass: 0.118602
+  Biomass constraint: 0.106742 ≤ biomass ≤ 0.118602 (opt_ratio=0.9)
+
+  Starting parallel FVA with 71 chunks...
+  FVA will analyze 142 reactions independently
+  Progress will be shown by chunk completion...
+2026-01-20 09:17:12.666 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-20 09:17:12.666 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-20 09:17:12.667 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-20 09:17:12.667 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-20 09:17:14,610 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:14,785 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:14,795 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:14,805 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:14,814 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:14,824 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:14,833 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:14,842 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:14,854 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:14,864 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:14,873 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:14,882 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:14,891 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:14,900 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:14,908 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:14,918 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:14,927 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:14,936 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:14,945 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:14,953 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:14,963 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:14,971 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:14,980 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:14,988 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:14,998 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,006 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,015 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,024 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,033 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,042 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,051 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,059 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,068 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,076 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,290 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,299 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,309 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,318 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,327 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,336 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,345 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,354 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,363 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,372 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,381 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,389 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,398 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,407 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,416 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,424 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,433 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,442 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,451 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,460 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,468 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,477 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,485 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,494 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,503 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,512 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,520 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,529 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,537 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,546 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,555 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,563 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,572 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,580 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,588 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,597 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:15,606 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+[FVA] Starting optimization for reaction: ATPS4r
+[FVA] Starting optimization for reaction: EX_pyr_e
+[FVA] Starting optimization for reaction: RPE
+[FVA] Starting optimization for reaction: AKGDH
+[FVA] Starting optimization for reaction: RPE_reverse
+[FVA] Starting optimization for reaction: EX_succ_e
+[FVA] Starting optimization for reaction: AKGt2r
+[FVA] Starting optimization for reaction: ATPS4r_reverse
+  [Chunk 30/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ENO_reverse
+  [Chunk  8/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ADK1
+  [Chunk 63/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: FBP
+  [Chunk 11/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: RPI
+[FVA] Starting optimization for reaction: ETOHt2r
+[FVA] Starting optimization for reaction: ADK1_reverse
+[FVA] Starting optimization for reaction: FORt
+[FVA] Starting optimization for reaction: RPI_reverse
+  [Chunk 16/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ACt2r
+  [Chunk  7/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ACONTa
+  [Chunk 64/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: G6PDH2r_reverse
+  [Chunk 32/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: GND
+[FVA] Starting optimization for reaction: ACt2r_reverse
+[FVA] Starting optimization for reaction: H2Ot
+[FVA] Starting optimization for reaction: ACONTa_reverse
+[FVA] Starting optimization for reaction: GAPD
+  [Chunk  6/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: FORt2
+  [Chunk  4/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: FRD7
+  [Chunk 43/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_pi_e
+  [Chunk 37/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: O2t
+[FVA] Starting optimization for reaction: FORt_reverse
+[FVA] Starting optimization for reaction: FRUpts2
+[FVA] Starting optimization for reaction: EX_pi_e_reverse
+[FVA] Starting optimization for reaction: O2t_reverse
+  [Chunk 33/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: TPI
+  [Chunk 34/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: NH4t
+  [Chunk 29/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: D_LACt2_reverse
+  [Chunk 52/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: FUM
+[FVA] Starting optimization for reaction: ENO
+[FVA] Starting optimization for reaction: FUM_reverse
+[FVA] Starting optimization for reaction: TPI_reverse
+[FVA] Starting optimization for reaction: NH4t_reverse
+  [Chunk 71/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ALCD2x_reverse
+  [Chunk 51/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: CYTBD
+  [Chunk 15/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ACALD
+  [Chunk 35/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: NADH16
+[FVA] Starting optimization for reaction: ATPM
+[FVA] Starting optimization for reaction: D_LACt2
+[FVA] Starting optimization for reaction: ACALD_reverse
+[FVA] Starting optimization for reaction: NADTRHD
+  [Chunk 10/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PGM
+  [Chunk 14/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: GAPD_reverse
+  [Chunk  1/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: SUCOAS_reverse
+  [Chunk 50/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ACKr
+[FVA] Starting optimization for reaction: PGM_reverse
+[FVA] Starting optimization for reaction: GLCpts
+[FVA] Starting optimization for reaction: ACKr_reverse
+[FVA] Starting optimization for reaction: TALA
+  [Chunk 57/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_fru_e
+  [Chunk 38/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ACALDt
+  [Chunk 67/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: MDH
+  [Chunk  3/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: GLNS
+[FVA] Starting optimization for reaction: EX_fum_e
+[FVA] Starting optimization for reaction: ACALDt_reverse
+[FVA] Starting optimization for reaction: MDH_reverse
+[FVA] Starting optimization for reaction: GLNabc
+  [Chunk 21/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PGI_reverse
+  [Chunk  2/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: CO2t_reverse
+  [Chunk 48/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: AKGt2r_reverse
+  [Chunk 39/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PGK_reverse
+[FVA] Starting optimization for reaction: PGK
+[FVA] Starting optimization for reaction: CS
+[FVA] Starting optimization for reaction: ALCD2x
+[FVA] Starting optimization for reaction: PGL
+  [Chunk 13/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PIt2r
+  [Chunk 56/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_lac__D_e
+  [Chunk 55/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: TKT1
+  [Chunk  9/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: GLUN
+[FVA] Starting optimization for reaction: TKT1_reverse
+[FVA] Starting optimization for reaction: PIt2r_reverse
+[FVA] Starting optimization for reaction: EX_mal__L_e
+[FVA] Starting optimization for reaction: GLUSy
+  [Chunk 69/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: SUCCt2_2
+  [Chunk 58/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: TKT2
+  [Chunk 26/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ACONTb
+  [Chunk 41/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PPS
+[FVA] Starting optimization for reaction: SUCCt3
+[FVA] Starting optimization for reaction: TKT2_reverse
+[FVA] Starting optimization for reaction: ACONTb_reverse
+[FVA] Starting optimization for reaction: PTAr
+  [Chunk 65/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ICDHyr_reverse
+  [Chunk 70/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PFL
+  [Chunk  5/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_acald_e
+  [Chunk 60/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: GLUDy
+[FVA] Starting optimization for reaction: ICL
+[FVA] Starting optimization for reaction: PGI
+[FVA] Starting optimization for reaction: GLUDy_reverse
+[FVA] Starting optimization for reaction: EX_akg_e
+  [Chunk 45/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: TALA_reverse
+  [Chunk 54/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: GLUt2r
+  [Chunk 40/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_h2o_e
+  [Chunk 18/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_nh4_e
+[FVA] Starting optimization for reaction: THD2
+[FVA] Starting optimization for reaction: GLUt2r_reverse
+[FVA] Starting optimization for reaction: EX_h2o_e_reverse
+[FVA] Starting optimization for reaction: EX_nh4_e_reverse
+  [Chunk 68/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: FBA
+  [Chunk 42/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ETOHt2r_reverse
+  [Chunk 24/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_gln__L_e
+  [Chunk 27/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: MALS
+[FVA] Starting optimization for reaction: FBA_reverse
+[FVA] Starting optimization for reaction: EX_ac_e
+[FVA] Starting optimization for reaction: EX_glu__L_e
+[FVA] Starting optimization for reaction: MALt2_2
+  [Chunk 31/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_etoh_e
+  [Chunk 17/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: LDH_D
+  [Chunk 47/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PDH
+  [Chunk 23/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PTAr_reverse
+[FVA] Starting optimization for reaction: EX_for_e
+[FVA] Starting optimization for reaction: LDH_D_reverse
+[FVA] Starting optimization for reaction: PFK
+[FVA] Starting optimization for reaction: PYK
+  [Chunk 20/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: SUCDi
+  [Chunk 46/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PYRt2
+  [Chunk 53/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PPC
+  [Chunk 61/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_glc__D_e
+[FVA] Starting optimization for reaction: SUCOAS
+[FVA] Starting optimization for reaction: PYRt2_reverse
+[FVA] Starting optimization for reaction: PPCK
+[FVA] Starting optimization for reaction: EX_glc__D_e_reverse
+  [Chunk 66/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_o2_e
+  [Chunk 62/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: H2Ot_reverse
+  [Chunk 59/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_co2_e
+  [Chunk 22/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: FUMt2_2
+[FVA] Starting optimization for reaction: EX_o2_e_reverse
+[FVA] Starting optimization for reaction: ICDHyr
+[FVA] Starting optimization for reaction: EX_co2_e_reverse
+  [Chunk 28/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ME1
+[FVA] Starting optimization for reaction: G6PDH2r
+  [Chunk 44/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_h_e
+  [Chunk 19/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: BIOMASS_Ecoli_core_w_GAM
+[FVA] Starting optimization for reaction: ME2
+[FVA] Starting optimization for reaction: EX_h_e_reverse
+[FVA] Starting optimization for reaction: CO2t
+  [Chunk 12/71] ✓ Complete (2 reactions)
+  [Chunk 25/71] ✓ Complete (2 reactions)
+  [Chunk 36/71] ✓ Complete (2 reactions)
+  [Chunk 49/71] ✓ Complete (2 reactions)
+  Dask dashboard: http://127.0.0.1:8787/status
+
+  ✓ FVA Complete: 142 reactions processed
+    - Successful: 142
+    - Success rate: 100.0%
+    - Execution time: 0.6 minutes (38.8 seconds)
+    - Average time per reaction: 0.27 seconds
+
+  FVA results saved to: /project/def-mahadeva/ranaab/kinGEMs_v2/results/tuning_results/e_coli_core_20260120_4907/e_coli_core_fva_results.csv
+  kinGEMs FVA completed: 142 reactions analyzed
+  Running COBRApy FVA for comparison...
+  Using original model for COBRApy FVA
+  COBRApy FVA completed: 95 reactions analyzed and results saved to /project/def-mahadeva/ranaab/kinGEMs_v2/results/tuning_results/e_coli_core_20260120_4907/e_coli_core_cobra_fva_results.csv
+  Generating FVA plots...
+  Saved FVA flux range plot to: /project/def-mahadeva/ranaab/kinGEMs_v2/results/tuning_results/e_coli_core_20260120_4907/e_coli_core_fva_flux_range_plot.png
+
+FVi at cumulative probability = 0.5:
+  kinGEMs FVA: 2.8453
+  COBRApy FVA: 8.0459
+  Saved FVA cumulative plot to: /project/def-mahadeva/ranaab/kinGEMs_v2/results/tuning_results/e_coli_core_20260120_4907/e_coli_core_fva_cumulative_plot.png
+
+=== Step 6: Running Flux Variability Analysis ===
+  Using parallel FVA with 4 workers...
+  Parallel FVA configuration:
+    Method: dask
+    Workers: 4
+    Reactions: 142
+    Chunk size: 2
+    Number of chunks: 71
+    Estimated memory: ~0.0 GB
+
+  Running baseline optimization...
+  [KCAT DEBUG] Sample kcat values:
+    PFK_b3916: kcat=1.402e+00
+    PFK_b1723: kcat=3.857e+00
+    PFK_b3916: kcat=6.370e-01
+GLPSOL--GLPK LP/MIP Solver 5.0
+Parameter(s) specified in the command line:
+ --tmlim 300 --write /tmp/tmprpdf_19_.glpk.raw --wglp /tmp/tmp_eteabgz.glpk.glp
+ --cpxlp /tmp/tmpj5649vg5.pyomo.lp
+Reading problem data from '/tmp/tmpj5649vg5.pyomo.lp'...
+339 rows, 280 columns, 1355 non-zeros
+2662 lines were read
+Writing problem data to '/tmp/tmp_eteabgz.glpk.glp'...
+2388 lines were written
+GLPK Simplex Optimizer 5.0
+339 rows, 280 columns, 1355 non-zeros
+Preprocessing...
+321 rows, 255 columns, 1276 non-zeros
+Scaling...
+ A: min|aij| =  2.093e-08  max|aij| =  4.778e+07  ratio =  2.283e+15
+GM: min|aij| =  1.349e-01  max|aij| =  7.411e+00  ratio =  5.492e+01
+EQ: min|aij| =  1.829e-02  max|aij| =  1.000e+00  ratio =  5.469e+01
+Constructing initial basis...
+Size of triangular part is 309
+      0: obj =  -0.000000000e+00 inf =   3.121e-01 (7)
+    157: obj =  -0.000000000e+00 inf =   1.008e-17 (0) 1
+*   191: obj =   1.327744863e-02 inf =   1.985e-17 (0)
+OPTIMAL LP SOLUTION FOUND
+Time used:   0.0 secs
+Memory used: 0.5 Mb (562955 bytes)
+Writing basic solution to '/tmp/tmprpdf_19_.glpk.raw'...
+628 lines were written
+  Optimal biomass: 0.013277
+  Biomass constraint: 0.011950 ≤ biomass ≤ 0.013277 (opt_ratio=0.9)
+
+  Starting parallel FVA with 71 chunks...
+  FVA will analyze 142 reactions independently
+  Progress will be shown by chunk completion...
+2026-01-20 09:17:29.322 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-20 09:17:29.353 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-20 09:17:29.363 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-20 09:17:29.403 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-20 09:17:30,492 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:30,503 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:30,514 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:30,523 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:30,533 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:30,542 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:30,552 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:30,560 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,240 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,250 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,261 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,270 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,280 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,291 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,301 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,310 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,320 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,329 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,338 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,347 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,357 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,366 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,375 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,384 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,394 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,403 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,414 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,423 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,433 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,442 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,452 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,461 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,470 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,479 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,489 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,497 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,507 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,516 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,527 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,535 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,545 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,553 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,563 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,572 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,580 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,590 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,599 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,609 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,618 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,627 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,636 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,646 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,654 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,664 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:31,996 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:32,006 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:32,016 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:32,025 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:32,035 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:32,045 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:32,054 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:32,064 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:32,073 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:32,082 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:32,091 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:32,101 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:32,110 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:32,120 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:32,129 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:32,139 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+2026-01-20 09:17:32,148 - cobra.core.model - INFO - The current solver interface glpk doesn't support setting the optimality tolerance.
+[FVA] Starting optimization for reaction: ACKr
+[FVA] Starting optimization for reaction: EX_lac__D_e
+[FVA] Starting optimization for reaction: EX_o2_e
+[FVA] Starting optimization for reaction: TALA_reverse
+[FVA] Starting optimization for reaction: EX_mal__L_e
+[FVA] Starting optimization for reaction: THD2
+[FVA] Starting optimization for reaction: EX_o2_e_reverse
+[FVA] Starting optimization for reaction: ACKr_reverse
+  [Chunk 26/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: G6PDH2r_reverse
+  [Chunk 68/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ALCD2x_reverse
+  [Chunk 28/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ACONTa
+  [Chunk  3/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PYRt2
+[FVA] Starting optimization for reaction: GAPD
+[FVA] Starting optimization for reaction: ATPM
+[FVA] Starting optimization for reaction: ACONTa_reverse
+[FVA] Starting optimization for reaction: PYRt2_reverse
+  [Chunk 37/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PFL
+  [Chunk 10/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_pi_e
+  [Chunk  4/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: GLUt2r
+  [Chunk 62/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PPS
+[FVA] Starting optimization for reaction: EX_pi_e_reverse
+[FVA] Starting optimization for reaction: PGI
+[FVA] Starting optimization for reaction: GLUt2r_reverse
+[FVA] Starting optimization for reaction: PTAr
+  [Chunk 29/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_acald_e
+  [Chunk 42/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: GLUN
+  [Chunk 54/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: FUM
+  [Chunk 60/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: O2t
+[FVA] Starting optimization for reaction: EX_akg_e
+[FVA] Starting optimization for reaction: FUM_reverse
+[FVA] Starting optimization for reaction: GLUSy
+[FVA] Starting optimization for reaction: O2t_reverse
+  [Chunk 18/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: FRD7
+  [Chunk 35/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_h_e
+  [Chunk 41/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: TKT2
+  [Chunk 52/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_nh4_e
+[FVA] Starting optimization for reaction: EX_nh4_e_reverse
+[FVA] Starting optimization for reaction: FRUpts2
+[FVA] Starting optimization for reaction: EX_h_e_reverse
+[FVA] Starting optimization for reaction: TKT2_reverse
+  [Chunk 34/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ATPS4r
+  [Chunk 25/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: MDH
+  [Chunk 70/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ENO_reverse
+  [Chunk 27/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: AKGt2r_reverse
+[FVA] Starting optimization for reaction: ATPS4r_reverse
+[FVA] Starting optimization for reaction: MDH_reverse
+[FVA] Starting optimization for reaction: ETOHt2r
+[FVA] Starting optimization for reaction: ALCD2x
+  [Chunk 11/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: FUMt2_2
+  [Chunk 48/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ACONTb
+  [Chunk 16/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: GLNS
+  [Chunk  9/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_gln__L_e
+[FVA] Starting optimization for reaction: EX_glu__L_e
+[FVA] Starting optimization for reaction: G6PDH2r
+[FVA] Starting optimization for reaction: ACONTb_reverse
+[FVA] Starting optimization for reaction: GLNabc
+  [Chunk 23/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: MALS
+  [Chunk 36/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_h2o_e
+  [Chunk  5/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: H2Ot_reverse
+  [Chunk 39/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: GAPD_reverse
+[FVA] Starting optimization for reaction: EX_h2o_e_reverse
+[FVA] Starting optimization for reaction: ICDHyr
+[FVA] Starting optimization for reaction: GLCpts
+  [Chunk 24/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: LDH_D
+[FVA] Starting optimization for reaction: MALt2_2
+  [Chunk 44/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_co2_e
+  [Chunk 38/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ICDHyr_reverse
+[FVA] Starting optimization for reaction: EX_co2_e_reverse
+  [Chunk 47/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: FBP
+[FVA] Starting optimization for reaction: FORt
+[FVA] Starting optimization for reaction: LDH_D_reverse
+[FVA] Starting optimization for reaction: ICL
+  [Chunk 32/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: CO2t_reverse
+  [Chunk 46/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PGK_reverse
+  [Chunk 19/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ME1
+  [Chunk 45/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: SUCOAS_reverse
+[FVA] Starting optimization for reaction: PGL
+[FVA] Starting optimization for reaction: ME2
+[FVA] Starting optimization for reaction: TALA
+  [Chunk 56/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: NH4t
+  [Chunk 49/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: FBA
+[FVA] Starting optimization for reaction: CS
+  [Chunk 67/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_etoh_e
+[FVA] Starting optimization for reaction: NH4t_reverse
+[FVA] Starting optimization for reaction: FBA_reverse
+  [Chunk 13/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ADK1
+[FVA] Starting optimization for reaction: EX_for_e
+[FVA] Starting optimization for reaction: ADK1_reverse
+  [Chunk 51/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_pyr_e
+  [Chunk  7/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: FORt2
+  [Chunk 31/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: TKT1
+  [Chunk 20/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: RPE
+[FVA] Starting optimization for reaction: EX_succ_e
+[FVA] Starting optimization for reaction: FORt_reverse
+[FVA] Starting optimization for reaction: TKT1_reverse
+[FVA] Starting optimization for reaction: RPE_reverse
+  [Chunk 30/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ACALDt
+[FVA] Starting optimization for reaction: ACALDt_reverse
+  [Chunk 63/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ACALD
+  [Chunk 69/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: BIOMASS_Ecoli_core_w_GAM
+  [Chunk 33/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_fru_e
+[FVA] Starting optimization for reaction: ACALD_reverse
+[FVA] Starting optimization for reaction: CO2t
+[FVA] Starting optimization for reaction: EX_fum_e
+  [Chunk 12/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: EX_glc__D_e
+  [Chunk  2/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: AKGDH
+  [Chunk 21/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: CYTBD
+[FVA] Starting optimization for reaction: AKGt2r
+[FVA] Starting optimization for reaction: D_LACt2
+  [Chunk  1/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: D_LACt2_reverse
+  [Chunk  8/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: TPI
+[FVA] Starting optimization for reaction: EX_glc__D_e_reverse
+[FVA] Starting optimization for reaction: ENO
+  [Chunk 14/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PGI_reverse
+[FVA] Starting optimization for reaction: TPI_reverse
+  [Chunk 22/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PTAr_reverse
+  [Chunk 15/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: SUCCt2_2
+  [Chunk 71/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: SUCDi
+[FVA] Starting optimization for reaction: PYK
+[FVA] Starting optimization for reaction: SUCCt3
+[FVA] Starting optimization for reaction: SUCOAS
+  [Chunk 61/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ETOHt2r_reverse
+[FVA] Starting optimization for reaction: PGK
+  [Chunk 65/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: NADH16
+[FVA] Starting optimization for reaction: EX_ac_e
+  [Chunk 55/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: GLUDy
+  [Chunk 17/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PDH
+  [Chunk 66/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PIt2r
+[FVA] Starting optimization for reaction: GLUDy_reverse
+[FVA] Starting optimization for reaction: PIt2r_reverse
+[FVA] Starting optimization for reaction: NADTRHD
+  [Chunk 40/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: GND
+  [Chunk 58/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: ACt2r
+  [Chunk 50/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: RPI
+[FVA] Starting optimization for reaction: H2Ot
+[FVA] Starting optimization for reaction: PFK
+[FVA] Starting optimization for reaction: ACt2r_reverse
+[FVA] Starting optimization for reaction: RPI_reverse
+  [Chunk 53/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PPC
+[FVA] Starting optimization for reaction: PPCK
+  [Chunk 43/71] ✓ Complete (2 reactions)
+[FVA] Starting optimization for reaction: PGM
+[FVA] Starting optimization for reaction: PGM_reverse
+  [Chunk 57/71] ✓ Complete (2 reactions)
+  [Chunk  6/71] ✓ Complete (2 reactions)
+  [Chunk 64/71] ✓ Complete (2 reactions)
+  [Chunk 59/71] ✓ Complete (2 reactions)
+  Dask dashboard: http://127.0.0.1:8787/status
+
+  ✓ FVA Complete: 142 reactions processed
+    - Successful: 142
+    - Success rate: 100.0%
+    - Execution time: 0.2 minutes (14.1 seconds)
+    - Average time per reaction: 0.10 seconds
+
+  FVA results saved to: /project/def-mahadeva/ranaab/kinGEMs_v2/results/tuning_results/e_coli_core_20260120_4907/e_coli_core_pre_tuning_fva_results.csv
+  kinGEMs FVA completed: 142 reactions analyzed
+  Running COBRApy FVA for comparison...
+  Using original model for COBRApy FVA
+  COBRApy FVA completed: 95 reactions analyzed and results saved to /project/def-mahadeva/ranaab/kinGEMs_v2/results/tuning_results/e_coli_core_20260120_4907/e_coli_core_pre_tuning_cobra_fva_results.csv
+  Generating FVA plots...
+  Saved FVA flux range plot to: /project/def-mahadeva/ranaab/kinGEMs_v2/results/tuning_results/e_coli_core_20260120_4907/e_coli_core_pre_tuning_fva_flux_range_plot.png
+
+FVi at cumulative probability = 0.5:
+  kinGEMs FVA: 1.1486
+  COBRApy FVA: 8.0459
+  Saved FVA cumulative plot to: /project/def-mahadeva/ranaab/kinGEMs_v2/results/tuning_results/e_coli_core_20260120_4907/e_coli_core_pre_tuning_fva_cumulative_plot.png
+
+=== Step 7: Saving final model ===
+  Final GEM saved to: /project/def-mahadeva/ranaab/kinGEMs_v2/models/e_coli_core_20260120_4907.xml
+
+======================================================================
+=== Pipeline Complete ===
+======================================================================
+Run ID: e_coli_core_20260120_4907
+Model: e_coli_core (Standard)
+Initial biomass: 0.0133
+Final biomass: 0.1133
+Improvement: 753.0%
+Iterations: 226
+
+Results directory: /project/def-mahadeva/ranaab/kinGEMs_v2/results/tuning_results/e_coli_core_20260120_4907
+Final model: /project/def-mahadeva/ranaab/kinGEMs_v2/models/e_coli_core_20260120_4907.xml
+======================================================================

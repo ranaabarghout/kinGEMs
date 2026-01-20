@@ -26,6 +26,18 @@ except ImportError:
     pass
 
 
+def base_rxn_ids(mod, reverse_suffix="_reverse"):
+    """
+    Extract base reaction IDs (excluding reverse reactions).
+    For regular FVA, we analyze base reactions and their reverse pairs independently,
+    then combine results post-hoc in calculate_flux_metrics().
+    """
+    ids = [r.id for r in mod.reactions if not r.id.endswith(reverse_suffix)]
+    ids.sort()
+    return ids
+
+
+
 
 
 def flux_variability_analysis(model, processed_df, biomass_reaction,
@@ -450,6 +462,7 @@ def _fva_for_reaction(model, processed_df,
                       enzyme_upper_bound, enzyme_ratio,
                       multi_enzyme_off, isoenzymes_off,
                       promiscuous_off, complexes_off):
+    """Perform FVA on a single reaction."""
     from .optimize import run_optimization_with_dataframe
 
     # restore the fixed‐biomass bounds
@@ -460,9 +473,12 @@ def _fva_for_reaction(model, processed_df,
     # copy model twice so we don’t clobber bounds
     m_max, m_min = model.copy(), model.copy()
 
+
+
     # maximize
+    flux_max = None
     try:
-        flux_max, *_ = run_optimization_with_dataframe(
+        _, df_max, _, _ = run_optimization_with_dataframe(
             model=m_max,
             processed_df=processed_df,
             objective_reaction=rxn_id,
@@ -476,12 +492,34 @@ def _fva_for_reaction(model, processed_df,
             save_results=False,
             verbose=False
         )
-    except Exception:
+        # Extract flux value for the reaction from df_max
+        if df_max is not None and isinstance(df_max, pd.DataFrame):
+            try:
+                # Safer approach: filter first, check result second
+                if 'Variable' in df_max.columns and 'Index' in df_max.columns and 'Value' in df_max.columns:
+                    flux_rows = df_max[(df_max['Variable'] == 'flux') & (df_max['Index'] == rxn_id)]
+                    if flux_rows is not None and len(flux_rows) > 0:
+                        flux_max = float(flux_rows['Value'].iloc[0])
+                    else:
+                        print(f"  ERROR: MAX: {rxn_id} not found in df_max flux rows")
+                else:
+                    print(f"  [DEBUG] MAX: df_max missing expected columns. Columns: {list(df_max.columns) if hasattr(df_max, 'columns') else 'N/A'}")
+            except Exception as inner_e:
+                import traceback
+                print(f"  [DEBUG] MAX INNER ERROR for {rxn_id}: {type(inner_e).__name__}: {str(inner_e)}")
+                print(f"  [DEBUG] MAX TRACEBACK:\n{traceback.format_exc()}")
+        else:
+            print(f"  [DEBUG] MAX: df_max is None or not DataFrame for {rxn_id}")
+    except Exception as e:
+        import traceback
         flux_max = None
+        print(f"  [DEBUG] MAX FAILED for {rxn_id}: {type(e).__name__}: {str(e)}")
+        print(f"  [DEBUG] MAX TRACEBACK:\n{traceback.format_exc()}")
 
     # minimize
+    flux_min = None
     try:
-        flux_min, *_ = run_optimization_with_dataframe(
+        _, df_min, _, _ = run_optimization_with_dataframe(
             model=m_min,
             processed_df=processed_df,
             objective_reaction=rxn_id,
@@ -495,86 +533,31 @@ def _fva_for_reaction(model, processed_df,
             save_results=False,
             verbose=False
         )
-    except Exception:
+        # Extract flux value for the reaction from df_min
+        if df_min is not None and isinstance(df_min, pd.DataFrame):
+            try:
+                # Safer approach: filter first, check result second
+                if 'Variable' in df_min.columns and 'Index' in df_min.columns and 'Value' in df_min.columns:
+                    flux_rows = df_min[(df_min['Variable'] == 'flux') & (df_min['Index'] == rxn_id)]
+                    if flux_rows is not None and len(flux_rows) > 0:
+                        flux_min = float(flux_rows['Value'].iloc[0])
+                    else:
+                        print(f"  ERROR MIN: {rxn_id} not found in df_min flux rows")
+                else:
+                    print(f"  [DEBUG] MIN: df_min missing expected columns. Columns: {list(df_min.columns) if hasattr(df_min, 'columns') else 'N/A'}")
+            except Exception as inner_e:
+                import traceback
+                print(f"  [DEBUG] MIN INNER ERROR for {rxn_id}: {type(inner_e).__name__}: {str(inner_e)}")
+                print(f"  [DEBUG] MIN TRACEBACK:\n{traceback.format_exc()}")
+        else:
+            print(f"  [DEBUG] MIN: df_min is None or not DataFrame for {rxn_id}")
+    except Exception as e:
+        import traceback
         flux_min = None
+        print(f"  [DEBUG] MIN FAILED for {rxn_id}: {type(e).__name__}: {str(e)}")
+        print(f"  [DEBUG] MIN TRACEBACK:\n{traceback.format_exc()}")
 
     return rxn_id, flux_min, flux_max
-
-# 2) Your FVA, rewritten to launch in parallel:
-# def flux_variability_analysis_parallel(model, processed_df, biomass_reaction,
-#                                output_file=None,
-#                                enzyme_upper_bound=0.15, enzyme_ratio=True,
-#                                multi_enzyme_off=False, isoenzymes_off=False,
-#                                promiscuous_off=False, complexes_off=False,
-#                                n_workers=None):
-#     """
-#     Perform Flux Variability Analysis (FVA) in parallel using Dask.
-#     """
-#     # Spin up a local Dask client (optional; if you omit this, compute() will
-#     # use threads by default)
-#     client = Client(n_workers=(n_workers or os.cpu_count()),
-#                 processes=True,      # optional: use separate processes
-#                 threads_per_worker=1)  # you can tune this
-
-#     # 1) baseline FBA to fix biomass
-#     from .optimize import run_optimization_with_dataframe
-#     sol_biomass, df_FBA, _, _ = run_optimization_with_dataframe(
-#         model=model, processed_df=processed_df,
-#         objective_reaction=biomass_reaction,
-#         enzyme_upper_bound=enzyme_upper_bound,
-#         enzyme_ratio=enzyme_ratio,
-#         multi_enzyme_off=multi_enzyme_off,
-#         isoenzymes_off=isoenzymes_off,
-#         promiscuous_off=promiscuous_off,
-#         complexes_off=complexes_off,
-#         maximization=True, save_results=False,
-#     )
-#     # freeze biomass
-#     # biomass_rxn = model.reactions.get_by_id(biomass_reaction)
-#     biomass_bounds = (biomass_reaction, sol_biomass, sol_biomass)
-
-#     # 2) create one delayed task per reaction
-#     tasks = []
-#     for rxn in model.reactions:
-#         tasks.append(
-#             delayed(_fva_for_reaction)(
-#                 model.copy(),           # each worker gets its own model copy
-#                 processed_df,
-#                 rxn.id,
-#                 biomass_bounds,
-#                 enzyme_upper_bound, enzyme_ratio,
-#                 multi_enzyme_off, isoenzymes_off,
-#                 promiscuous_off, complexes_off
-#             )
-#         )
-
-#     # 3) compute in parallel
-#     results = compute(*tasks)  # by default uses the Client’s cluster
-
-#     # Print condensed summary of min and max solution values for each reaction
-#     print("\nFVA Results (Reaction | Min | Max):")
-#     print("{:<20} {:>12} {:>12}".format("Reaction", "Min", "Max"))
-#     print("-" * 46)
-#     for rxn_id, min_val, max_val in results:
-#         print("{:<20} {:>12.4g} {:>12.4g}".format(rxn_id, min_val if min_val is not None else float('nan'), max_val if max_val is not None else float('nan')))
-
-#     # 4) stitch results back into a DataFrame
-#     reaction_ids, min_vals, max_vals = zip(*results)
-#     df_FVA = pd.DataFrame({
-#         "Reactions": reaction_ids,
-#         "Min Solutions": min_vals,
-#         "Max Solutions": max_vals,
-#         "Solution Biomass": [sol_biomass] * len(results)
-#     })
-
-#     # 5) optionally save
-#     if output_file:
-#         os.makedirs(os.path.dirname(output_file), exist_ok=True)
-#         df_FVA.to_csv(output_file, index=False)
-
-#     client.close()
-#     return df_FVA, processed_df, df_FBA
-
 
 # ============================================================================
 # IMPROVED PARALLEL FVA IMPLEMENTATIONS
@@ -583,13 +566,11 @@ def _fva_for_reaction(model, processed_df,
 def _fva_for_reaction_chunk(model, processed_df, rxn_ids, biomass_bounds,
                             enzyme_upper_bound, enzyme_ratio,
                             multi_enzyme_off, isoenzymes_off,
-                            promiscuous_off, complexes_off, chunk_id=None, total_chunks=None):
-    """
-    Process multiple reactions in one task (for chunked parallelization).
-    Reduces task overhead by batching reactions together.
-    """
+                            promiscuous_off, complexes_off,
+                            chunk_id=None, total_chunks=None):
+    """Process multiple reactions independently (regular FVA)."""
     if chunk_id is not None and total_chunks is not None:
-        print(f"  [Chunk {chunk_id:2d}/{total_chunks}] Processing {len(rxn_ids)} reactions...")
+        pass  # Chunk progress will be shown after all reactions complete
 
     results = []
     for i, rxn_id in enumerate(rxn_ids):
@@ -721,12 +702,15 @@ def flux_variability_analysis_parallel_chunked(model, processed_df, biomass_reac
 
     biomass_bounds = (biomass_reaction, sol_biomass * opt_ratio, sol_biomass)
 
-    # 2) Create reaction chunks
-    reaction_ids = [rxn.id for rxn in model.reactions]
-    chunks = [reaction_ids[i:i+chunk_size]
-              for i in range(0, len(reaction_ids), chunk_size)]
+    # 2) Create reaction chunks from all reactions (forward and reverse)
+    # All reactions will be analyzed independently, then combined post-hoc
+    all_rxn_ids = [r.id for r in model.reactions]
+    all_rxn_ids.sort()
+    chunks = [all_rxn_ids[i:i+chunk_size]
+              for i in range(0, len(all_rxn_ids), chunk_size)]
 
     print(f"\n  Starting parallel FVA with {n_chunks} chunks...")
+    print(f"  FVA will analyze {len(all_rxn_ids)} reactions independently")
     print("  Progress will be shown by chunk completion...")
 
     # 3) Execute in parallel based on method
@@ -772,7 +756,7 @@ def flux_variability_analysis_parallel_chunked(model, processed_df, biomass_reac
     if successful_reactions > 0:
         print(f"    - Average time per reaction: {execution_time/successful_reactions:.2f} seconds")
 
-    # 5) Create DataFrame
+    # 5) Create DataFrame with all reactions
     reaction_ids, min_vals, max_vals = zip(*flat_results)
     df_FVA = pd.DataFrame({
         "Reactions": reaction_ids,
@@ -835,7 +819,8 @@ def _run_fva_dask(model, processed_df, chunks, biomass_bounds,
                 enzyme_upper_bound, enzyme_ratio,
                 multi_enzyme_off, isoenzymes_off,
                 promiscuous_off, complexes_off,
-                i, total_chunks  # chunk_id and total_chunks for progress tracking
+                chunk_id=i,
+                total_chunks=total_chunks
             )
         )
 
@@ -844,7 +829,16 @@ def _run_fva_dask(model, processed_df, chunks, biomass_bounds,
         results = compute(*tasks)
     finally:
         if client:
-            client.close()
+            try:
+                # Try graceful shutdown with longer timeout
+                client.close(timeout=120)
+            except Exception as e:
+                # Shutdown timeout is non-fatal - computation already completed
+                try:
+                    # Force fast shutdown
+                    client.close(fast=True)
+                except Exception:
+                    pass  # Ignore any remaining errors
 
     return results
 
@@ -869,7 +863,8 @@ def _run_fva_multiprocessing(model, processed_df, chunks, biomass_bounds,
             enzyme_upper_bound, enzyme_ratio,
             multi_enzyme_off, isoenzymes_off,
             promiscuous_off, complexes_off,
-            chunk_id, total_chunks
+            chunk_id=chunk_id,
+            total_chunks=total_chunks
         )
 
     # Create chunk info tuples (chunk, chunk_id, total_chunks)
