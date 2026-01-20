@@ -1,9 +1,5 @@
 """
-Validate kinGEMs metabolic reaction flux predictions against experimental data.
-
-This module provides functions to:
-- Modify the iML1515 GEM  so its medium and stress conditions match the experimental conditions.
-- Create a dataframe that combines experimental fluxomics data with kinGEMs results.
+Uitilitary functions to validate kinGEMs metabolic reaction flux predictions against experimental data.
 """
 
 import pandas as pd
@@ -14,67 +10,84 @@ import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 
 
-def compare_fluxomics(fba_results_path: str, exp_fluxes_path: str) -> pd.DataFrame:
+def create_net_FVA_dataframe(irreversible_fva_path: str) -> pd.DataFrame:
     """
-    Compare FBA simulation results with experimental fluxomics data.
+    Create a dataframe with the net FVA results by collapsing split reversible reactions.
     
     Parameters:
-        fba_results_path : str
-            Path to the CSV file with FBA results (df_FBA.csv format)
-            Expected columns: 'Variable', 'Index', 'Value'
-        exp_fluxes_path : str
-            Path to the CSV file with experimental fluxes
-            Expected columns: 'rxn_id', 'exp_reaction', 'exp_flux'
+        irreversible_fva_path : str
+            Path to the CSV file with irreversible model FVA results
     
     Returns:
-        pd.DataFrame: DataFrame with columns: 'rxn_id', 'exp_reaction', 'exp_flux', 'FBA_flux'
+        pd.DataFrame: Dataframe containing 'rxn_id', 'fva_lb', and 'fva_ub' for net fluxes.
     """
     
-    # Load FBA results and filter for flux variables
-    fba_df = pd.read_csv(fba_results_path)
+    # Load irreversible model FVA results
+    irreversible_fva_df = pd.read_csv(irreversible_fva_path)
     
-    # Filter for flux variables only
-    flux_df = fba_df[fba_df['Variable'] == 'flux'].copy()
+    # Extract and rename FVA columns
+    df = irreversible_fva_df[['Reactions', 'Min Solutions', 'Max Solutions']].copy()
+    df = df.rename(columns={
+        'Reactions': 'rxn_id',
+        'Min Solutions': 'fva_lb_irrev',
+        'Max Solutions': 'fva_ub_irrev'
+    })
     
-    # Rename columns to match expected output format
-    flux_df = flux_df.rename(columns={'Index': 'rxn_id', 'Value': 'FBA_flux'})
+    print(f"Irreversible model FVA dataframe has {len(df)} rows")
     
-    # Keep only the columns we need
-    flux_df = flux_df[['rxn_id', 'FBA_flux']]
+    # Identify reverse reactions and base IDs
+    df['is_reverse'] = df['rxn_id'].str.endswith('_reverse')
     
-    # Load experimental fluxes
-    exp_df = pd.read_csv(exp_fluxes_path)
+    # Create a 'base_id' column to join on
+    df['base_id'] = df['rxn_id'].str.replace(r'_reverse$', '', regex=True)
     
-    # Merge the dataframes on rxn_id
-    result_df = exp_df.merge(flux_df, on='rxn_id', how='right')
+    # Split into forward and reverse dataframes
+    df_fwd = df[~df['is_reverse']].copy()
+    df_rev = df[df['is_reverse']].copy()
     
-    # Reorder columns to match expected output
-    result_df = result_df[['rxn_id', 'exp_reaction', 'exp_flux', 'FBA_flux']]
+    # Merge forward and reverse dataframes on 'base_id'
+    merged_df = pd.merge(
+        df_fwd, 
+        df_rev[['base_id', 'fva_lb_irrev', 'fva_ub_irrev']], 
+        on='base_id', 
+        how='left', 
+        suffixes=('', '_rev')
+    )
     
-    print(f"Loaded {len(flux_df)} FBA flux results")
-    print(f"Loaded {len(exp_df)} experimental flux measurements")
-    print(f"Merged dataframe has {len(result_df)} rows")
-    print(f"Matched reactions: {result_df['exp_reaction'].notna().sum()}")
-    print(f"Unmatched reactions: {result_df['exp_reaction'].isna().sum()}")
+    # Handle missing reverse values
+    # (fill with 0.0 because an irreversible reaction has 0 reverse flux)
+    merged_df['fva_lb_irrev_rev'] = merged_df['fva_lb_irrev_rev'].fillna(0.0)
+    merged_df['fva_ub_irrev_rev'] = merged_df['fva_ub_irrev_rev'].fillna(0.0)
     
-    return result_df
-
+    # Calculate net FVA results
+    # net_LB = Min(Forward) - Max(Reverse)
+    # net_UB = Max(Forward) - Min(Reverse)
+    merged_df['fva_lb'] = merged_df['fva_lb_irrev'] - merged_df['fva_ub_irrev_rev']
+    merged_df['fva_ub'] = merged_df['fva_ub_irrev'] - merged_df['fva_lb_irrev_rev']
+    
+    # Keep relevant columns
+    final_df = merged_df[['base_id', 'fva_lb', 'fva_ub']].rename(columns={'base_id': 'rxn_id'})
+    
+    print(f"Net FVA dataframe has {len(final_df)} rows")
+    
+    return final_df
+    
 
 def create_fva_comparison_dataframe(
     fva_results_path: str,
     mfa_results_path: str,
-    fva_columns: list[str],
-    mfa_columns: list[str]
+    fva_columns: list[str] | None = None,
+    mfa_columns: list[str] = None
 ) -> pd.DataFrame:
     """
     Compare FVA simulation results with MFA experimental data.
     
     Parameters:
-        fva_results_path : str
+        fva_results_path : str or pd.DataFrame
             Path to the CSV file with FVA results
         mfa_results_path : str
             Path to the CSV file with MFA experimental fluxes
-        fva_columns : list[str]
+        fva_columns : list[str], optional
             List of 3 column names for FVA file: [rxn_id, lb_flux, ub_flux]
         mfa_columns : list[str]
             List of 3 column names for MFA file: [rxn_id, lb_flux, ub_flux]
@@ -83,17 +96,22 @@ def create_fva_comparison_dataframe(
         pd.DataFrame: DataFrame with columns: 'rxn_id', 'fva_lb', 'fva_ub', 'mfa_lb', 'mfa_ub'
     """
     
-    # Load FVA results
-    fva_df = pd.read_csv(fva_results_path)
-    
-    # Extract and rename FVA columns
-    fva_rxn_id_col, fva_lb_col, fva_ub_col = fva_columns
-    fva_df = fva_df[[fva_rxn_id_col, fva_lb_col, fva_ub_col]].copy()
-    fva_df = fva_df.rename(columns={
-        fva_rxn_id_col: 'rxn_id',
-        fva_lb_col: 'fva_lb',
-        fva_ub_col: 'fva_ub'
-    })
+    # Load FVA results (if not a dataframe, read it from a CSV file)
+    if not isinstance(fva_results_path, pd.DataFrame):
+        fva_df = pd.read_csv(fva_results_path)
+
+        if fva_columns is None:
+            raise ValueError("fva_columns must be provided when fva_results_path is a CSV path")
+
+        fva_rxn_id_col, fva_lb_col, fva_ub_col = fva_columns
+        fva_df = fva_df[[fva_rxn_id_col, fva_lb_col, fva_ub_col]].copy()
+        fva_df = fva_df.rename(columns={
+            fva_rxn_id_col: 'rxn_id',
+            fva_lb_col: 'fva_lb',
+            fva_ub_col: 'fva_ub'
+        })
+    else:
+        fva_df = fva_results_path.copy()
     
     # Load MFA results
     mfa_df = pd.read_csv(mfa_results_path)
@@ -148,10 +166,10 @@ def calculate_consistency_score(
     consistent_mask = overlap_lower <= overlap_upper
     score = consistent_mask.mean()
     
-    print(f"\n--- Consistency Score Analysis ---")
-    print(f"Evaluated {len(df)} reactions")
-    print(f"Consistent reactions: {consistent_mask.sum()}")
-    print(f"Consistency Score: {score:.4f}")
+    print(f"\nConsistency Score Analysis")
+    print(f"   Evaluated {len(df)} reactions")
+    print(f"   Consistent reactions: {consistent_mask.sum()}")
+    print(f"   Consistency Score: {score:.4f}")
     
     return score
 
@@ -183,11 +201,11 @@ def calculate_range_precision_ratio(
     
     ratio = fva_width / mfa_width
     
-    print(f"\n--- Range Precision Analysis ---")
-    print(f"Evaluated {len(df)} reactions")
-    print(f"Median FVA width: {fva_width.median():.4f}")
-    print(f"Median MFA width: {mfa_width.median():.4f}")
-    print(f"Median Precision Ratio: {ratio.median():.4f}")
+    print(f"\nRange Precision Analysis")
+    print(f"   Evaluated {len(df)} reactions")
+    print(f"   Median FVA width: {fva_width.median():.4f}")
+    print(f"   Median MFA width: {mfa_width.median():.4f}")
+    print(f"   Median Precision Ratio: {ratio.median():.4f}")
     
     return ratio
 
@@ -228,10 +246,10 @@ def calculate_normalized_euclidean_dist(
     # Calculate Sum of Squared Errors
     ssd = (distance ** 2).sum()
     
-    print(f"\n--- Euclidean Distance Analysis ---")
-    print(f"Evaluated {len(df)} reactions")
-    print(f"Reactions with mean outside FVA range: {(distance > 0).sum()}")
-    print(f"Sum of Squared Distances (SSD): {ssd:.4f}")
+    print(f"\nEuclidean Distance Analysis")
+    print(f"   Evaluated {len(df)} reactions")
+    print(f"   Reactions with mean outside FVA range: {(distance > 0).sum()}")
+    print(f"   Sum of Squared Distances (SSD): {ssd:.4f}")
     
     return ssd
 
@@ -285,11 +303,11 @@ def calculate_jaccard_index(
     
     zero_overlaps = jaccard[jaccard == 0].count()
     
-    print(f"\n--- Jaccard Index Analysis ---")
-    print(f"Evaluated {len(df)} reactions")
-    print(f"Perfect overlaps (J=1.0): {(jaccard >= 0.99).sum()}")
-    print(f"Zero overlaps (J=0.0): {zero_overlaps}")
-    print(f"Mean Jaccard Index: {mean_jaccard:.4f}")
+    print(f"\nJaccard Index Analysis")
+    print(f"   Evaluated {len(df)} reactions")
+    print(f"   Perfect overlaps (J=1.0): {(jaccard >= 0.99).sum()}")
+    print(f"   Zero overlaps (J=0.0): {zero_overlaps}")
+    print(f"   Mean Jaccard Index: {mean_jaccard:.4f}")
     
     return mean_jaccard, jaccard_df, zero_overlaps
 
@@ -408,17 +426,21 @@ def plot_fva_mfa_comparison(
         
         plt.tight_layout()
         plt.show()
-        
-        
+    
+
 def plot_fva_mfa_comparison_normalized(
     models_data: dict[str, pd.DataFrame],
     split_charts: bool = True,
-    reactions_per_plot: int = 25
+    reactions_per_plot: int = 25,
+    zoom_limit: float = 5.0  
 ) -> None:
     """
-    Generates a normalized bar plot comparing MFA experimental ranges against 
-    FVA prediction ranges for multiple models. Each reaction is normalized by
-    the MFA range width to make visual comparison easier across different flux magnitudes.
+    Generates a normalized bar plot centered on the MFA midpoint.
+    
+    The X-axis represents 'MFA Range Units'. 
+    - 0 is the MFA midpoint.
+    - The MFA range always spans from -0.5 to +0.5.
+    - FVA ranges are scaled relative to the MFA width.
     
     Parameters:
         models_data : dict[str, pd.DataFrame]
@@ -429,27 +451,27 @@ def plot_fva_mfa_comparison_normalized(
             exceeds reactions_per_plot.
         reactions_per_plot : int
             Number of reactions to show per figure chunk.
-    """
-    
-    # 1. Consolidate Data
+        zoom_limit : float
+            Limits the x-axis to +/- zoom_limit * the MFA range width.
+    """    
+    # Consolidate data
     primary_name = list(models_data.keys())[0]
     master_df = models_data[primary_name].copy()
     
-    # Filter for reactions that have MFA data
     master_df = master_df.dropna(subset=['mfa_lb', 'mfa_ub'])
     all_reactions = master_df['rxn_id'].unique()
     
-    # 2. Calculate normalization factors for each reaction (normalize by MFA range width)
+    # Calculate normalization factors
     normalization_factors = {}
     for rxn in all_reactions:
         row = master_df[master_df['rxn_id'] == rxn].iloc[0]
         mfa_lb = row['mfa_lb']
         mfa_ub = row['mfa_ub']
+        
         mfa_midpoint = (mfa_lb + mfa_ub) / 2
         mfa_range = mfa_ub - mfa_lb
         
-        # Normalize by the width of the MFA range
-        # Avoid division by zero for very tight ranges
+        # Handle near-zero ranges to avoid explosion
         norm_factor = mfa_range if abs(mfa_range) > 1e-6 else 1.0
         
         normalization_factors[rxn] = {
@@ -457,60 +479,50 @@ def plot_fva_mfa_comparison_normalized(
             'offset': mfa_midpoint
         }
     
-    # 3. Setup Visualization Constants
+    # Setup visualization
     colors = ['#1f77b4', '#2ca02c', '#d62728', '#9467bd']
-    bar_height = 0.6
     
-    # Calculate offsets to 'dodge' the bars
+    # Calculate offsets
     num_models = len(models_data)
-    total_bars = num_models + 1  # +1 for MFA
-    
-    step_size = 0.7 / total_bars
-    mfa_offset = -0.35 + step_size / 2
+    total_bars = num_models + 1
+    step_size = 0.8 / total_bars # Slightly increased spacing
+    mfa_offset = -0.4 + step_size / 2
     model_offsets = [mfa_offset + (i + 1) * step_size for i in range(num_models)]
     
-    # 4. Chunking Logic
+    # Chunking
     chunks = [all_reactions]
     if split_charts and len(all_reactions) > reactions_per_plot:
         chunks = [all_reactions[i:i + reactions_per_plot] 
                   for i in range(0, len(all_reactions), reactions_per_plot)]
-        print(f"Splitting visualization into {len(chunks)} plots for readability.")
+        print(f"Splitting visualization into {len(chunks)} plots.")
 
-    # 5. Plotting Loop
+    # Plotting loop
     for chunk_idx, rxn_chunk in enumerate(chunks):
         
-        fig_height = len(rxn_chunk) * 0.5 + 2
+        fig_height = len(rxn_chunk) * 0.6 + 2
         fig, ax = plt.subplots(figsize=(12, fig_height))
         
         for i, rxn in enumerate(rxn_chunk):
             y_pos = i
-            
-            # Get normalization parameters for this reaction
             norm_factor = normalization_factors[rxn]['factor']
             norm_offset = normalization_factors[rxn]['offset']
             
-            # A. Plot MFA Reference (Black Range Bar) - Normalized
-            row = master_df[master_df['rxn_id'] == rxn].iloc[0]
-            mfa_lb = row['mfa_lb']
-            mfa_ub = row['mfa_ub']
-            
-            # Normalize MFA values
-            mfa_lb_norm = (mfa_lb - norm_offset) / norm_factor
-            mfa_ub_norm = (mfa_ub - norm_offset) / norm_factor
-            
-            # Plot normalized MFA range
+            # --- A. Plot MFA Reference (Always -0.5 to 0.5) ---
+            # Hardcode -0.5 to 0.5 because we are normalizing by its own width
             ax.hlines(
                 y=y_pos + mfa_offset, 
-                xmin=mfa_lb_norm, 
-                xmax=mfa_ub_norm,
+                xmin=-0.5, 
+                xmax=0.5,
                 color='black', 
-                linewidth=4, 
-                alpha=0.8,
-                zorder=10, 
+                linewidth=5, 
+                zorder=20, # Ensure it sits on top
                 label='MFA Range' if i == 0 else ""
             )
             
-            # B. Plot Each Model's FVA Range - Normalized
+            # Add a white tick at the midpoint (0) to help visibility
+            ax.plot(0, y_pos + mfa_offset, '|', color='white', markersize=10, zorder=21)
+
+            # --- B. Plot Each Model's FVA Range ---
             for model_idx, (name, df) in enumerate(models_data.items()):
                 model_row = df[df['rxn_id'] == rxn]
                 
@@ -518,51 +530,52 @@ def plot_fva_mfa_comparison_normalized(
                     fva_lb = model_row.iloc[0]['fva_lb']
                     fva_ub = model_row.iloc[0]['fva_ub']
                     
-                    # Normalize FVA values using the same factors
+                    # Normalize
                     fva_lb_norm = (fva_lb - norm_offset) / norm_factor
                     fva_ub_norm = (fva_ub - norm_offset) / norm_factor
                     
+                    # Capping for visual cleanliness (optional, prevents infinity issues)
+                    draw_min = max(fva_lb_norm, -zoom_limit * 1.5)
+                    draw_max = min(fva_ub_norm, zoom_limit * 1.5)
+
                     y_offset = y_pos + model_offsets[model_idx]
                     
-                    # Draw the normalized range bar
                     ax.hlines(
                         y=y_offset, 
-                        xmin=fva_lb_norm, 
-                        xmax=fva_ub_norm,
+                        xmin=draw_min, 
+                        xmax=draw_max,
                         color=colors[model_idx % len(colors)],
                         linewidth=4, 
-                        alpha=0.8,
+                        alpha=0.7,
                         label=name if i == 0 else ""
                     )
             
-            # Add a vertical line at the center (MFA midpoint) for reference
-            ax.axvline(x=0, color='gray', linestyle='--', alpha=0.2, linewidth=0.5)
-            
-            # Guideline for readability
-            ax.axhline(y=y_pos, color='gray', linestyle=':', alpha=0.1, linewidth=0.5)
+            # Grid lines
+            ax.axhline(y=y_pos, color='gray', linestyle=':', alpha=0.15, linewidth=1)
 
-        # 6. Formatting
+        # Formatting. Clamp the X-Axis.
+        ax.set_xlim(-zoom_limit, zoom_limit)
+        
+        ax.axvline(x=0, color='black', linestyle='--', alpha=0.3, linewidth=1)
+        ax.axvline(x=-0.5, color='black', linestyle=':', alpha=0.2) # MFA Lower Bound ref
+        ax.axvline(x=0.5, color='black', linestyle=':', alpha=0.2)  # MFA Upper Bound ref
+
         ax.set_yticks(range(len(rxn_chunk)))
         ax.set_yticklabels(rxn_chunk, fontsize=10, fontfamily='monospace')
         ax.invert_yaxis()
-        ax.set_xlabel('Normalized Flux (relative to MFA range)')
-        ax.set_title(f'MFA vs FVA Range Comparison')
-        ax.grid(axis='x', linestyle='--', alpha=0.5)
         
-        # Create custom legend
-        handles = [
-            mlines.Line2D([], [], color='black', linewidth=4, label='MFA Range')
-        ]
-        for idx, name in enumerate(models_data.keys()):
-            handles.append(
-                mlines.Line2D([], [], color=colors[idx], linewidth=4, label=name)
-            )
+        ax.set_xlabel('Normalized Deviation (Units of MFA Range Width)')
+        ax.set_title(f'MFA vs FVA: Normalized Deviations (Zoomed)')
+        
+        # Custom Legend
+        handles = [mlines.Line2D([], [], color='black', linewidth=4, label='MFA Range')]
+        for idx, name in enumerate(models_data.items()):
+            handles.append(mlines.Line2D([], [], color=colors[idx % len(colors)], linewidth=4, label=name[0]))
             
         ax.legend(handles=handles, loc='upper right', frameon=True)
         
         plt.tight_layout()
         plt.show()
-
 
 
 def plot_jaccard_index_comparison(
