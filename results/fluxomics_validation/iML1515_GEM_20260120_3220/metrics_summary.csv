@@ -1,0 +1,2 @@
+model,consistency_score,range_precision_ratio_median,normalized_euclidean_dist,jaccard_index,zero_overlaps
+COBRA FVA,0.9565217391304348,299.76637474155814,0.5957281217275118,0.02844296618098993,2

@@ -2,6 +2,7 @@
 Uitilitary functions to validate kinGEMs metabolic reaction flux predictions against experimental data.
 """
 
+import os
 import pandas as pd
 import cobra
 import numpy as np
@@ -315,7 +316,9 @@ def calculate_jaccard_index(
 def plot_fva_mfa_comparison(
     models_data: dict[str, pd.DataFrame],
     split_charts: bool = True,
-    reactions_per_plot: int = 25
+    reactions_per_plot: int = 25,
+    output_path: str | None = None,
+    show: bool = True
 ) -> None:
     """
     Generates a bar plot comparing MFA experimental ranges against 
@@ -425,14 +428,26 @@ def plot_fva_mfa_comparison(
         ax.legend(handles=handles, loc='upper right', frameon=True)
         
         plt.tight_layout()
-        plt.show()
+        if output_path:
+            base, ext = os.path.splitext(output_path)
+            if len(chunks) > 1:
+                chunk_path = f"{base}_part{chunk_idx+1:02d}{ext or '.png'}"
+            else:
+                chunk_path = output_path
+            plt.savefig(chunk_path, dpi=300, bbox_inches='tight')
+        if show:
+            plt.show()
+        else:
+            plt.close(fig)
     
 
 def plot_fva_mfa_comparison_normalized(
     models_data: dict[str, pd.DataFrame],
     split_charts: bool = True,
     reactions_per_plot: int = 25,
-    zoom_limit: float = 5.0  
+    zoom_limit: float = 5.0,
+    output_path: str | None = None,
+    show: bool = True
 ) -> None:
     """
     Generates a normalized bar plot centered on the MFA midpoint.
@@ -575,13 +590,25 @@ def plot_fva_mfa_comparison_normalized(
         ax.legend(handles=handles, loc='upper right', frameon=True)
         
         plt.tight_layout()
-        plt.show()
+        if output_path:
+            base, ext = os.path.splitext(output_path)
+            if len(chunks) > 1:
+                chunk_path = f"{base}_part{chunk_idx+1:02d}{ext or '.png'}"
+            else:
+                chunk_path = output_path
+            plt.savefig(chunk_path, dpi=300, bbox_inches='tight')
+        if show:
+            plt.show()
+        else:
+            plt.close(fig)
 
 
 def plot_jaccard_index_comparison(
     jaccard_indices: list[float],
     zero_overlaps: list[int],
-    model_names: list[str] = None
+    model_names: list[str] = None,
+    output_path: str | None = None,
+    show: bool = True
 ) -> None:
     """
     Plot bar chart of Jaccard indices and zero overlaps for multiple models.
@@ -633,4 +660,9 @@ def plot_jaccard_index_comparison(
                 ha='center', va='bottom', fontsize=10)
     
     plt.tight_layout()
-    plt.show()
+    if output_path:
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)

@@ -31,6 +31,7 @@ dependencies = [
   "escher",
   "pyomo[appsi]",
   "highspy",
+  "jupytext>=1.19.0",
 ]
 
 [tool.uv]
