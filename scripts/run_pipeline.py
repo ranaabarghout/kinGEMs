@@ -24,6 +24,9 @@ Config File Format:
     See example configs in the configs/ directory
 """
 
+from __future__ import annotations
+
+from dataclasses import dataclass
 from datetime import datetime
 import json
 import logging
@@ -236,6 +239,302 @@ def simulate_enzyme_rate(base_model, processed_df, biomass_reaction, blocked_cpd
         solver_name=solver_name
     )
     return sol_val
+
+
+@dataclass
+class PipelineResults:
+    """Container for pipeline outputs that can be used by downstream analyses."""
+    model: object
+    processed_df: pd.DataFrame
+    df_new: pd.DataFrame
+    biomass_reaction: str
+    enzyme_upper_bound: float
+    fva_config: dict
+    cobra_fva_path: str | None
+    kingems_fva_pre_tuning_path: str | None
+    kingems_fva_post_tuning_path: str | None
+    run_id: str
+    output_dir: str
+
+
+def run_pipeline_core(
+    config: dict,
+    output_dir: str,
+    run_id: str,
+    force_regenerate: bool = False,
+    logger: logging.Logger | None = None
+) -> PipelineResults:
+    """
+    Run the core kinGEMs pipeline (steps 1-5) and return results for downstream use.
+
+    This function encapsulates data preparation, model loading, optimization,
+    simulated annealing, and FVA. It can be called from other scripts.
+
+    Parameters
+    ----------
+    config : dict
+        Configuration dictionary
+    output_dir : str
+        Directory to save pipeline outputs 
+    run_id : str
+        Unique identifier for this run
+    force_regenerate : bool
+        If True, regenerate all intermediate files even if cached
+    logger : logging.Logger, optional
+        Logger instance. If None, uses print statements.
+
+    Returns
+    -------
+    PipelineResults
+        Dataclass containing model, dataframes, paths, and config needed for
+        downstream analyses.
+    """
+    def log(msg):
+        if logger:
+            logger.info(msg)
+        else:
+            print(msg)
+
+    # Extract configuration
+    model_name = config['model_name']
+    organism = config.get('organism', 'Unknown')
+    enzyme_upper_bound = config.get('enzyme_upper_bound', 0.15)
+    enable_fva = config.get('enable_fva', False)
+    solver_name = config.get('solver', 'glpk')
+    medium = config.get('medium', None)
+    medium_upper_bound = config.get('medium_upper_bound', True)
+    fva_config = config.get('fva', {})
+    sa_config = config.get('simulated_annealing', {})
+
+    # Detect model type
+    is_modelseed = is_modelseed_model(model_name)
+    model_type = "ModelSEED" if is_modelseed else "Standard"
+
+    # Setup paths
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    data_dir = os.path.join(project_root, "data")
+    raw_data_dir = os.path.join(data_dir, "raw")
+    interim_data_dir = os.path.join(data_dir, "interim", model_name)
+    processed_data_dir = os.path.join(data_dir, "processed", model_name)
+    CPIPred_data_dir = os.path.join(data_dir, "interim", "CPI-Pred predictions")
+    os.makedirs(output_dir, exist_ok=True)
+    os.makedirs(interim_data_dir, exist_ok=True)
+    os.makedirs(processed_data_dir, exist_ok=True)
+
+    # File paths
+    model_path = os.path.join(raw_data_dir, f"{model_name}.xml")
+    substrates_output = os.path.join(interim_data_dir, f"{model_name}_substrates.csv")
+    sequences_output = os.path.join(interim_data_dir, f"{model_name}_sequences.csv")
+    merged_data_output = os.path.join(interim_data_dir, f"{model_name}_merged_data.csv")
+    processed_data_output = os.path.join(processed_data_dir, f"{model_name}_processed_data.csv")
+
+    log(f"=== kinGEMs Pipeline for {model_name} ===")
+    log(f"Run ID: {run_id}")
+    log(f"Model type: {model_type}")
+    log(f"Organism: {organism}")
+    log(f"Results directory: {output_dir}")
+    log(f"Solver: {solver_name}")
+
+    # Determine biomass reaction
+    temp_model = cobra.io.read_sbml_model(model_path)
+    biomass_reaction = config.get('biomass_reaction') or determine_biomass_reaction(temp_model)
+    log(f"Biomass reaction: {biomass_reaction}")
+    log(f"Baseline growth: {temp_model.slim_optimize():.4f}")
+
+    # === Step 1: Prepare model data ===
+    log("=== Step 1: Preparing model data ===")
+    if not force_regenerate and os.path.exists(substrates_output) and os.path.exists(sequences_output):
+        log("  Found existing files, loading cached data")
+        substrate_df = pd.read_csv(substrates_output)
+        sequences_df = pd.read_csv(sequences_output)
+        model = load_model(model_path)
+        model = convert_to_irreversible(model)
+    else:
+        if is_modelseed:
+            metadata_dir = config.get('metadata_dir', os.path.join(data_dir, "Biolog experiments"))
+            model, substrate_df, sequences_df = prepare_modelseed_model_data(
+                model_path=model_path,
+                substrates_output=substrates_output,
+                sequences_output=sequences_output,
+                organism=organism,
+                metadata_dir=metadata_dir
+            )
+        else:
+            model, substrate_df, sequences_df = prepare_model_data(
+                model_path=model_path,
+                substrates_output=substrates_output,
+                sequences_output=sequences_output,
+                organism=organism,
+                convert_irreversible=True
+            )
+    log(f"  Model: {len(model.genes)} genes, {len(model.reactions)} reactions")
+
+    # === Step 2: Merge substrate and sequence data ===
+    log("=== Step 2: Merging substrate and sequence data ===")
+    if not force_regenerate and os.path.exists(merged_data_output):
+        merged_data = pd.read_csv(merged_data_output)
+    else:
+        merged_data = merge_substrate_sequences(
+            substrate_df=substrate_df,
+            sequences_df=sequences_df,
+            model=model,
+            output_path=merged_data_output
+        )
+    log(f"  Merged data: {len(merged_data)} rows")
+
+    # === Step 3: Process kcat predictions ===
+    log("=== Step 3: Processing CPI-Pred kcat values ===")
+    if not force_regenerate and os.path.exists(processed_data_output):
+        processed_data = pd.read_csv(processed_data_output)
+    else:
+        predictions_csv_path = find_predictions_file(model_name, CPIPred_data_dir)
+        processed_data = process_kcat_predictions(
+            merged_df=merged_data,
+            predictions_csv_path=predictions_csv_path,
+            output_path=processed_data_output
+        )
+    log(f"  Processed data: {len(processed_data)} rows")
+
+    # Ensure kcat column exists
+    if 'kcat_mean' in processed_data.columns and 'kcat' not in processed_data.columns:
+        processed_data['kcat'] = processed_data['kcat_mean']
+    elif 'kcat_y' in processed_data.columns and 'kcat' not in processed_data.columns:
+        processed_data['kcat'] = processed_data['kcat_y']
+
+    # Annotate model
+    model = annotate_model_with_kcat_and_gpr(model=model, df=processed_data)
+
+    # === Step 4: Optimization ===
+    log("=== Step 4: Running optimization ===")
+
+    # Apply medium constraints
+    if medium is not None:
+        mode = "fixed fluxes" if medium_upper_bound else "max uptake rates"
+        log(f"  Applying medium conditions ({mode})")
+        for rxn_id, flux_value in medium.items():
+            try:
+                rxn = model.reactions.get_by_id(rxn_id)
+                rxn.lower_bound = flux_value
+                if medium_upper_bound:
+                    rxn.upper_bound = flux_value
+            except KeyError:
+                log(f"    Warning: Reaction '{rxn_id}' not found")
+
+    cobra_solution = model.optimize()
+    cobra_biomass = cobra_solution.objective_value
+    log(f"  COBRApy biomass: {cobra_biomass:.4f}")
+
+    # Enzyme-constrained optimization
+    solution_value, df_FBA, gene_sequences_dict, _ = run_optimization_with_dataframe(
+        model=model,
+        processed_df=processed_data,
+        objective_reaction=biomass_reaction,
+        enzyme_upper_bound=enzyme_upper_bound,
+        enzyme_ratio=True,
+        maximization=True,
+        multi_enzyme_off=False,
+        isoenzymes_off=False,
+        promiscuous_off=False,
+        complexes_off=False,
+        output_dir=None,
+        save_results=False,
+        print_reaction_conditions=False,
+        verbose=False,
+        solver_name=solver_name,
+        medium=medium,
+        medium_upper_bound=medium_upper_bound
+    )
+    log(f"  kinGEMs biomass: {solution_value:.4f}")
+
+    # === Step 5: Simulated Annealing ===
+    log("=== Step 5: Running simulated annealing ===")
+    kcat_dict, top_targets, df_new, iterations, biomasses, df_FBA = simulated_annealing(
+        model=model,
+        processed_data=processed_data,
+        biomass_reaction=biomass_reaction,
+        objective_value=sa_config.get('biomass_goal', 0.5),
+        gene_sequences_dict=gene_sequences_dict,
+        output_dir=output_dir,
+        enzyme_fraction=enzyme_upper_bound,
+        n_top_enzymes=sa_config.get('n_top_enzymes', 65),
+        temperature=sa_config.get('temperature', 1.0),
+        cooling_rate=sa_config.get('cooling_rate', 0.95),
+        min_temperature=sa_config.get('min_temperature', 0.01),
+        max_iterations=sa_config.get('max_iterations', 100),
+        max_unchanged_iterations=sa_config.get('max_unchanged_iterations', 5),
+        change_threshold=sa_config.get('change_threshold', 0.009),
+        verbose=sa_config.get('verbose', False),
+        medium=medium,
+        medium_upper_bound=medium_upper_bound
+    )
+
+    improvement = (biomasses[-1] - biomasses[0]) / biomasses[0] * 100 if biomasses[0] > 0 else 0
+    log(f"  Annealing complete! Initial: {biomasses[0]:.4f}, Final: {biomasses[-1]:.4f}, Improvement: {improvement:.1f}%")
+
+    # Save df_new
+    df_new_path = os.path.join(output_dir, "df_new.csv")
+    df_new.to_csv(df_new_path, index=False)
+    log(f"  Saved tuned dataframe: {df_new_path}")
+
+    # Merge kcat_dict into df_new
+    kcat_dict_path = os.path.join(output_dir, "kcat_dict.csv")
+    if os.path.exists(kcat_dict_path):
+        kcat_dict_df = pd.read_csv(kcat_dict_path)
+        if 'reaction_gene' not in kcat_dict_df.columns:
+            kcat_dict_df.columns = ['reaction_gene', 'kcat_value']
+        df_new['reaction_gene'] = df_new['Reactions'].astype(str) + '_' + df_new['Single_gene'].astype(str)
+        df_new = df_new.merge(kcat_dict_df, on='reaction_gene', how='left')
+        df_new.rename(columns={'kcat_value': 'kcat_tuned'}, inplace=True)
+        final_info_path = os.path.join(output_dir, "final_model_info.csv")
+        df_new.to_csv(final_info_path, index=False)
+
+    # === Step 6: Run FVA ===
+    cobra_fva_path = None
+    kingems_fva_pre_path = None
+    kingems_fva_post_path = None
+
+    if enable_fva:
+        log("=== Step 6: Running Flux Variability Analysis ===")
+        opt_ratio = fva_config.get('opt_ratio', 0.9)
+
+        # COBRApy FVA
+        cobra_fva_path = os.path.join(output_dir, f"{model_name}_cobra_fva_results.csv")
+        log(f"  Running COBRApy FVA (opt_ratio={opt_ratio})...")
+        cobra_fva_results = cobra_fva(model, fraction_of_optimum=opt_ratio)
+        cobra_fva_df = pd.DataFrame({
+            "Reactions": cobra_fva_results.index,
+            "Min Solutions": cobra_fva_results['minimum'],
+            "Max Solutions": cobra_fva_results['maximum'],
+            "Solution Biomass": [model.slim_optimize()] * len(cobra_fva_results)
+        })
+        cobra_fva_df.to_csv(cobra_fva_path, index=False)
+        log(f"  Saved COBRApy FVA: {cobra_fva_path}")
+
+        # kinGEMs FVA (pre-tuning)
+        kingems_fva_pre_path = os.path.join(output_dir, f"{model_name}_pre_tuning_fva_results.csv")
+        run_fva_analysis(model, processed_data, biomass_reaction, enzyme_upper_bound,
+                        output_dir, f"{model_name}_pre_tuning", fva_config)
+
+        # kinGEMs FVA (post-tuning)
+        kingems_fva_post_path = os.path.join(output_dir, f"{model_name}_fva_results.csv")
+        run_fva_analysis(model, df_new, biomass_reaction, enzyme_upper_bound,
+                        output_dir, model_name, fva_config)
+
+    log("=== Pipeline core complete ===")
+
+    return PipelineResults(
+        model=model,
+        processed_df=processed_data,
+        df_new=df_new,
+        biomass_reaction=biomass_reaction,
+        enzyme_upper_bound=enzyme_upper_bound,
+        fva_config=fva_config,
+        cobra_fva_path=cobra_fva_path,
+        kingems_fva_pre_tuning_path=kingems_fva_pre_path,
+        kingems_fva_post_tuning_path=kingems_fva_post_path,
+        run_id=run_id,
+        output_dir=output_dir
+    )
 
 
 def run_fva_analysis(model, processed_df, biomass_reaction, enzyme_upper_bound,
