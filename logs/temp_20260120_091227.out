@@ -1,0 +1,12 @@
+2026-01-20 09:14:03.527 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+Loading configuration from: configs/e_coli_core
+Traceback (most recent call last):
+  File "/project/def-mahadeva/ranaab/kinGEMs_v2/scripts/run_pipeline.py", line 809, in <module>
+    main()
+  File "/project/def-mahadeva/ranaab/kinGEMs_v2/scripts/run_pipeline.py", line 408, in main
+    config = load_config(config_path)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/def-mahadeva/ranaab/kinGEMs_v2/scripts/run_pipeline.py", line 77, in load_config
+    with open(config_path, 'r') as f:
+         ^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'configs/e_coli_core'

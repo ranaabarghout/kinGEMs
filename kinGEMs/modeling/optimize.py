@@ -152,10 +152,16 @@ def run_optimization(
     else:
         for rxn in mod.reactions:
             rxn.objective_coefficient = 0.0
-        for rid, coef in obj_cobjective_coeffsoef.items():
-            mod.reactions.get_by_id(rid).objective_coefficient = float(coef)
+        for rid, coef in objective_coeffs.items():
+            try:
+                mod.reactions.get_by_id(rid).objective_coefficient = float(coef)
+            except KeyError:
+                raise
 
     cobra_sol = mod.optimize()
+    if cobra_sol is None:
+        print(f"  ERROR: Optimization returned None! Model status may be infeasible or unbounded")
+        return None
     flux0 = cobra_sol.fluxes.to_dict()
 
     # 3) Load & normalize kcat_dict
@@ -572,9 +578,9 @@ def run_optimization(
 
     # 10) Collect results
     sol_val = value(m.obj)  # noqa: F405
-    records = [('flux', r, m.v[r].value) for r in m.R]
-    records += [('enzyme', g, m.E[g].value) for g in m.G]
-    df_FBA = pd.DataFrame(records, columns=['Variable','Index','Value'])
+    records = [('flux', r, m.v[r].value, f"[{lb[r]}, {ub[r]}]") for r in m.R]
+    records += [('enzyme', g, m.E[g].value, None) for g in m.G]
+    df_FBA = pd.DataFrame(records, columns=['Variable','Index','Value', 'Bounds'])
 
     # DIAGNOSTIC: Print exchange reaction fluxes if medium was provided
     if medium is not None:
@@ -624,8 +630,11 @@ def create_descriptive_filename(objective_reaction, enzyme_upper_bound, maximiza
     """
     import os
 
+    # Handle None objective_reaction (when objective_coeffs is used instead)
+    if objective_reaction is None:
+        obj_short = "multi_obj"
     # Shorten the objective reaction name if it's too long
-    if len(objective_reaction) > 20:
+    elif len(objective_reaction) > 20:
         obj_short = objective_reaction[:20]
     else:
         obj_short = objective_reaction

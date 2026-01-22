@@ -46,6 +46,7 @@ from kinGEMs.validation_utils import (
     simulate_phenotype,
     simulate_phenotype_parallel,
     set_carbon_source_safely,
+    set_medium_safely,
     reset_carbon_source_safely,
 )
 from kinGEMs.dataset import convert_to_irreversible
@@ -60,37 +61,6 @@ def load_config(config_path):
     with open(config_path, 'r') as f:
         config = json.load(f)
     return config
-
-
-def set_medium_safely(model, medium_ex_inds, uptake_rate=-1000):
-    """
-    Safely set medium exchange reactions for irreversible models.
-
-    For irreversible models, this handles both uptake-only exchanges and
-    split reversible exchanges properly.
-
-    Parameters
-    ----------
-    model : cobra.Model
-        The model containing exchange reactions
-    medium_ex_inds : list
-        Indices of medium exchange reactions
-    uptake_rate : float
-        Uptake rate to set (negative value)
-    """
-    for e in medium_ex_inds:
-        if e != -1:
-            exchange_rxn = model.exchanges[e]
-
-            # Check if this is an irreversible uptake-only exchange
-            if exchange_rxn.lower_bound < 0 and exchange_rxn.upper_bound <= 0:
-                # This is an uptake-only exchange, set lower bound directly
-                exchange_rxn.lower_bound = uptake_rate
-            else:
-                # This might be a reversible exchange or export-only
-                # For safety, just allow uptake by setting negative lower bound
-                # This preserves the original validation logic
-                exchange_rxn.lower_bound = uptake_rate
 
 
 def simulate_wild_type_growth(model_adj, name_carbon_model_matched_adj,
@@ -394,7 +364,7 @@ def main():
 
     # === Step 2: Prepare Environment ===
     print("\n=== Step 2: Preparing validation environment ===")
-
+    og_model = model.copy()
     model = prepare_model(model)
     name_medium_model, name_carbon_model, name_carbon_experiment = load_environment(ECOLI_VALIDATION_DIR)
     data_experiments, data_genes, data_fitness = load_data(ECOLI_VALIDATION_DIR)

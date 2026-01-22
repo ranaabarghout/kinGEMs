@@ -49,6 +49,70 @@ def time_limit(seconds, description="operation"):
         signal.signal(signal.SIGALRM, old_handler)
 
 
+def _is_model_with_reverse_exchanges(model):
+    """
+    Check if the model has already been converted to use _reverse exchange reactions.
+
+    Parameters
+    ----------
+    model : cobra.Model
+        The model to check
+
+    Returns
+    -------
+    bool
+        True if model has _reverse exchanges, False otherwise
+    """
+    exchange_ids = {ex.id for ex in model.exchanges}
+    # Check if any exchange has a corresponding _reverse version
+    for ex_id in exchange_ids:
+        if ex_id + '_reverse' in exchange_ids:
+            return True
+    return False
+
+
+def _get_exchange_directionality(model, ex_id):
+    """
+    Determine exchange directionality by checking forward and _reverse versions.
+
+    Parameters
+    ----------
+    model : cobra.Model
+        The model
+    ex_id : str
+        Exchange reaction ID (without _reverse suffix)
+
+    Returns
+    -------
+    str
+        One of: 'uptake_only', 'export_only', 'bidirectional'
+    """
+    # Get or create the IDs
+    reverse_id = ex_id + '_reverse'
+
+    try:
+        forward_ex = model.reactions.get_by_id(ex_id)
+        forward_ub = forward_ex.upper_bound
+    except KeyError:
+        forward_ub = 0
+
+    try:
+        reverse_ex = model.reactions.get_by_id(reverse_id)
+        reverse_ub = reverse_ex.upper_bound
+    except KeyError:
+        reverse_ub = 0
+
+    # Determine directionality based on which direction has capacity
+    if forward_ub > 0 and reverse_ub <= 0:
+        return 'export_only'
+    elif forward_ub <= 0 and reverse_ub > 0:
+        return 'uptake_only'
+    elif forward_ub > 0 and reverse_ub > 0:
+        return 'bidirectional'
+    else:
+        return 'bidirectional'  # Default to bidirectional if unclear
+
+
 def prepare_model(model, handle_irreversible=True):
     """
     Prepare model for validation by setting appropriate exchange bounds.
@@ -72,26 +136,71 @@ def prepare_model(model, handle_irreversible=True):
             ex.lower_bound = 0
             ex.upper_bound = 1000
     else:
-        print("Using irreversible model handling: preserving irreversible exchange structure")
-        # Improved behavior: preserve irreversible structure where appropriate
-        for ex in model.exchanges:
-            # Check if this is an irreversible uptake-only exchange (e.g., carbon sources)
-            is_uptake_only = (ex.lower_bound < 0 and ex.upper_bound <= 0)
-            # Check if this is an irreversible export-only exchange (e.g., waste products)
-            is_export_only = (ex.lower_bound >= 0 and ex.upper_bound > 0)
+        print("Using irreversible model handling: converting to non-negative exchange format")
 
-            if is_uptake_only:
-                # Keep as uptake-only but allow wider range
-                ex.lower_bound = -1000
-                ex.upper_bound = 0
-            elif is_export_only:
-                # Keep as export-only but allow wider range
-                ex.lower_bound = 0
-                ex.upper_bound = 1000
-            else:
-                # Default: make bidirectional with wide bounds
-                ex.lower_bound = -1000
-                ex.upper_bound = 1000
+        # Check if model has _reverse exchanges (already split)
+        has_reverse_exchanges = _is_model_with_reverse_exchanges(model)
+
+        if has_reverse_exchanges:
+            print("  Model has _reverse exchanges - using forward/reverse pairs for directionality")
+            # Only process forward exchanges (skip the _reverse ones)
+            processed = set()
+            for ex in model.exchanges:
+                if ex.id in processed or ex.id.endswith('_reverse'):
+                    continue
+                processed.add(ex.id)
+
+                # Determine directionality from forward and reverse versions
+                directionality = _get_exchange_directionality(model, ex.id)
+
+                if directionality == 'uptake_only':
+                    # Uptake: forward (0, 0), reverse (0, 1000)
+                    ex.lower_bound = 0
+                    ex.upper_bound = 0
+                    try:
+                        reverse_ex = model.reactions.get_by_id(ex.id + '_reverse')
+                        reverse_ex.lower_bound = 0
+                        reverse_ex.upper_bound = 1000
+                    except KeyError:
+                        pass
+                elif directionality == 'export_only':
+                    # Export: forward (0, 1000), reverse (0, 0)
+                    ex.lower_bound = 0
+                    ex.upper_bound = 1000
+                    try:
+                        reverse_ex = model.reactions.get_by_id(ex.id + '_reverse')
+                        reverse_ex.lower_bound = 0
+                        reverse_ex.upper_bound = 0
+                    except KeyError:
+                        pass
+                else:  # bidirectional
+                    # Bidirectional: forward (0, 1000), reverse (0, 1000)
+                    ex.lower_bound = 0
+                    ex.upper_bound = 1000
+                    try:
+                        reverse_ex = model.reactions.get_by_id(ex.id + '_reverse')
+                        reverse_ex.lower_bound = 0
+                        reverse_ex.upper_bound = 1000
+                    except KeyError:
+                        pass
+        else:
+            # Original logic for models without _reverse exchanges
+            print("  Model does not have _reverse exchanges - using original bounds")
+            for ex in model.exchanges:
+                lb, ub = ex.lower_bound, ex.upper_bound
+
+                if lb < 0 and ub <= 0:
+                    # Uptake-only exchange: convert to forward (0, 0), reverse (0, |lb|)
+                    ex.lower_bound = 0
+                    ex.upper_bound = max(0, -lb)  # Use reverse capacity
+                elif lb >= 0 and ub > 0:
+                    # Export-only exchange: convert to forward (0, ub), reverse (0, 0)
+                    ex.lower_bound = 0
+                    ex.upper_bound = ub  # Use forward capacity
+                else:
+                    # Bidirectional exchange: convert to forward (0, ub), can also use reverse
+                    ex.lower_bound = 0
+                    ex.upper_bound = max(ub, -lb)  # Take the larger capacity
 
     # We leave the maintenance on here
     # turn off maintenance reactions by setting the lower bound to 0 (turning off maintenance can make results easier to interpret)
@@ -102,6 +211,7 @@ def prepare_model(model, handle_irreversible=True):
 def set_carbon_source_safely(model, carbon_ex_idx, uptake_rate=-10):
     """
     Safely set carbon source uptake rate while respecting irreversible constraints.
+    Handles both models with and without _reverse exchanges.
 
     Parameters
     ----------
@@ -121,29 +231,94 @@ def set_carbon_source_safely(model, carbon_ex_idx, uptake_rate=-10):
         return False
 
     ex_rxn = model.exchanges[carbon_ex_idx]
+    has_reverse = _is_model_with_reverse_exchanges(model)
 
-    # Check if the exchange can handle the requested uptake rate
     if uptake_rate < 0:  # Uptake (negative flux)
-        if ex_rxn.lower_bound <= uptake_rate:
-            ex_rxn.lower_bound = uptake_rate
-            return True
+        if has_reverse:
+            # For models with _reverse exchanges: set the reverse reaction to allow uptake
+            try:
+                reverse_rxn = model.reactions.get_by_id(ex_rxn.id + '_reverse')
+                # Set reverse reaction to allow the uptake (convert negative to positive)
+                reverse_rxn.upper_bound = abs(uptake_rate)
+                return True
+            except KeyError:
+                # No reverse reaction found - exchange is export-only, cannot support uptake
+                print(f"Warning: Exchange {ex_rxn.id} cannot handle uptake rate {uptake_rate} (bounds: [{ex_rxn.lower_bound}, {ex_rxn.upper_bound}])")
+                return False
         else:
-            # Exchange reaction cannot handle this uptake rate (e.g., export-only)
-            print(f"Warning: Exchange {ex_rxn.id} cannot handle uptake rate {uptake_rate} (bounds: [{ex_rxn.lower_bound}, {ex_rxn.upper_bound}])")
-            return False
+            # Original logic for bidirectional bounds
+            if ex_rxn.lower_bound <= uptake_rate:
+                ex_rxn.lower_bound = uptake_rate
+                return True
+            else:
+                print(f"Warning: Exchange {ex_rxn.id} cannot handle uptake rate {uptake_rate} (bounds: [{ex_rxn.lower_bound}, {ex_rxn.upper_bound}])")
+                return False
     else:  # Export (positive flux)
-        if ex_rxn.upper_bound >= uptake_rate:
+        if has_reverse:
+            # For models with _reverse exchanges: set the forward reaction to allow export
             ex_rxn.upper_bound = uptake_rate
             return True
         else:
-            # Exchange reaction cannot handle this export rate (e.g., uptake-only)
-            print(f"Warning: Exchange {ex_rxn.id} cannot handle export rate {uptake_rate} (bounds: [{ex_rxn.lower_bound}, {ex_rxn.upper_bound}])")
-            return False
+            # Original logic for bidirectional bounds
+            if ex_rxn.upper_bound >= uptake_rate:
+                ex_rxn.upper_bound = uptake_rate
+                return True
+            else:
+                print(f"Warning: Exchange {ex_rxn.id} cannot handle export rate {uptake_rate} (bounds: [{ex_rxn.lower_bound}, {ex_rxn.upper_bound}])")
+                return False
 
+def set_medium_safely(model, medium_ex_inds, uptake_rate=-1000):
+    """
+    Safely set medium exchange reactions for irreversible models.
+
+    For irreversible models, this handles both uptake-only exchanges and
+    split reversible exchanges properly.
+
+    Parameters
+    ----------
+    model : cobra.Model
+        The model containing exchange reactions
+    medium_ex_inds : list
+        Indices of medium exchange reactions
+    uptake_rate : float
+        Uptake rate to set (negative value)
+    """
+    has_reverse = _is_model_with_reverse_exchanges(model)
+
+    for e in medium_ex_inds:
+        if e != -1:
+            exchange_rxn = model.exchanges[e]
+
+            if has_reverse:
+                # For models with _reverse exchanges: check directionality and set appropriately
+                directionality = _get_exchange_directionality(model, exchange_rxn.id)
+
+                if directionality == 'uptake_only':
+                    # Set reverse reaction to allow uptake
+                    try:
+                        reverse_rxn = model.reactions.get_by_id(exchange_rxn.id + '_reverse')
+                        reverse_rxn.upper_bound = abs(uptake_rate)
+                    except KeyError:
+                        pass
+                elif directionality == 'export_only':
+                    # Set forward reaction to export capacity
+                    exchange_rxn.upper_bound = abs(uptake_rate)
+                else:  # bidirectional
+                    # Allow both directions with wide bounds
+                    exchange_rxn.upper_bound = abs(uptake_rate)
+                    try:
+                        reverse_rxn = model.reactions.get_by_id(exchange_rxn.id + '_reverse')
+                        reverse_rxn.upper_bound = abs(uptake_rate)
+                    except KeyError:
+                        pass
+            else:
+                # Original logic for models without _reverse exchanges
+                exchange_rxn.lower_bound = uptake_rate
 
 def reset_carbon_source_safely(model, carbon_ex_idx):
     """
     Reset carbon source to default bounds while preserving irreversible structure.
+    Handles both models with and without _reverse exchanges.
 
     Parameters
     ----------
@@ -156,20 +331,56 @@ def reset_carbon_source_safely(model, carbon_ex_idx):
         return
 
     ex_rxn = model.exchanges[carbon_ex_idx]
+    has_reverse = _is_model_with_reverse_exchanges(model)
 
-    # Reset to wide bounds while preserving directionality
-    if ex_rxn.lower_bound < 0 and ex_rxn.upper_bound <= 0:
-        # This was uptake-only, keep it that way
-        ex_rxn.lower_bound = -1000
-        ex_rxn.upper_bound = 0
-    elif ex_rxn.lower_bound >= 0 and ex_rxn.upper_bound > 0:
-        # This was export-only, keep it that way
-        ex_rxn.lower_bound = 0
-        ex_rxn.upper_bound = 1000
+    if has_reverse:
+        # For models with _reverse exchanges, reset based on directionality
+        directionality = _get_exchange_directionality(model, ex_rxn.id)
+
+        if directionality == 'uptake_only':
+            # Uptake: forward (0, 0), reverse (0, 1000)
+            ex_rxn.lower_bound = 0
+            ex_rxn.upper_bound = 0
+            try:
+                reverse_ex = model.reactions.get_by_id(ex_rxn.id + '_reverse')
+                reverse_ex.lower_bound = 0
+                reverse_ex.upper_bound = 1000
+            except KeyError:
+                pass
+        elif directionality == 'export_only':
+            # Export: forward (0, 1000), reverse (0, 0)
+            ex_rxn.lower_bound = 0
+            ex_rxn.upper_bound = 1000
+            try:
+                reverse_ex = model.reactions.get_by_id(ex_rxn.id + '_reverse')
+                reverse_ex.lower_bound = 0
+                reverse_ex.upper_bound = 0
+            except KeyError:
+                pass
+        else:  # bidirectional
+            # Bidirectional: forward (0, 1000), reverse (0, 1000)
+            ex_rxn.lower_bound = 0
+            ex_rxn.upper_bound = 1000
+            try:
+                reverse_ex = model.reactions.get_by_id(ex_rxn.id + '_reverse')
+                reverse_ex.lower_bound = 0
+                reverse_ex.upper_bound = 1000
+            except KeyError:
+                pass
     else:
-        # This was bidirectional, keep it that way
-        ex_rxn.lower_bound = -1000
-        ex_rxn.upper_bound = 1000
+        # Original logic for bidirectional bounds
+        if ex_rxn.lower_bound < 0 and ex_rxn.upper_bound <= 0:
+            # This was uptake-only, keep it that way
+            ex_rxn.lower_bound = -1000
+            ex_rxn.upper_bound = 0
+        elif ex_rxn.lower_bound >= 0 and ex_rxn.upper_bound > 0:
+            # This was export-only, keep it that way
+            ex_rxn.lower_bound = 0
+            ex_rxn.upper_bound = 1000
+        else:
+            # This was bidirectional, keep it that way
+            ex_rxn.lower_bound = -1000
+            ex_rxn.upper_bound = 1000
 
 
 def load_environment(base_directory):
@@ -292,22 +503,36 @@ def model_adjustments(adj_strain, adj_essential, adj_carbon, model, name_genes_m
     if adj_essential:
         thresh = 0.001
         # Temporarily set all exchanges to wide bounds for essential gene testing
+        # Using irreversible format: forward (0, UB_forward), reverse (0, -LB_original)
         original_bounds = {}
         for ex in model_adj.exchanges:
             original_bounds[ex.id] = (ex.lower_bound, ex.upper_bound)
-            # Preserve directionality while allowing wide bounds
-            if ex.lower_bound < 0 and ex.upper_bound <= 0:
-                # Uptake-only exchange
-                ex.lower_bound = -1000
-                ex.upper_bound = 0
-            elif ex.lower_bound >= 0 and ex.upper_bound > 0:
-                # Export-only exchange
+            lb, ub = ex.lower_bound, ex.upper_bound
+
+            # Convert to irreversible format:
+            # forward reaction bounds: (0, max(0, UB))
+            # reverse reaction bounds: (0, max(0, -LB))
+            # For exchanges, we set the reaction bounds to allow wide uptake/export
+
+            if lb < 0 and ub <= 0:
+                # Uptake-only exchange: original is (-1000, 0)
+                # Forward stays minimal: (0, 0)
+                # Reverse allows large uptake: (0, 1000)
                 ex.lower_bound = 0
-                ex.upper_bound = 1000
+                ex.upper_bound = max(0, -lb)  # Use reverse capacity
+            elif lb >= 0 and ub > 0:
+                # Export-only exchange: original is (0, 1000)
+                # Forward allows large export: (0, 1000)
+                # Reverse stays minimal: (0, 0)
+                ex.lower_bound = 0
+                ex.upper_bound = ub  # Use forward capacity
             else:
-                # Bidirectional exchange
-                ex.lower_bound = -1000
-                ex.upper_bound = 1000
+                # Bidirectional exchange: original is (-1000, 1000)
+                # Forward allows large export: (0, 1000)
+                # Reverse allows large uptake: (0, 1000)
+                # We set to allow forward direction with max(0, ub)
+                ex.lower_bound = 0
+                ex.upper_bound = max(ub, -lb)  # Take the larger of forward/reverse capacity
 
         tmp_inds = []
         print("Removing essential genes: ")
@@ -378,16 +603,19 @@ def test_growth(model_adj, name_carbon_model_matched_adj, medium_ex_inds, carbon
     """
     results = {}
     with model_adj:
-        # Set medium with safe bounds handling
+        # Set medium with safe bounds handling using irreversible format
         for e in medium_ex_inds:
             if e != -1:
                 ex = model_adj.exchanges[e]
                 # Allow uptake while preserving irreversible structure
-                if ex.upper_bound <= 0:  # Uptake-only
-                    ex.lower_bound = -1000
-                else:  # Bidirectional
-                    ex.lower_bound = -1000
-                    ex.upper_bound = 1000
+                # Convert to forward (0, UB_forward), reverse (0, -LB_original)
+                lb, ub = ex.lower_bound, ex.upper_bound
+                if ub <= 0:  # Uptake-only
+                    ex.lower_bound = 0
+                    ex.upper_bound = max(0, -lb)
+                else:  # Bidirectional or export
+                    ex.lower_bound = 0
+                    ex.upper_bound = max(ub, -lb if lb < 0 else 0)
 
         solution = model_adj.optimize()
         base_growth = 1 if solution.objective_value and solution.objective_value > thresh else 0
@@ -435,16 +663,19 @@ def simulate_phenotype(
     """
     # Baseline GEM simulation
     baseline_GEM = np.zeros([len(name_genes_matched_adj), len(name_carbon_model_matched_adj)], dtype=float)
-    # Set medium with safe bounds handling
+    # Set medium with safe bounds handling using irreversible format
     for e in medium_ex_inds:
         if e != -1:
             ex = model_run.exchanges[e]
             # Allow uptake while preserving irreversible structure
-            if ex.upper_bound <= 0:  # Uptake-only
-                ex.lower_bound = -1000
-            else:  # Bidirectional
-                ex.lower_bound = -1000
-                ex.upper_bound = 1000
+            # Convert to forward (0, UB_forward), reverse (0, -LB_original)
+            lb, ub = ex.lower_bound, ex.upper_bound
+            if ub <= 0:  # Uptake-only
+                ex.lower_bound = 0
+                ex.upper_bound = max(0, -lb)
+            else:  # Bidirectional or export
+                ex.lower_bound = 0
+                ex.upper_bound = max(ub, -lb if lb < 0 else 0)
 
     for e in range(len(name_carbon_model_matched_adj)):
         print(f"Baseline GEM progress: {e+1}/{len(name_carbon_model_matched_adj)}", end='\r')
@@ -543,16 +774,19 @@ def simulate_phenotype_flux(
 
     # Baseline GEM flux simulation
     baseline_fluxes = np.zeros([n_genes, n_carbons, n_rxns], dtype=float)
-    # Set medium with safe bounds handling
+    # Set medium with safe bounds handling using irreversible format
     for e in medium_ex_inds:
         if e != -1:
             ex = model_run.exchanges[e]
             # Allow uptake while preserving irreversible structure
-            if ex.upper_bound <= 0:  # Uptake-only
-                ex.lower_bound = -1000
-            else:  # Bidirectional
-                ex.lower_bound = -1000
-                ex.upper_bound = 1000
+            # Convert to forward (0, UB_forward), reverse (0, -LB_original)
+            lb, ub = ex.lower_bound, ex.upper_bound
+            if ub <= 0:  # Uptake-only
+                ex.lower_bound = 0
+                ex.upper_bound = max(0, -lb)
+            else:  # Bidirectional or export
+                ex.lower_bound = 0
+                ex.upper_bound = max(ub, -lb if lb < 0 else 0)
 
     for e in range(n_carbons):
         print(f"Baseline GEM flux progress: {e+1}/{n_carbons}", end='\r')
@@ -724,16 +958,19 @@ def _simulate_gene_carbon(model, processed_df, gene, carbon_idx, carbon_name,
 
     print(f"  🚀 Starting {mode} simulation: Gene {gene} × Carbon {carbon_name} (idx {carbon_idx})")
 
-    # Set up medium with safe bounds handling
+    # Set up medium with safe bounds handling using irreversible format
     for e in medium_ex_inds:
         if e != -1:
             ex = model.exchanges[e]
             # Allow uptake while preserving irreversible structure
-            if ex.upper_bound <= 0:  # Uptake-only
-                ex.lower_bound = -1000
-            else:  # Bidirectional
-                ex.lower_bound = -1000
-                ex.upper_bound = 1000
+            # Convert to forward (0, UB_forward), reverse (0, -LB_original)
+            lb, ub = ex.lower_bound, ex.upper_bound
+            if ub <= 0:  # Uptake-only
+                ex.lower_bound = 0
+                ex.upper_bound = max(0, -lb)
+            else:  # Bidirectional or export
+                ex.lower_bound = 0
+                ex.upper_bound = max(ub, -lb if lb < 0 else 0)
 
     # Set carbon source with safe bounds handling
     carbon_set = False
@@ -1553,48 +1790,6 @@ def _run_validation_multiprocessing(model, processed_df, chunks, medium_ex_inds,
             print(f"    Chunk time: {avg_chunk_time:.1f}s, Total time: {time_str}")
 
     return (results, all_improvements)
-
-def set_carbon_source_safely(model, carbon_ex_idx, uptake_rate=-10):
-    """
-    Safely set carbon source uptake rate while respecting irreversible constraints.
-
-    Parameters
-    ----------
-    model : cobra.Model
-        The model to modify
-    carbon_ex_idx : int
-        Index of the carbon exchange reaction in model.exchanges
-    uptake_rate : float
-        Desired uptake rate (should be negative for uptake)
-
-    Returns
-    -------
-    bool
-        True if carbon source was set successfully, False otherwise
-    """
-    if carbon_ex_idx == -1:
-        return False
-
-    ex_rxn = model.exchanges[carbon_ex_idx]
-
-    # Check if the exchange can handle the requested uptake rate
-    if uptake_rate < 0:  # Uptake (negative flux)
-        if ex_rxn.lower_bound <= uptake_rate:
-            ex_rxn.lower_bound = uptake_rate
-            return True
-        else:
-            # Exchange reaction cannot handle this uptake rate (e.g., export-only)
-            print(f"Warning: Exchange {ex_rxn.id} cannot handle uptake rate {uptake_rate} (bounds: [{ex_rxn.lower_bound}, {ex_rxn.upper_bound}])")
-            return False
-    else:  # Export (positive flux)
-        if ex_rxn.upper_bound >= uptake_rate:
-            ex_rxn.upper_bound = uptake_rate
-            return True
-        else:
-            # Exchange reaction cannot handle this export rate (e.g., uptake-only)
-            print(f"Warning: Exchange {ex_rxn.id} cannot handle export rate {uptake_rate} (bounds: [{ex_rxn.lower_bound}, {ex_rxn.upper_bound}])")
-            return False
-
 
 def reset_carbon_source_safely(model, carbon_ex_idx):
     """

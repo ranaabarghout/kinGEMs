@@ -538,7 +538,7 @@ def run_pipeline_core(
 
 
 def run_fva_analysis(model, processed_df, biomass_reaction, enzyme_upper_bound,
-                     tuning_results_dir, organism_strain_GEMname, fva_config=None):
+                     tuning_results_dir, organism_strain_GEMname, fva_config=None, og_model=None):
     """Run flux variability analysis and generate plots."""
     print("\n=== Step 6: Running Flux Variability Analysis ===")
 
@@ -579,15 +579,29 @@ def run_fva_analysis(model, processed_df, biomass_reaction, enzyme_upper_bound,
 
     # Run COBRApy FVA for comparison
     print("  Running COBRApy FVA for comparison...")
-    cobra_fva_results = cobra_fva(model, fraction_of_optimum=0.9)
-    cobra_fva_df = pd.DataFrame({
-        "Reactions": cobra_fva_results.index,
-        "Min Solutions": cobra_fva_results['minimum'],
-        "Max Solutions": cobra_fva_results['maximum'],
-        "Solution Biomass": [model.slim_optimize()] * len(cobra_fva_results)
-    })
-    cobra_fva_df.to_csv(fva_baseline_results_path, index=False)
-    print(f"  COBRApy FVA completed: {len(cobra_fva_df)} reactions analyzed and results saved to {fva_baseline_results_path}")
+    if og_model is not None:
+        print("  Using original model for COBRApy FVA")
+        cobra_fva_results = cobra_fva(og_model, fraction_of_optimum=0.9)
+        cobra_fva_df = pd.DataFrame({
+            "Reactions": cobra_fva_results.index,
+            "Min Solutions": cobra_fva_results['minimum'],
+            "Max Solutions": cobra_fva_results['maximum'],
+            "Solution Biomass": [(og_model).slim_optimize()] * len(cobra_fva_results)
+        })
+        cobra_fva_df.to_csv(fva_baseline_results_path, index=False)
+        print(f"  COBRApy FVA completed: {len(cobra_fva_df)} reactions analyzed and results saved to {fva_baseline_results_path}")
+    else:
+        print(" Using irreversible model for cobrapy FVA")
+        cobra_fva_results = cobra_fva(model, fraction_of_optimum=0.9)
+        cobra_fva_df = pd.DataFrame({
+            "Reactions": cobra_fva_results.index,
+            "Min Solutions": cobra_fva_results['minimum'],
+            "Max Solutions": cobra_fva_results['maximum'],
+            "Solution Biomass": [model.slim_optimize()] * len(cobra_fva_results)
+        })
+        cobra_fva_df.to_csv(fva_baseline_results_path, index=False)
+        print(f"  COBRApy FVA completed: {len(cobra_fva_df)} reactions analyzed and results saved to {fva_baseline_results_path}")
+
 
     # Generate plots
     print("  Generating FVA plots...")
@@ -827,6 +841,9 @@ def main():
             )
         print("  ✓ Generated and saved substrates and sequences")
 
+    # Loading model again to pass to any cobrapy FVA later
+    og_model = load_model(model_path)
+
     print(f"  Model: {len(model.genes)} genes, {len(model.reactions)} reactions")
 
     # === Step 2: Merge substrate and sequence data ===
@@ -1051,10 +1068,10 @@ def main():
     if enable_fva:
         fva_config = config.get('fva', {})
         run_fva_analysis(model, df_new, biomass_reaction, enzyme_upper_bound,
-                        tuning_results_dir, model_name, fva_config)
+                        tuning_results_dir, model_name, fva_config, og_model=og_model)
 
         run_fva_analysis(model, processed_data, biomass_reaction, enzyme_upper_bound,
-                        tuning_results_dir, f"{model_name}_pre_tuning", fva_config)
+                        tuning_results_dir, f"{model_name}_pre_tuning", fva_config, og_model=og_model)
 
     if enable_biolog:
         biolog_config = config.get('biolog_validation', {})

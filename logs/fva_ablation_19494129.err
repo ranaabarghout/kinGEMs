@@ -1,0 +1,147 @@
+2026-01-19 09:36:19.540 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 09:36:58.324 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 09:36:58.357 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 09:36:58.360 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 09:36:58.425 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 09:36:58.590 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 09:36:58.665 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 09:36:58.717 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 09:36:58.807 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 10:24:43.578 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 10:24:43.592 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 10:24:43.592 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 10:24:43.592 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 10:24:43.592 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 10:24:43.728 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 10:24:43.736 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 10:24:43.788 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 11:13:23.079 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 11:13:23.079 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 11:13:23.079 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 11:13:23.080 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 11:13:23.081 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 11:13:23.081 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 11:13:23.084 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 11:13:23.103 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 11:58:24.414 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 11:58:24.414 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 11:58:24.416 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 11:58:24.417 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 11:58:24.417 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 11:58:24.417 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 11:58:24.418 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 11:58:24.419 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 12:54:32,606 - distributed.client - ERROR - 
+Traceback (most recent call last):
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/utils.py", line 1923, in wait_for
+    return await fut
+           ^^^^^^^^^
+asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/utils.py", line 818, in wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/client.py", line 1928, in _close
+    await self.cluster.close()
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/deploy/spec.py", line 454, in _close
+    await self._correct_state()
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/deploy/spec.py", line 365, in _correct_state_internal
+    await asyncio.gather(*tasks)
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/nanny.py", line 619, in close
+    await self.kill(timeout=timeout, reason=reason)
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/nanny.py", line 400, in kill
+    await self.process.kill(reason=reason, timeout=timeout)
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/nanny.py", line 883, in kill
+    await process.join(max(0, deadline - time()))
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/process.py", line 330, in join
+    await wait_for(asyncio.shield(self._exit_future), timeout)
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/utils.py", line 1922, in wait_for
+    async with asyncio.timeout(timeout):
+  File "/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/lib/python3.11/asyncio/timeouts.py", line 111, in __aexit__
+    raise TimeoutError from exc_val
+TimeoutError
+2026-01-19 12:54:32,650 - tornado.application - ERROR - Exception in callback functools.partial(<bound method IOLoop._discard_future_result of <tornado.platform.asyncio.AsyncIOMainLoop object at 0x14af8a21b510>>, <Task finished name='Task-6582990' coro=<SpecCluster._correct_state_internal() done, defined at /project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/deploy/spec.py:352> exception=TimeoutError()>)
+Traceback (most recent call last):
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/utils.py", line 1923, in wait_for
+    return await fut
+           ^^^^^^^^^
+asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/tornado/ioloop.py", line 758, in _run_callback
+    ret = callback()
+          ^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/tornado/ioloop.py", line 782, in _discard_future_result
+    future.result()
+TimeoutError
+Traceback (most recent call last):
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/utils.py", line 1923, in wait_for
+    return await fut
+           ^^^^^^^^^
+asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_fva_ablation.py", line 658, in <module>
+    main()
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_fva_ablation.py", line 537, in main
+    fva_df, biomass = run_promiscuous_fva(
+                      ^^^^^^^^^^^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_fva_ablation.py", line 269, in run_promiscuous_fva
+    fva_df, processed_df_result, df_FBA = flux_variability_analysis_parallel(
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/kinGEMs/modeling/fva.py", line 888, in flux_variability_analysis_parallel
+    return flux_variability_analysis_parallel_chunked(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/kinGEMs/modeling/fva.py", line 728, in flux_variability_analysis_parallel_chunked
+    results = _run_fva_dask(
+              ^^^^^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/kinGEMs/modeling/fva.py", line 832, in _run_fva_dask
+    client.close()
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/client.py", line 1981, in close
+    sync(self.loop, self._close, fast=True, callback_timeout=timeout)
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/utils.py", line 452, in sync
+    raise error
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/utils.py", line 426, in f
+    result = yield future
+             ^^^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/tornado/gen.py", line 783, in run
+    value = future.result()
+            ^^^^^^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/utils.py", line 1923, in wait_for
+    return await fut
+           ^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/utils.py", line 818, in wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/client.py", line 1928, in _close
+    await self.cluster.close()
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/deploy/spec.py", line 454, in _close
+    await self._correct_state()
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/deploy/spec.py", line 365, in _correct_state_internal
+    await asyncio.gather(*tasks)
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/nanny.py", line 619, in close
+    await self.kill(timeout=timeout, reason=reason)
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/nanny.py", line 400, in kill
+    await self.process.kill(reason=reason, timeout=timeout)
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/nanny.py", line 883, in kill
+    await process.join(max(0, deadline - time()))
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/process.py", line 330, in join
+    await wait_for(asyncio.shield(self._exit_future), timeout)
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/utils.py", line 1922, in wait_for
+    async with asyncio.timeout(timeout):
+  File "/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/lib/python3.11/asyncio/timeouts.py", line 111, in __aexit__
+    raise TimeoutError from exc_val
+TimeoutError
+Exception ignored in: <function Client.__del__ at 0x14b06908a3e0>
+Traceback (most recent call last):
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/client.py", line 1726, in __del__
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/client.py", line 1981, in close
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/utils.py", line 446, in sync
+TimeoutError: timed out after 60 s.

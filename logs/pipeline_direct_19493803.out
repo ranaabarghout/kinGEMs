@@ -1,0 +1,15 @@
+=========================================
+Job: kinGEMs General Pipeline (Direct)
+Job ID: 19493803
+Node: fc30638
+Current working directory: /project/def-mahadeva/ranaab/kinGEMs_v2
+Starting run at: Mon Jan 19 09:27:08 PST 2026
+=========================================
+
+Configuration: configs/iML1515_GEM_parallel_fva.json
+CPUs allocated: 8
+
+Updated FVA workers to match SLURM CPUs: 8
+Using temporary config: /tmp/tmp.i7fEaq3lC7.json
+
+Running kinGEMs pipeline...

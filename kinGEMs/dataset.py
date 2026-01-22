@@ -126,7 +126,9 @@ def convert_to_irreversible(model):
     for reaction in model.reactions:
         # If a reaction is reverse only, the forward reaction (which
         # will be constrained to 0) will be left in the model.
-        if reaction.lower_bound < 0:
+        # Also split ALL exchange reactions to ensure reversibility handling
+        is_exchange = reaction in model.exchanges
+        if is_exchange or reaction.lower_bound < 0 or reaction.reversibility==True:
             reverse_id = reaction.id + "_reverse"
 
             # If a reverse reaction already exists in the model, reuse it
@@ -733,7 +735,7 @@ def retrieve_sequences(model, organism, output_path=None):
     return df_genes
 
 def prepare_model_data(model_path, substrates_output=None, sequences_output=None,
-                      organism='E coli', metadata_dir=None, convert_irreversible=False):
+                      organism='E coli', metadata_dir=None, convert_irreversible=True):
     """
     Prepare model data for kinetic analysis.
 
@@ -767,13 +769,8 @@ def prepare_model_data(model_path, substrates_output=None, sequences_output=None
     print(f"Loaded model with {len(model.reactions)} reactions and {len(model.metabolites)} metabolites")
 
     # Convert to irreversible (required for proper enzyme constraints)
-    if convert_irreversible:
-        irrev_model = convert_to_irreversible(model)
-        print(f"Converted to irreversible model with {len(irrev_model.reactions)} reactions")
-    else:
-        # Default behavior: convert to irreversible for enzyme constraints
-        irrev_model = convert_to_irreversible(model)
-        print(f"Converted to irreversible model with {len(irrev_model.reactions)} reactions")
+    irrev_model = convert_to_irreversible(model)
+    print(f"Converted to irreversible model with {len(irrev_model.reactions)} reactions")
 
     # Extract substrates for both directions if reversible
     rxn_data = []

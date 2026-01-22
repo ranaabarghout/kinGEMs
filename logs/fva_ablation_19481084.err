@@ -1,0 +1,256 @@
+2026-01-19 07:07:52.010 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 07:09:04.095 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 07:09:04.200 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 07:09:04.202 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 07:09:04.578 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 07:09:04.913 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 07:09:04.921 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 07:09:04.953 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 07:09:04.971 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 08:48:02.131 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 08:48:02.131 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 08:48:02.131 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 08:48:02.131 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 08:48:02.131 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 08:48:02.132 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 08:48:02.132 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 08:48:02.132 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-19 08:49:14,734 - distributed.worker - ERROR - Compute Failed
+Key:       _fva_for_reaction_chunk-fe4e331b-280f-4636-9e9c-7ec91316b0cf
+State:     executing
+Task:  <Task '_fva_for_reaction_chunk-fe4e331b-280f-4636-9e9c-7ec91316b0cf' _fva_for_reaction_chunk(..., ...)>
+Exception: 'TypeError("_fva_for_reaction_chunk() got an unexpected keyword argument \'net_objective_coeffs\'")'
+Traceback: ''
+
+2026-01-19 08:49:14,735 - distributed.worker - ERROR - Compute Failed
+Key:       _fva_for_reaction_chunk-d7d39053-0370-48f8-b693-c6fe03b2aa56
+State:     executing
+Task:  <Task '_fva_for_reaction_chunk-d7d39053-0370-48f8-b693-c6fe03b2aa56' _fva_for_reaction_chunk(..., ...)>
+Exception: 'TypeError("_fva_for_reaction_chunk() got an unexpected keyword argument \'net_objective_coeffs\'")'
+Traceback: ''
+
+2026-01-19 08:49:14,737 - distributed.worker - ERROR - Compute Failed
+Key:       _fva_for_reaction_chunk-f6fd2411-4f2d-46ca-8439-446316f5269d
+State:     executing
+Task:  <Task '_fva_for_reaction_chunk-f6fd2411-4f2d-46ca-8439-446316f5269d' _fva_for_reaction_chunk(..., ...)>
+Exception: 'TypeError("_fva_for_reaction_chunk() got an unexpected keyword argument \'net_objective_coeffs\'")'
+Traceback: ''
+
+2026-01-19 08:49:14,752 - distributed.worker - ERROR - Compute Failed
+Key:       _fva_for_reaction_chunk-d5bbaabe-6d0e-4f34-9dc5-ef935c074bca
+State:     executing
+Task:  <Task '_fva_for_reaction_chunk-d5bbaabe-6d0e-4f34-9dc5-ef935c074bca' _fva_for_reaction_chunk(..., ...)>
+Exception: 'TypeError("_fva_for_reaction_chunk() got an unexpected keyword argument \'net_objective_coeffs\'")'
+Traceback: ''
+
+2026-01-19 08:49:14,782 - distributed.worker - ERROR - Compute Failed
+Key:       _fva_for_reaction_chunk-eec2a836-d741-48b2-9131-f6fc01b13013
+State:     executing
+Task:  <Task '_fva_for_reaction_chunk-eec2a836-d741-48b2-9131-f6fc01b13013' _fva_for_reaction_chunk(..., ...)>
+Exception: 'TypeError("_fva_for_reaction_chunk() got an unexpected keyword argument \'net_objective_coeffs\'")'
+Traceback: ''
+
+2026-01-19 08:49:14,783 - distributed.worker - ERROR - Compute Failed
+Key:       _fva_for_reaction_chunk-c4846e4b-b834-4079-b60d-8f6b6883e82b
+State:     executing
+Task:  <Task '_fva_for_reaction_chunk-c4846e4b-b834-4079-b60d-8f6b6883e82b' _fva_for_reaction_chunk(..., ...)>
+Exception: 'TypeError("_fva_for_reaction_chunk() got an unexpected keyword argument \'net_objective_coeffs\'")'
+Traceback: ''
+
+2026-01-19 08:49:14,807 - distributed.worker - ERROR - Compute Failed
+Key:       _fva_for_reaction_chunk-e9d47261-6458-41ba-b0f4-ec0adcfae8ad
+State:     executing
+Task:  <Task '_fva_for_reaction_chunk-e9d47261-6458-41ba-b0f4-ec0adcfae8ad' _fva_for_reaction_chunk(..., ...)>
+Exception: 'TypeError("_fva_for_reaction_chunk() got an unexpected keyword argument \'net_objective_coeffs\'")'
+Traceback: ''
+
+2026-01-19 08:49:14,810 - distributed.worker - ERROR - Compute Failed
+Key:       _fva_for_reaction_chunk-bb40750e-fa1c-4ff9-80a1-9751ae3729db
+State:     executing
+Task:  <Task '_fva_for_reaction_chunk-bb40750e-fa1c-4ff9-80a1-9751ae3729db' _fva_for_reaction_chunk(..., ...)>
+Exception: 'TypeError("_fva_for_reaction_chunk() got an unexpected keyword argument \'net_objective_coeffs\'")'
+Traceback: ''
+
+2026-01-19 08:49:14,887 - distributed.worker - ERROR - Compute Failed
+Key:       _fva_for_reaction_chunk-e1b87e8c-615f-413a-9001-a1f3cd257c33
+State:     executing
+Task:  <Task '_fva_for_reaction_chunk-e1b87e8c-615f-413a-9001-a1f3cd257c33' _fva_for_reaction_chunk(..., ...)>
+Exception: 'TypeError("_fva_for_reaction_chunk() got an unexpected keyword argument \'net_objective_coeffs\'")'
+Traceback: ''
+
+2026-01-19 08:49:14,891 - distributed.worker - ERROR - Compute Failed
+Key:       _fva_for_reaction_chunk-b8b8b6bc-53d6-4c5c-9aa0-511db007a1b0
+State:     executing
+Task:  <Task '_fva_for_reaction_chunk-b8b8b6bc-53d6-4c5c-9aa0-511db007a1b0' _fva_for_reaction_chunk(..., ...)>
+Exception: 'TypeError("_fva_for_reaction_chunk() got an unexpected keyword argument \'net_objective_coeffs\'")'
+Traceback: ''
+
+2026-01-19 08:49:14,964 - distributed.worker - ERROR - Compute Failed
+Key:       _fva_for_reaction_chunk-f1450923-3ca9-47e9-97c4-aebf4ea07065
+State:     executing
+Task:  <Task '_fva_for_reaction_chunk-f1450923-3ca9-47e9-97c4-aebf4ea07065' _fva_for_reaction_chunk(..., ...)>
+Exception: 'TypeError("_fva_for_reaction_chunk() got an unexpected keyword argument \'net_objective_coeffs\'")'
+Traceback: ''
+
+2026-01-19 08:49:14,967 - distributed.worker - ERROR - Compute Failed
+Key:       _fva_for_reaction_chunk-d3a04258-4860-4425-af4e-4cb71cc3aa3b
+State:     executing
+Task:  <Task '_fva_for_reaction_chunk-d3a04258-4860-4425-af4e-4cb71cc3aa3b' _fva_for_reaction_chunk(..., ...)>
+Exception: 'TypeError("_fva_for_reaction_chunk() got an unexpected keyword argument \'net_objective_coeffs\'")'
+Traceback: ''
+
+2026-01-19 08:49:15,126 - distributed.worker - ERROR - Compute Failed
+Key:       _fva_for_reaction_chunk-ec06b28d-0ec1-4d9e-9b1a-22915ac70a17
+State:     executing
+Task:  <Task '_fva_for_reaction_chunk-ec06b28d-0ec1-4d9e-9b1a-22915ac70a17' _fva_for_reaction_chunk(..., ...)>
+Exception: 'TypeError("_fva_for_reaction_chunk() got an unexpected keyword argument \'net_objective_coeffs\'")'
+Traceback: ''
+
+2026-01-19 08:49:15,127 - distributed.worker - ERROR - Compute Failed
+Key:       _fva_for_reaction_chunk-bbeb062e-da1b-4008-adfe-24fed4373cfd
+State:     executing
+Task:  <Task '_fva_for_reaction_chunk-bbeb062e-da1b-4008-adfe-24fed4373cfd' _fva_for_reaction_chunk(..., ...)>
+Exception: 'TypeError("_fva_for_reaction_chunk() got an unexpected keyword argument \'net_objective_coeffs\'")'
+Traceback: ''
+
+2026-01-19 08:49:15,763 - distributed.worker - ERROR - Compute Failed
+Key:       _fva_for_reaction_chunk-f0bffcfd-6769-42f6-8304-a981ed0c07dd
+State:     executing
+Task:  <Task '_fva_for_reaction_chunk-f0bffcfd-6769-42f6-8304-a981ed0c07dd' _fva_for_reaction_chunk(..., ...)>
+Exception: 'TypeError("_fva_for_reaction_chunk() got an unexpected keyword argument \'net_objective_coeffs\'")'
+Traceback: ''
+
+2026-01-19 08:49:15,768 - distributed.worker - ERROR - Compute Failed
+Key:       _fva_for_reaction_chunk-c8a71150-a8b3-4b45-bd58-6b91f086d433
+State:     executing
+Task:  <Task '_fva_for_reaction_chunk-c8a71150-a8b3-4b45-bd58-6b91f086d433' _fva_for_reaction_chunk(..., ...)>
+Exception: 'TypeError("_fva_for_reaction_chunk() got an unexpected keyword argument \'net_objective_coeffs\'")'
+Traceback: ''
+
+2026-01-19 08:49:15,971 - distributed.worker - ERROR - Compute Failed
+Key:       _fva_for_reaction_chunk-b2c6b8ad-44ad-42a8-ab44-284b076c070d
+State:     executing
+Task:  <Task '_fva_for_reaction_chunk-b2c6b8ad-44ad-42a8-ab44-284b076c070d' _fva_for_reaction_chunk(..., ...)>
+Exception: 'TypeError("_fva_for_reaction_chunk() got an unexpected keyword argument \'net_objective_coeffs\'")'
+Traceback: ''
+
+2026-01-19 08:49:16,025 - distributed.worker - ERROR - Compute Failed
+Key:       _fva_for_reaction_chunk-acc6ebad-01ac-4a41-a4ca-f4a51d2fdc39
+State:     executing
+Task:  <Task '_fva_for_reaction_chunk-acc6ebad-01ac-4a41-a4ca-f4a51d2fdc39' _fva_for_reaction_chunk(..., ...)>
+Exception: 'TypeError("_fva_for_reaction_chunk() got an unexpected keyword argument \'net_objective_coeffs\'")'
+Traceback: ''
+
+2026-01-19 08:49:16,751 - distributed.worker - ERROR - Compute Failed
+Key:       _fva_for_reaction_chunk-a586c8ad-69f6-4440-a894-a96d22e242ea
+State:     executing
+Task:  <Task '_fva_for_reaction_chunk-a586c8ad-69f6-4440-a894-a96d22e242ea' _fva_for_reaction_chunk(..., ...)>
+Exception: 'TypeError("_fva_for_reaction_chunk() got an unexpected keyword argument \'net_objective_coeffs\'")'
+Traceback: ''
+
+2026-01-19 08:49:16,762 - distributed.worker - ERROR - Compute Failed
+Key:       _fva_for_reaction_chunk-9e8332c8-7223-47f5-a7d2-2bcd3a9809e9
+State:     executing
+Task:  <Task '_fva_for_reaction_chunk-9e8332c8-7223-47f5-a7d2-2bcd3a9809e9' _fva_for_reaction_chunk(..., ...)>
+Exception: 'TypeError("_fva_for_reaction_chunk() got an unexpected keyword argument \'net_objective_coeffs\'")'
+Traceback: ''
+
+2026-01-19 08:49:16,980 - distributed.worker - ERROR - Compute Failed
+Key:       _fva_for_reaction_chunk-8d8999e2-b427-4a82-a9b2-10e812887ddc
+State:     executing
+Task:  <Task '_fva_for_reaction_chunk-8d8999e2-b427-4a82-a9b2-10e812887ddc' _fva_for_reaction_chunk(..., ...)>
+Exception: 'TypeError("_fva_for_reaction_chunk() got an unexpected keyword argument \'net_objective_coeffs\'")'
+Traceback: ''
+
+2026-01-19 08:49:16,981 - distributed.worker - ERROR - Compute Failed
+Key:       _fva_for_reaction_chunk-895b7d16-6e28-4c68-bab0-2cc9faeae4ac
+State:     executing
+Task:  <Task '_fva_for_reaction_chunk-895b7d16-6e28-4c68-bab0-2cc9faeae4ac' _fva_for_reaction_chunk(..., ...)>
+Exception: 'TypeError("_fva_for_reaction_chunk() got an unexpected keyword argument \'net_objective_coeffs\'")'
+Traceback: ''
+
+2026-01-19 08:49:16,996 - distributed.worker - ERROR - Compute Failed
+Key:       _fva_for_reaction_chunk-92755fa6-4866-4ec0-ae05-5ace3dac18ef
+State:     executing
+Task:  <Task '_fva_for_reaction_chunk-92755fa6-4866-4ec0-ae05-5ace3dac18ef' _fva_for_reaction_chunk(..., ...)>
+Exception: 'TypeError("_fva_for_reaction_chunk() got an unexpected keyword argument \'net_objective_coeffs\'")'
+Traceback: ''
+
+2026-01-19 08:49:17,913 - distributed.worker - ERROR - Compute Failed
+Key:       _fva_for_reaction_chunk-85415394-fea2-4bd8-92d4-d8af701238a1
+State:     executing
+Task:  <Task '_fva_for_reaction_chunk-85415394-fea2-4bd8-92d4-d8af701238a1' _fva_for_reaction_chunk(..., ...)>
+Exception: 'TypeError("_fva_for_reaction_chunk() got an unexpected keyword argument \'net_objective_coeffs\'")'
+Traceback: ''
+
+2026-01-19 08:49:17,915 - distributed.worker - ERROR - Compute Failed
+Key:       _fva_for_reaction_chunk-86d417b1-0655-4180-af6d-058a1ae7ff16
+State:     executing
+Task:  <Task '_fva_for_reaction_chunk-86d417b1-0655-4180-af6d-058a1ae7ff16' _fva_for_reaction_chunk(..., ...)>
+Exception: 'TypeError("_fva_for_reaction_chunk() got an unexpected keyword argument \'net_objective_coeffs\'")'
+Traceback: ''
+
+2026-01-19 08:49:17,920 - distributed.worker - ERROR - Compute Failed
+Key:       _fva_for_reaction_chunk-82fccefc-bffa-4ad1-851d-3be023076d14
+State:     executing
+Task:  <Task '_fva_for_reaction_chunk-82fccefc-bffa-4ad1-851d-3be023076d14' _fva_for_reaction_chunk(..., ...)>
+Exception: 'TypeError("_fva_for_reaction_chunk() got an unexpected keyword argument \'net_objective_coeffs\'")'
+Traceback: ''
+
+2026-01-19 08:49:18,216 - distributed.worker - ERROR - Compute Failed
+Key:       _fva_for_reaction_chunk-7682587f-8320-4064-86fe-2a1497fff308
+State:     executing
+Task:  <Task '_fva_for_reaction_chunk-7682587f-8320-4064-86fe-2a1497fff308' _fva_for_reaction_chunk(..., ...)>
+Exception: 'TypeError("_fva_for_reaction_chunk() got an unexpected keyword argument \'net_objective_coeffs\'")'
+Traceback: ''
+
+2026-01-19 08:49:18,251 - distributed.worker - ERROR - Compute Failed
+Key:       _fva_for_reaction_chunk-6d8cadbc-f700-4f9c-bb0e-b6bf3e4f4960
+State:     executing
+Task:  <Task '_fva_for_reaction_chunk-6d8cadbc-f700-4f9c-bb0e-b6bf3e4f4960' _fva_for_reaction_chunk(..., ...)>
+Exception: 'TypeError("_fva_for_reaction_chunk() got an unexpected keyword argument \'net_objective_coeffs\'")'
+Traceback: ''
+
+2026-01-19 08:49:18,330 - distributed.worker - ERROR - Compute Failed
+Key:       _fva_for_reaction_chunk-b7257107-46a7-4095-af93-5146307c2b13
+State:     executing
+Task:  <Task '_fva_for_reaction_chunk-b7257107-46a7-4095-af93-5146307c2b13' _fva_for_reaction_chunk(..., ...)>
+Exception: 'TypeError("_fva_for_reaction_chunk() got an unexpected keyword argument \'net_objective_coeffs\'")'
+Traceback: ''
+
+2026-01-19 08:49:18,331 - distributed.worker - ERROR - Compute Failed
+Key:       _fva_for_reaction_chunk-b69857ab-a928-4c88-b21d-a74e8f758ab9
+State:     executing
+Task:  <Task '_fva_for_reaction_chunk-b69857ab-a928-4c88-b21d-a74e8f758ab9' _fva_for_reaction_chunk(..., ...)>
+Exception: 'TypeError("_fva_for_reaction_chunk() got an unexpected keyword argument \'net_objective_coeffs\'")'
+Traceback: ''
+
+2026-01-19 08:49:18,828 - distributed.worker - ERROR - Compute Failed
+Key:       _fva_for_reaction_chunk-7c7679b7-4386-4f4d-b8ac-8e9cab293fd6
+State:     executing
+Task:  <Task '_fva_for_reaction_chunk-7c7679b7-4386-4f4d-b8ac-8e9cab293fd6' _fva_for_reaction_chunk(..., ...)>
+Exception: 'TypeError("_fva_for_reaction_chunk() got an unexpected keyword argument \'net_objective_coeffs\'")'
+Traceback: ''
+
+Traceback (most recent call last):
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_fva_ablation.py", line 658, in <module>
+    main()
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_fva_ablation.py", line 515, in main
+    fva_df, biomass = run_isoenzymes_fva(
+                      ^^^^^^^^^^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_fva_ablation.py", line 183, in run_isoenzymes_fva
+    fva_df, processed_df_result, df_FBA = flux_variability_analysis_parallel(
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/kinGEMs/modeling/fva.py", line 946, in flux_variability_analysis_parallel
+  File "/project/6000502/ranaab/kinGEMs_v2/kinGEMs/modeling/fva.py", line 783, in flux_variability_analysis_parallel_chunked
+    try:
+        
+  File "/project/6000502/ranaab/kinGEMs_v2/kinGEMs/modeling/fva.py", line 886, in _run_fva_dask
+    original flux_variability_analysis_parallel but now uses chunking by default.
+                  ^^^^^^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/dask/base.py", line 681, in compute
+    results = schedule(expr, keys, **kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/client.py", line 2416, in _gather
+    raise exception.with_traceback(traceback)
+TypeError: _fva_for_reaction_chunk() got an unexpected keyword argument 'net_objective_coeffs'
