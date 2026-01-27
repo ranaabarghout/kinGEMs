@@ -11,6 +11,7 @@ import logging
 import logging as pyomo_logging
 import math
 import os
+import random
 import re
 import warnings
 
@@ -115,7 +116,9 @@ def run_optimization(
       - promiscuous enzymes
     Returns: sol_val, df_FBA, gene_sequences_dict, model
     """
-
+    # Set random seeds for reproducibility
+    random.seed(42)
+    np.random.seed(42)
 
     # 1) Load COBRA model
     # print("Step 1: Loading COBRA model...")
@@ -715,7 +718,9 @@ def run_optimization_with_dataframe(model, processed_df, objective_reaction, obj
     tuple
         (solution_value, df_FBA, gene_sequences_dict, output_filepath)
     """
-
+    # Set random seeds for reproducibility
+    random.seed(42)
+    np.random.seed(42)
 
     # Check if required columns exist in processed_df
     required_cols = ['Reactions', 'Single_gene', 'SEQ', 'kcat_mean']

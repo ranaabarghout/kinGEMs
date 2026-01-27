@@ -1,0 +1,22 @@
+=========================================
+Job: Post-tuning kinGEMs Validation
+Job ID: 20195074
+Node: fc30369
+Current working directory: /project/def-mahadeva/ranaab/kinGEMs_v2
+Starting run at: Fri Jan 23 08:04:25 PST 2026
+=========================================
+Checking CPLEX availability...
+/home/ranaab/cplex_studio2211/cplex/bin/x86-64_linux/cplex
+✓ CPLEX found: /home/ranaab/cplex_studio2211/cplex/bin/x86-64_linux/cplex
+CPLEX_STUDIO_DIR: /home/ranaab/cplex_studio2211
+Running Post-tuning kinGEMs validation...
+
+Memory Usage Statistics:
+20195074                                      
+20195074.ba+                                  
+20195074.ex+                                  
+Peak memory usage:            
+=========================================
+Finished at: Fri Jan 23 08:19:07 PST 2026
+Exit code: 1
+=========================================

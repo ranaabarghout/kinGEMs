@@ -1,21 +1,44 @@
-loguru
-mkdocs
-pip
-python-dotenv
-ruff
-tqdm
-typer
-bioservices
-cobra
-numpy
-pandas
-pubchempy
-requests
-biopython
-pyomo
-seaborn
-scikit-learn
-ipykernel
-glpk
-dask[distributed]
+# kinGEMs Project Dependencies
+# =============================================================================
+# All versions are pinned to ensure reproducible results across different
+# systems. If you need to update a package, update both the version number
+# and the corresponding entry in environment.yml.
+# =============================================================================
+
+# Core dependencies (must be pinned for reproducibility)
+cobra==0.29.1
+numpy==1.26.4
+pandas==2.2.3
+scipy==1.15.2
+pyomo==6.9.4
+scikit-learn==1.7.1
+dask[distributed]==2025.9.1
+
+# Supporting scientific packages
+seaborn==0.13.2
+biopython==1.85
+
+# Data sources and APIs
+bioservices==1.11.0
+pubchempy==1.0.4
+
+# Utilities
+loguru==0.7.2
+python-dotenv==1.0.1
+requests==2.32.3
+tqdm==4.66.2
+typer==0.9.4
+ruff==0.4.0
+
+# Development
+mkdocs==1.6.0
+pip==24.0
+
+# Jupyter/Interactive
+ipykernel==6.29.5
+
+# Optional: Solver libraries (install as needed)
+# CPLEX - Install via: python setup.py install from CPLEX distribution
+# GLPK - Install via: pip install python-glpk
+# GUROBI - Install via: pip install gurobipy
 -e .

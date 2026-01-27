@@ -1,0 +1,12 @@
+2026-01-22 10:39:39.170 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+Traceback (most recent call last):
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_validation_parallel.py", line 37, in <module>
+    from kinGEMs.config import ECOLI_VALIDATION_DIR
+  File "/project/6000502/ranaab/kinGEMs_v2/kinGEMs/__init__.py", line 25, in <module>
+    from .modeling import flux_variability_analysis, run_optimization, simulated_annealing
+  File "/project/6000502/ranaab/kinGEMs_v2/kinGEMs/modeling/__init__.py", line 2, in <module>
+    from .optimize import run_optimization, run_optimization_with_dataframe
+  File "/project/6000502/ranaab/kinGEMs_v2/kinGEMs/modeling/optimize.py", line 592
+    else:
+    ^
+IndentationError: expected an indented block after 'if' statement on line 590

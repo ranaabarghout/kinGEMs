@@ -9,7 +9,7 @@
 #SBATCH --mem=64G
 #SBATCH --output=logs/fluxomics_pipeline_%j.out
 #SBATCH --error=logs/fluxomics_pipeline_%j.err
-#SBATCH --mail-user=lya.chinas@mail.utoronto.ca
+#SBATCH --mail-user=ranamoneim@gmail.com
 #SBATCH --mail-type=BEGIN,END,FAIL
 # ---------------------------------------------------------------------
 echo "========================================="
@@ -25,24 +25,21 @@ echo "========================================="
 module load python/3.11
 
 # Activate virtual environment
-source .venv/bin/activate
+source venv/bin/activate
 
 # Create logs directory if it doesn't exist
 mkdir -p logs
 
-# Input arguments:
-#   Case 1 (config): run_fluxomics_pipeline.sh <config.json> [experimental.csv]
-#   Case 2 (CSV-only): run_fluxomics_pipeline.sh <experimental.csv> <fva_results.csv> [more_fva_results.csv ...]
-INPUT_1="$1"
-INPUT_2="$2"
+# Hard-coded inputs (can be overridden by command-line arguments)
+DEFAULT_CONFIG="configs/fluxomics_iML1515_GEM.json"
+DEFAULT_EXP_FILE="data/experimental/crown_fluxomics_final.csv"
 
-if [ -z "$INPUT_1" ]; then
-    echo "Error: No arguments provided."
-    echo "Usage:"
-    echo "  $0 <config.json> [experimental.csv]"
-    echo "  $0 <experimental.csv> <fva_results.csv> [more_fva_results.csv ...]"
-    exit 1
-fi
+# Use command-line arguments if provided, otherwise use defaults
+INPUT_1="${1:-$DEFAULT_CONFIG}"
+INPUT_2="${2:-$DEFAULT_EXP_FILE}"
+
+echo "Using configuration: $INPUT_1"
+echo "Using experimental data: $INPUT_2"
 
 echo ""
 echo "CPUs allocated: $SLURM_CPUS_PER_TASK"

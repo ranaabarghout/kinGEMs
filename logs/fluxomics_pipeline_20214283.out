@@ -1,0 +1,11 @@
+=========================================
+Job: kinGEMs Fluxomics Validation Pipeline
+Job ID: 20214283
+Node: fc30618
+Current working directory: /project/def-mahadeva/ranaab/kinGEMs_v2
+Starting run at: Fri Jan 23 11:50:42 PST 2026
+=========================================
+Error: No arguments provided.
+Usage:
+  /localscratch/spool/slurmd/job20214283/slurm_script <config.json> [experimental.csv]
+  /localscratch/spool/slurmd/job20214283/slurm_script <experimental.csv> <fva_results.csv> [more_fva_results.csv ...]

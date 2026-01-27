@@ -683,22 +683,19 @@ def simulate_phenotype(
             e_found = name_carbon_model_matched_adj[:e].index(name_carbon_model_matched_adj[e])
             baseline_GEM[:, e] = baseline_GEM[:, e_found]
         else:
-            # Use safe carbon source setting
-            carbon_set = False
-            if carbon_ex_inds[e] != -1:
-                carbon_set = set_carbon_source_safely(model_run, carbon_ex_inds[e], -10)
-
             for g in range(len(name_genes_matched_adj)):
                 with model_run:
+                    # Set carbon source INSIDE context so bounds persist through optimization
+                    carbon_set = False
+                    if carbon_ex_inds[e] != -1:
+                        carbon_set = set_carbon_source_safely(model_run, carbon_ex_inds[e], -10)
+
+                    # Knock out gene and optimize
                     model_run.genes.get_by_id(name_genes_matched_adj[g]).knock_out()
                     solution = model_run.slim_optimize()
                     if np.isnan(solution):
                         solution = 0
                     baseline_GEM[g, e] = solution
-
-            # Reset carbon source safely
-            if carbon_ex_inds[e] != -1 and carbon_set:
-                reset_carbon_source_safely(model_run, carbon_ex_inds[e])
 
     # Enzyme-constrained GEM simulation
     if 'kcat_mean' in processed_df.columns:
@@ -711,13 +708,14 @@ def simulate_phenotype(
             e_found = name_carbon_model_matched_adj[:e].index(name_carbon_model_matched_adj[e])
             enzyme_constrained_GEM[:, e] = enzyme_constrained_GEM[:, e_found]
         else:
-            # Use safe carbon source setting
-            carbon_set = False
-            if carbon_ex_inds[e] != -1:
-                carbon_set = set_carbon_source_safely(model_run, carbon_ex_inds[e], -10)
-
             for g in range(len(name_genes_matched_adj)):
                 with model_run:
+                    # Set carbon source INSIDE context so bounds persist through optimization
+                    carbon_set = False
+                    if carbon_ex_inds[e] != -1:
+                        carbon_set = set_carbon_source_safely(model_run, carbon_ex_inds[e], -10)
+
+                    # Knock out gene and optimize
                     model_run.genes.get_by_id(name_genes_matched_adj[g]).knock_out()
                     try:
                         solution_value, df_FBA, gene_sequences_dict, _ = run_optimization_with_dataframe(
@@ -743,10 +741,6 @@ def simulate_phenotype(
                     except Exception as ex:
                         print(f"Enzyme-constrained optimization failed for gene {name_genes_matched_adj[g]}, carbon {name_carbon_model_matched_adj[e]}: {ex}")
                         enzyme_constrained_GEM[g, e] = 0
-
-            # Reset carbon source safely
-            if carbon_ex_inds[e] != -1 and carbon_set:
-                reset_carbon_source_safely(model_run, carbon_ex_inds[e])
 
     print("\nBaseline GEM and enzyme-constrained GEM simulation complete.")
     return baseline_GEM, enzyme_constrained_GEM
@@ -914,7 +908,8 @@ def calculate_phenotypes_with_dataframe(
 
 def _simulate_gene_carbon(model, processed_df, gene, carbon_idx, carbon_name,
                                 medium_ex_inds, carbon_ex_inds, objective_reaction,
-                                enzyme_upper_bound, mode='baseline', solver_name='glpk'):
+                                enzyme_upper_bound, mode='baseline', solver_name='glpk',
+                                remove_knockout_enzyme=True):
     """
     Simulate a single gene knockout × carbon source combination.
 
@@ -942,6 +937,11 @@ def _simulate_gene_carbon(model, processed_df, gene, carbon_idx, carbon_name,
         'baseline' for slim_optimize or 'enzyme' for enzyme-constrained
     solver_name : str, optional
         Solver to use for optimization (default: 'glpk')
+    remove_knockout_enzyme : bool, optional
+        If True (default), remove enzyme constraints for the knocked-out gene,
+        freeing protein pool capacity. If False, keep enzyme constraints for
+        the knocked-out gene, which may better model immediate knockout effects
+        without proteome reallocation.
 
     Returns
     -------
@@ -955,15 +955,19 @@ def _simulate_gene_carbon(model, processed_df, gene, carbon_idx, carbon_name,
 
     print(f"  🚀 Starting {mode} simulation: Gene {gene} × Carbon {carbon_name} (idx {carbon_idx})")
 
+    # Make a copy of the model so we can modify bounds without affecting the original
+    # that's used for other parallel simulations
+    model = model.copy()
+
     # Apply medium bounds directly to the model (instead of passing to run_optimization)
     # For irreversible models, _reverse reactions need upper_bound set (not lower_bound)
-    
+
     # Set base medium components
     for e in medium_ex_inds:
         if e != -1:
             ex = model.exchanges[e]
             reverse_id = ex.id + '_reverse'
-            
+
             # Check if this exchange has a _reverse version (uptake-capable)
             if reverse_id in [r.id for r in model.reactions]:
                 # Set _reverse reaction upper_bound for uptake
@@ -975,7 +979,7 @@ def _simulate_gene_carbon(model, processed_df, gene, carbon_idx, carbon_name,
             else:
                 # Forward exchange only - set upper_bound for export
                 ex.upper_bound = 1000
-    
+
     # Set carbon source (uptake via _reverse reaction)
     if carbon_ex_inds[carbon_idx] != -1:
         carbon_ex = model.exchanges[carbon_ex_inds[carbon_idx]]
@@ -1082,20 +1086,8 @@ def _simulate_gene_carbon(model, processed_df, gene, carbon_idx, carbon_name,
 
     # Simulate growth
     if mode == 'baseline':
-        # For baseline mode, apply medium directly to model bounds
-        print(f"    - Applying medium configuration for baseline ({len(medium)} exchanges)")
-        for ex_id, flux_value in medium.items():
-            try:
-                ex_rxn = model.reactions.get_by_id(ex_id)
-                # For _reverse reactions, set upper bound (positive = uptake capacity)
-                # For forward reactions, set bounds appropriately
-                if ex_id.endswith('_reverse'):
-                    ex_rxn.upper_bound = flux_value  # Positive upper bound for uptake
-                else:
-                    ex_rxn.lower_bound = -flux_value  # Negative lower bound for uptake
-            except KeyError:
-                print(f"    - Warning: Exchange {ex_id} not found in model")
-        
+        # Medium and carbon source bounds already set on model above (lines 960-989)
+        # Just proceed with optimization
         print(f"    - Running baseline GEM simulation for gene {gene}, carbon {carbon_idx}")
         try:
             with time_limit(300, f"Baseline optimization for {gene}"):
@@ -1147,22 +1139,27 @@ def _simulate_gene_carbon(model, processed_df, gene, carbon_idx, carbon_name,
     else:  # enzyme-constrained
         print(f"    🔬 Running enzyme-constrained GEM simulation for gene {gene}, carbon {carbon_idx}")
         try:
-            # CRITICAL FIX: Remove knocked-out gene from enzyme constraint dataframe
-            # This ensures the enzyme variable E[gene] is not created in optimization
-            # and the protein pool capacity is reduced appropriately
-            processed_df_knockout = processed_df[processed_df['Single_gene'] != gene].copy()
-            
-            # Log the filtering for verification
-            n_original = len(processed_df)
-            n_filtered = len(processed_df_knockout)
-            if n_original != n_filtered:
-                print(f"    - Filtered enzyme data: removed gene {gene} ({n_original} → {n_filtered} entries)")
-            
+            # Control whether enzyme constraints are removed for the knocked-out gene
+            # If remove_knockout_enzyme=True (default): Remove enzyme constraints for the KO gene,
+            #   which frees protein pool capacity and can result in slight growth improvements
+            # If remove_knockout_enzyme=False: Keep enzyme constraints even for KO gene,
+            #   which models immediate knockout effects without proteome reallocation
+            if remove_knockout_enzyme:
+                processed_df_knockout = processed_df[processed_df['Single_gene'] != gene].copy()
+                # Log the filtering for verification
+                n_original = len(processed_df)
+                n_filtered = len(processed_df_knockout)
+                if n_original != n_filtered:
+                    print(f"    - Filtered enzyme data: removed gene {gene} ({n_original} → {n_filtered} entries)")
+            else:
+                processed_df_knockout = processed_df  # Keep all enzyme constraints
+                print(f"    - Keeping enzyme constraints for knocked-out gene {gene}")
+
             # Try with the provided solver first
             with time_limit(600, f"Enzyme-constrained optimization for {gene}"):
                 solution_value, _, _, _ = run_optimization_with_dataframe(
                     model=model,
-                    processed_df=processed_df_knockout,  # Use filtered dataframe
+                    processed_df=processed_df_knockout,  # Use (possibly filtered) dataframe
                     objective_reaction=objective_reaction,
                     enzyme_upper_bound=enzyme_upper_bound,
                     enzyme_ratio=True,
@@ -1351,7 +1348,8 @@ def _simulate_gene_carbon(model, processed_df, gene, carbon_idx, carbon_name,
 
 def _simulate_gene_carbon_chunk(model, processed_df, tasks, medium_ex_inds,
                                 carbon_ex_inds, objective_reaction,
-                                enzyme_upper_bound, mode='baseline', solver_name='glpk'):
+                                enzyme_upper_bound, mode='baseline', solver_name='glpk',
+                                remove_knockout_enzyme=True):
     """
     Process a chunk of gene × carbon combinations.
 
@@ -1375,6 +1373,9 @@ def _simulate_gene_carbon_chunk(model, processed_df, tasks, medium_ex_inds,
         'baseline' or 'enzyme'
     solver_name : str, optional
         Solver to use (default: 'glpk')
+    remove_knockout_enzyme : bool, optional
+        If True (default), remove enzyme constraints for knocked-out genes.
+        If False, keep enzyme constraints even for knocked-out genes.
 
     Returns
     -------
@@ -1398,7 +1399,8 @@ def _simulate_gene_carbon_chunk(model, processed_df, tasks, medium_ex_inds,
             objective_reaction=objective_reaction,
             enzyme_upper_bound=enzyme_upper_bound,
             mode=mode,
-            solver_name=solver_name
+            solver_name=solver_name,
+            remove_knockout_enzyme=remove_knockout_enzyme
         )
         results.append((gene_result, carbon_idx_result, growth_value))
 
@@ -1422,7 +1424,8 @@ def simulate_phenotype_parallel(
     chunk_size=None,
     method='dask',
     skip_baseline=False,
-    solver_name='glpk'
+    solver_name='glpk',
+    remove_knockout_enzyme=True
 ):
     """
     Parallel version of simulate_phenotype using Dask or multiprocessing.
@@ -1459,6 +1462,10 @@ def simulate_phenotype_parallel(
         'dask' or 'multiprocessing' (default: 'dask')
     skip_baseline : bool, optional
         If True, skip baseline simulation and only run enzyme-constrained (default: False)
+    remove_knockout_enzyme : bool, optional
+        If True (default), remove enzyme constraints for knocked-out genes,
+        freeing protein pool capacity. If False, keep enzyme constraints even
+        for knocked-out genes (use --keep-enzyme-constraints CLI flag).
 
     Returns
     -------
@@ -1537,20 +1544,23 @@ def simulate_phenotype_parallel(
         if method.lower() == 'multiprocessing':
             baseline_results, baseline_improvements = _run_validation_multiprocessing(
                 model_run, processed_df, chunks, medium_ex_inds, carbon_ex_inds,
-                objective_reaction, enzyme_upper_bound, n_workers, mode='baseline', solver_name=solver_name
+                objective_reaction, enzyme_upper_bound, n_workers, mode='baseline', solver_name=solver_name,
+                remove_knockout_enzyme=remove_knockout_enzyme
             )
         else:  # dask
             try:
                 baseline_results = _run_validation_dask(
                     model_run, processed_df, chunks, medium_ex_inds, carbon_ex_inds,
-                    objective_reaction, enzyme_upper_bound, n_workers, mode='baseline', solver_name=solver_name
+                    objective_reaction, enzyme_upper_bound, n_workers, mode='baseline', solver_name=solver_name,
+                    remove_knockout_enzyme=remove_knockout_enzyme
                 )
                 baseline_improvements = []  # Dask doesn't return improvements yet
             except Exception:
                 print("    ⚠️  Dask failed, switching to multiprocessing")
                 baseline_results, baseline_improvements = _run_validation_multiprocessing(
                     model_run, processed_df, chunks, medium_ex_inds, carbon_ex_inds,
-                    objective_reaction, enzyme_upper_bound, n_workers, mode='baseline', solver_name=solver_name
+                    objective_reaction, enzyme_upper_bound, n_workers, mode='baseline', solver_name=solver_name,
+                    remove_knockout_enzyme=remove_knockout_enzyme
                 )
 
         # Flatten results
@@ -1587,20 +1597,23 @@ def simulate_phenotype_parallel(
     if method.lower() == 'multiprocessing':
         enzyme_results, enzyme_improvements = _run_validation_multiprocessing(
             model_run, processed_df, chunks, medium_ex_inds, carbon_ex_inds,
-            objective_reaction, enzyme_upper_bound, n_workers, mode='enzyme', solver_name=solver_name
+            objective_reaction, enzyme_upper_bound, n_workers, mode='enzyme', solver_name=solver_name,
+            remove_knockout_enzyme=remove_knockout_enzyme
         )
     else:  # dask
         try:
             enzyme_results = _run_validation_dask(
                 model_run, processed_df, chunks, medium_ex_inds, carbon_ex_inds,
-                objective_reaction, enzyme_upper_bound, n_workers, mode='enzyme', solver_name=solver_name
+                objective_reaction, enzyme_upper_bound, n_workers, mode='enzyme', solver_name=solver_name,
+                remove_knockout_enzyme=remove_knockout_enzyme
             )
             enzyme_improvements = []  # Dask doesn't return improvements yet
         except Exception:
             print("    ⚠️  Dask failed, switching to multiprocessing")
             enzyme_results, enzyme_improvements = _run_validation_multiprocessing(
                 model_run, processed_df, chunks, medium_ex_inds, carbon_ex_inds,
-                objective_reaction, enzyme_upper_bound, n_workers, mode='enzyme', solver_name=solver_name
+                objective_reaction, enzyme_upper_bound, n_workers, mode='enzyme', solver_name=solver_name,
+                remove_knockout_enzyme=remove_knockout_enzyme
             )
 
     # Flatten results
@@ -1669,7 +1682,8 @@ def simulate_phenotype_parallel(
 
 
 def _run_validation_dask(model, processed_df, chunks, medium_ex_inds, carbon_ex_inds,
-                        objective_reaction, enzyme_upper_bound, n_workers, mode='baseline', solver_name='glpk'):
+                        objective_reaction, enzyme_upper_bound, n_workers, mode='baseline', solver_name='glpk',
+                        remove_knockout_enzyme=True):
     """Execute validation using Dask with HPC-friendly configuration."""
     import logging
     import tempfile
@@ -1695,7 +1709,8 @@ def _run_validation_dask(model, processed_df, chunks, medium_ex_inds, carbon_ex_
                 objective_reaction,
                 enzyme_upper_bound,
                 mode,
-                solver_name
+                solver_name,
+                remove_knockout_enzyme
             )
         )
 
@@ -1780,7 +1795,8 @@ def _run_validation_dask(model, processed_df, chunks, medium_ex_inds, carbon_ex_
 
 def _run_validation_multiprocessing(model, processed_df, chunks, medium_ex_inds,
                                     carbon_ex_inds, objective_reaction,
-                                    enzyme_upper_bound, n_workers, mode='baseline', solver_name='glpk'):
+                                    enzyme_upper_bound, n_workers, mode='baseline', solver_name='glpk',
+                                    remove_knockout_enzyme=True):
     """Execute validation using multiprocessing.Pool with progress tracking."""
     from functools import partial
     from multiprocessing import Pool
@@ -1796,7 +1812,8 @@ def _run_validation_multiprocessing(model, processed_df, chunks, medium_ex_inds,
         objective_reaction=objective_reaction,
         enzyme_upper_bound=enzyme_upper_bound,
         mode=mode,
-        solver_name=solver_name
+        solver_name=solver_name,
+        remove_knockout_enzyme=remove_knockout_enzyme
     )
 
     # Execute in parallel with progress tracking

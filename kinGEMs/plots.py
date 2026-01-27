@@ -7,7 +7,10 @@ including flux distributions, enzyme usage, and parameter optimization progress.
 
 import os
 
+import matplotlib
+import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
+from matplotlib.offsetbox import AnnotationBbox, TextArea, HPacker
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -16,6 +19,7 @@ from scipy.stats import pearsonr, spearmanr
 
 from .config import ensure_dir_exists
 
+matplotlib.use("Agg")
 
 # ============================================================================
 # GLOBAL PLOT CONFIGURATION
@@ -34,12 +38,12 @@ FVA_LEVEL_COLORS = {
 
 # Font sizes - Consistent across all plots
 FONT_SIZES = {
-    'title': 16,
-    'subtitle': 14,
-    'axis_label': 13,
-    'tick_label': 12,
-    'legend': 12,
-    'annotation': 10
+    'title': 18,
+    'subtitle': 16,
+    'axis_label': 15,
+    'tick_label': 14,
+    'legend': 14,
+    'annotation': 12
 }
 
 # Default figure settings
@@ -1164,7 +1168,7 @@ def plot_fva_ablation_violin(fva_results_dict, model_name, output_path=None,
             labels.append(label.replace('Level ', 'L').replace(': ', '\n'))
 
     # Create violin plot
-    parts = ax.violinplot(data_for_plot, positions=range(len(labels)), 
+    parts = ax.violinplot(data_for_plot, positions=range(len(labels)),
                          showmeans=True, showmedians=True, widths=0.7)
 
     # Color the violin plots
@@ -1186,11 +1190,11 @@ def plot_fva_ablation_violin(fva_results_dict, model_name, output_path=None,
     ax.set_xticks(range(len(labels)))
     ax.set_xticklabels(labels, rotation=45, ha='right', fontsize=FONT_SIZES['tick_label'])
     ax.set_ylabel('log₁₀(FVi)', fontsize=FONT_SIZES['axis_label'] + 2)
-    ax.set_title(f'{model_name}: Distribution of Flux Variability (FVi) by Constraint Level', 
+    ax.set_title(f'{model_name}: Distribution of Flux Variability (FVi) by Constraint Level',
                 fontsize=FONT_SIZES['title'], fontweight='bold')
     ax.grid(True, alpha=0.3, axis='y')
     ax.tick_params(axis='y', labelsize=FONT_SIZES['tick_label'])
-    
+
     # Add legend explaining violin plot elements
     from matplotlib.lines import Line2D
     legend_elements = [
@@ -1198,7 +1202,7 @@ def plot_fva_ablation_violin(fva_results_dict, model_name, output_path=None,
         Line2D([0], [0], color='black', linewidth=1.5, linestyle='--', label='Mean'),
     ]
     ax.legend(handles=legend_elements, loc='lower right', fontsize=FONT_SIZES['legend'])
-    
+
     plt.tight_layout()
     plt.subplots_adjust(bottom=0.15)
 
@@ -1333,7 +1337,7 @@ def generate_fva_ablation_summary_statistics(fva_results_dict, biomass_dict, out
         biomass = biomass_dict[label]
 
         # Flag reactions with high flux variability range (potential issues)
-        high_range_reactions = fvr >= 1000
+        high_range_reactions = fvr >= 1900
 
         # Additional metrics
         zero_flux_reactions = (fvi == 0).sum()
@@ -1356,7 +1360,7 @@ def generate_fva_ablation_summary_statistics(fva_results_dict, biomass_dict, out
             'Mean FVR': fvr.mean(),
             'Median FVR': fvr.median(),
             'Max FVR': fvr.max(),
-            '% High Range (FVR ≥ 1000)': high_range_reactions.sum() / len(fvr) * 100,
+            '% High Range (FVR ≥ 1900)': high_range_reactions.sum() / len(fvr) * 100,
             'N High Range Reactions': high_range_reactions.sum(),
             'N Zero Flux': zero_flux_reactions,
             'N High Variability': high_var_reactions
@@ -1571,3 +1575,819 @@ def plot_cumulative_fvi_distribution(fva_dataframes, labels, output_path=None,
         plt.show()
 
     return fig
+
+
+# ============================================================================
+# FLUXOMICS VALIDATION PLOTS
+# ============================================================================
+
+def _safe_ensure_dir_for_file(path: str | None) -> None:
+    """Ensure parent directory exists for a file path (no-op for None or cwd)."""
+    if not path:
+        return
+    out_dir = os.path.dirname(path)
+    if out_dir:
+        ensure_dir_exists(out_dir)
+
+
+def _order_models(models_data: dict[str, pd.DataFrame]):
+    """
+    Map raw model names to display labels and return an ordered list of (label, df).
+    Keeps a preferred order when present, then appends any extras.
+    """
+    model_label_map = {
+        'COBRA FVA': 'Baseline GEM',
+        'kinGEMs FVA (pre-tuning)': 'kinGEMs (Pre-Tuning)',
+        'kinGEMs FVA': 'kinGEMs (Post-Tuning)',
+    }
+    model_color_map = {
+        'Baseline GEM': '#1f77b4',
+        'kinGEMs (Pre-Tuning)': '#8c564b',
+        'kinGEMs (Post-Tuning)': '#e377c2',
+    }
+    preferred = ['Baseline GEM', 'kinGEMs (Pre-Tuning)', 'kinGEMs (Post-Tuning)']
+
+    # Map keys -> labels
+    mapped_items = []
+    for raw_name, df in models_data.items():
+        mapped_items.append((model_label_map.get(raw_name, raw_name), raw_name, df))
+
+    # Build order: preferred first (if present), then the rest (stable)
+    by_label = {label: (label, raw, df) for (label, raw, df) in mapped_items}
+    ordered = []
+    for p in preferred:
+        if p in by_label:
+            ordered.append((by_label[p][0], by_label[p][2]))
+
+    extras = [(label, df) for (label, raw, df) in mapped_items if label not in preferred]
+    ordered.extend(extras)
+
+    return ordered, model_color_map
+
+
+def plot_fva_mfa_comparison(
+    models_data: dict[str, pd.DataFrame],
+    split_charts: bool = True,
+    reactions_per_plot: int = 25,
+    output_path: str | None = None,
+    show: bool = True
+) -> None:
+    """
+    Compare MFA experimental ranges against FVA prediction ranges for multiple models.
+    Expects each df to contain: rxn_id, mfa_lb, mfa_ub, fva_lb, fva_ub (mfa_* can be NaN for some models).
+    """
+    set_plotting_style()
+
+    if not models_data:
+        raise ValueError("models_data is empty")
+
+    # master list from first df
+    primary_name = 'COBRA FVA' if 'COBRA FVA' in models_data else next(iter(models_data))
+    master_df = models_data[primary_name].copy()
+
+
+    required_master = {'rxn_id', 'mfa_lb', 'mfa_ub'}
+    missing = required_master - set(master_df.columns)
+    if missing:
+        raise ValueError(f"Master dataframe missing columns: {missing}")
+
+    master_df = master_df.dropna(subset=['mfa_lb', 'mfa_ub'])
+    all_reactions = master_df['rxn_id'].unique()
+
+    if len(all_reactions) == 0:
+        raise ValueError(
+            "No reactions left after dropping NaNs for MFA bounds. "
+            "Check that your comparison df has non-null mfa_lb/mfa_ub for the selected rxns."
+        )
+
+
+    ordered_models, model_color_map = _order_models(models_data)
+    num_models = len(ordered_models)
+
+    total_bars = num_models + 1  # +1 for MFA
+    step_size = 0.7 / total_bars
+    mfa_offset = -0.35 + step_size / 2
+    model_offsets = [mfa_offset + (i + 1) * step_size for i in range(num_models)]
+
+    # Chunking
+    chunks = [all_reactions]
+    if split_charts and len(all_reactions) > reactions_per_plot:
+        chunks = [all_reactions[i:i + reactions_per_plot]
+                  for i in range(0, len(all_reactions), reactions_per_plot)]
+        print(f"Splitting visualization into {len(chunks)} plots for readability.")
+
+    for chunk_idx, rxn_chunk in enumerate(chunks):
+        fig_height = len(rxn_chunk) * 0.5 + 2
+        fig, ax = plt.subplots(figsize=(12, fig_height))
+
+        for i, rxn in enumerate(rxn_chunk):
+            y_pos = i
+
+            # MFA range
+            row = master_df[master_df['rxn_id'] == rxn]
+            if row.empty:
+                continue
+            row0 = row.iloc[0]
+            mfa_lb = row0['mfa_lb']
+            mfa_ub = row0['mfa_ub']
+
+            ax.hlines(
+                y=y_pos + mfa_offset,
+                xmin=mfa_lb,
+                xmax=mfa_ub,
+                color='black',
+                linewidth=4,
+                alpha=0.85,
+                zorder=10,
+                label='MFA' if i == 0 else ""
+            )
+
+            # FVA ranges for each model
+            for model_idx, (label, df) in enumerate(ordered_models):
+                if 'rxn_id' not in df.columns or 'fva_lb' not in df.columns or 'fva_ub' not in df.columns:
+                    continue
+                model_row = df[df['rxn_id'] == rxn]
+                if model_row.empty:
+                    continue
+
+                fva_lb = model_row.iloc[0]['fva_lb']
+                fva_ub = model_row.iloc[0]['fva_ub']
+                y_offset = y_pos + model_offsets[model_idx]
+
+                ax.hlines(
+                    y=y_offset,
+                    xmin=fva_lb,
+                    xmax=fva_ub,
+                    color=model_color_map.get(label, '#777777'),
+                    linewidth=4,
+                    alpha=0.85,
+                    label=label if i == 0 else ""
+                )
+
+        # Formatting
+        ax.set_yticks(range(len(rxn_chunk)))
+        ax.set_yticklabels(rxn_chunk, fontsize=FONT_SIZES['tick_label'], fontfamily='monospace')
+        ax.invert_yaxis()
+        ax.set_xlabel('Flux (mmol/gDW/h)', fontsize=FONT_SIZES['axis_label'])
+        ax.set_title('MFA vs FVA Range Comparison', fontsize=FONT_SIZES['title'])
+        ax.grid(axis='x', linestyle='--', alpha=0.5)
+
+        # Custom legend (no duplicates)
+        handles = [mlines.Line2D([], [], color='black', linewidth=4, label='MFA')]
+        for label, _ in ordered_models:
+            handles.append(
+                mlines.Line2D([], [], color=model_color_map.get(label, '#777777'), linewidth=4, label=label)
+            )
+        ax.legend(handles=handles, loc='upper right', frameon=True, fontsize=FONT_SIZES['legend'])
+
+        plt.tight_layout()
+
+        # Save
+        if output_path:
+            base, ext = os.path.splitext(output_path)
+            ext = ext or ".png"
+            chunk_path = f"{base}_part{chunk_idx+1:02d}{ext}" if len(chunks) > 1 else output_path
+            _safe_ensure_dir_for_file(chunk_path)
+            fig.savefig(chunk_path, dpi=DEFAULT_DPI, bbox_inches="tight")  # <-- use fig.savefig
+
+        if show:
+            plt.show()
+        else:
+            plt.close(fig)
+
+
+def plot_fva_mfa_comparison_normalized(
+    models_data: dict[str, pd.DataFrame],
+    split_charts: bool = True,
+    reactions_per_plot: int = 25,
+    zoom_limit: float = 5.0,
+    output_path: str | None = None,
+    show: bool = True
+) -> None:
+    """
+    Normalized view centered on MFA midpoint.
+    x=0 is MFA midpoint, MFA always spans [-0.5, 0.5], FVA scaled by MFA width.
+    """
+    set_plotting_style()
+
+    if not models_data:
+        raise ValueError("models_data is empty")
+
+    primary_name = 'COBRA FVA' if 'COBRA FVA' in models_data else next(iter(models_data))
+    master_df = models_data[primary_name].copy()
+
+
+    required_master = {'rxn_id', 'mfa_lb', 'mfa_ub'}
+    missing = required_master - set(master_df.columns)
+    if missing:
+        raise ValueError(f"Master dataframe missing columns: {missing}")
+
+    master_df = master_df.dropna(subset=['mfa_lb', 'mfa_ub'])
+    all_reactions = master_df['rxn_id'].unique()
+
+    # Normalization factors per rxn
+    normalization_factors = {}
+    for rxn in all_reactions:
+        row = master_df[master_df['rxn_id'] == rxn]
+        if row.empty:
+            continue
+        row0 = row.iloc[0]
+        mfa_lb = float(row0['mfa_lb'])
+        mfa_ub = float(row0['mfa_ub'])
+        mfa_midpoint = (mfa_lb + mfa_ub) / 2.0
+        mfa_range = (mfa_ub - mfa_lb)
+
+        # Avoid explosion if MFA range ~ 0
+        norm_factor = mfa_range if abs(mfa_range) > 1e-6 else 1.0
+        normalization_factors[rxn] = {'factor': norm_factor, 'offset': mfa_midpoint}
+
+    ordered_models, model_color_map = _order_models(models_data)
+    num_models = len(ordered_models)
+
+    total_bars = num_models + 1
+    step_size = 0.8 / total_bars
+    mfa_offset = -0.4 + step_size / 2
+    model_offsets = [mfa_offset + (i + 1) * step_size for i in range(num_models)]
+
+    # Chunking
+    chunks = [all_reactions]
+    if split_charts and len(all_reactions) > reactions_per_plot:
+        chunks = [all_reactions[i:i + reactions_per_plot]
+                  for i in range(0, len(all_reactions), reactions_per_plot)]
+        print(f"Splitting visualization into {len(chunks)} plots.")
+
+    for chunk_idx, rxn_chunk in enumerate(chunks):
+        fig_height = len(rxn_chunk) * 0.5 + 2
+        fig, ax = plt.subplots(figsize=(12, fig_height))
+
+        for i, rxn in enumerate(rxn_chunk):
+            if rxn not in normalization_factors:
+                continue
+
+            y_pos = i
+            norm_factor = normalization_factors[rxn]['factor']
+            norm_offset = normalization_factors[rxn]['offset']
+
+            # MFA reference always [-0.5, 0.5]
+            ax.hlines(
+                y=y_pos + mfa_offset,
+                xmin=-0.5,
+                xmax=0.5,
+                color='black',
+                linewidth=5,
+                alpha=0.9,
+                zorder=20,
+                label='MFA Range' if i == 0 else ""
+            )
+            ax.plot(0, y_pos + mfa_offset, '|', color='white', markersize=10, zorder=21)
+
+            # Models (FVA normalized)
+            for model_idx, (label, df) in enumerate(ordered_models):
+                if 'rxn_id' not in df.columns or 'fva_lb' not in df.columns or 'fva_ub' not in df.columns:
+                    continue
+                model_row = df[df['rxn_id'] == rxn]
+                if model_row.empty:
+                    continue
+
+                fva_lb = float(model_row.iloc[0]['fva_lb'])
+                fva_ub = float(model_row.iloc[0]['fva_ub'])
+
+                fva_lb_norm = (fva_lb - norm_offset) / norm_factor
+                fva_ub_norm = (fva_ub - norm_offset) / norm_factor
+
+                # Clamp drawn segment to avoid huge off-screen lines
+                draw_min = max(fva_lb_norm, -zoom_limit * 1.5)
+                draw_max = min(fva_ub_norm,  zoom_limit * 1.5)
+
+                y_offset = y_pos + model_offsets[model_idx]
+                ax.hlines(
+                    y=y_offset,
+                    xmin=draw_min,
+                    xmax=draw_max,
+                    color=model_color_map.get(label, '#777777'),
+                    linewidth=4,
+                    alpha=0.75,
+                    label=label if i == 0 else ""
+                )
+
+        # Formatting
+        ax.set_xlim(-zoom_limit, zoom_limit)
+        ax.set_yticks(range(len(rxn_chunk)))
+        ax.set_yticklabels(rxn_chunk, fontsize=FONT_SIZES['tick_label'], fontfamily='monospace')
+        ax.invert_yaxis()
+        ax.set_xlabel('Normalized Deviation (Units of MFA Range Width)', fontsize=FONT_SIZES['axis_label'])
+        ax.set_title('MFA vs FVA: Normalized Deviations', fontsize=FONT_SIZES['title'])
+        ax.grid(axis='x', linestyle='--', alpha=0.5)
+
+        handles = [mlines.Line2D([], [], color='black', linewidth=5, label='MFA Range')]
+        for label, _ in ordered_models:
+            handles.append(mlines.Line2D([], [], color=model_color_map.get(label, '#777777'), linewidth=4, label=label))
+        ax.legend(handles=handles, loc='upper right', frameon=True, fontsize=FONT_SIZES['legend'])
+
+        plt.tight_layout()
+
+        # Save
+        if output_path:
+            base, ext = os.path.splitext(output_path)
+            ext = ext or ".png"
+            chunk_path = f"{base}_part{chunk_idx+1:02d}{ext}" if len(chunks) > 1 else output_path
+            _safe_ensure_dir_for_file(chunk_path)
+            plt.savefig(chunk_path, dpi=DEFAULT_DPI, bbox_inches='tight')
+
+        if show:
+            plt.show()
+        else:
+            plt.close(fig)
+def plot_fva_mfa_comparison_zoom_with_jaccard_table(
+    models_data: dict[str, pd.DataFrame],
+    rxn_ids: list[str] | None = None,
+    output_path: str | None = None,
+    show: bool = True
+) -> None:
+    """
+    Zoomed MFA vs FVA range comparison for a small set of reactions.
+
+    Adds I (intersection) and U (union) numeric labels to the right of each
+    Baseline/kinGEMs bar (not MFA), where I/U are computed between MFA interval
+    and the model's FVA interval.
+    """
+    set_plotting_style()
+
+    if not models_data:
+        raise ValueError("models_data is empty")
+
+    if rxn_ids is None:
+        rxn_ids = ["EX_ac_e", "PPCK", "ME1"]
+
+    primary_name = 'COBRA FVA' if 'COBRA FVA' in models_data else next(iter(models_data))
+    master_df = models_data[primary_name].copy()
+
+    required_master = {'rxn_id', 'mfa_lb', 'mfa_ub'}
+    missing = required_master - set(master_df.columns)
+    if missing:
+        raise ValueError(f"Master dataframe missing columns: {missing}")
+
+    master_df = master_df.dropna(subset=['mfa_lb', 'mfa_ub'])
+    present = set(master_df['rxn_id'].astype(str).unique())
+    rxn_ids = [r for r in rxn_ids if r in present]
+    if len(rxn_ids) == 0:
+        raise ValueError("None of the requested rxn_ids were found with valid MFA bounds in master_df.")
+
+    ordered_models, model_color_map = _order_models(models_data)
+    band_height = 1.35  # >1 = more space between reactions
+
+
+    # ---- Layout: each reaction gets its own "band" from y=i to y=i+1 ----
+    # Offsets relative to reaction center (top → bottom)
+    band_offsets = [0.30, 0.10, -0.10, -0.30]
+
+
+    fig_height = max(4.5, len(rxn_ids) * 1.1 + 1.5)
+    fig, ax = plt.subplots(figsize=(12, fig_height))
+
+    lw_mfa = 9
+    lw_fva = 9
+
+    # ---- I/U annotation styling ----
+    # Two colors for the values (pick any you like; these are readable on white)
+    inter_color = "#2ca02c"  # green
+    union_color = "#d62728"  # red
+
+    # Put the two labels slightly separated in x so they don't collide
+    # These are in "data" units, so small values may need smaller offsets.
+    # We'll compute offsets relative to the overall x-range later.
+    # Font size: reuse your annotation size but a bit smaller usually looks better
+    iu_fontsize = max(8, FONT_SIZES.get("annotation", 10) - 1)
+
+    def _interval_intersection_union(a_lb, a_ub, b_lb, b_ub):
+        """Return (intersection_length, union_length) for 1D closed intervals."""
+        inter = max(0.0, min(a_ub, b_ub) - max(a_lb, b_lb))
+        union = max(0.0, max(a_ub, b_ub) - min(a_lb, b_lb))
+        return inter, union
+
+    xmins, xmaxs = [], []
+
+    # We'll store pending text placements until we know xlim (for consistent offsets)
+    pending_labels = []  # list of dicts with keys: x_end, y, inter, union
+
+    for i, rxn in enumerate(rxn_ids):
+        row = master_df[master_df['rxn_id'] == rxn]
+        if row.empty:
+            continue
+        row0 = row.iloc[0]
+        mfa_lb = float(row0['mfa_lb'])
+        mfa_ub = float(row0['mfa_ub'])
+        xmins.append(mfa_lb); xmaxs.append(mfa_ub)
+
+        y_center = i * band_height + 0.5 * band_height
+
+        # MFA
+        ax.hlines(
+            y=y_center + band_offsets[0],
+            xmin=mfa_lb,
+            xmax=mfa_ub,
+            color='black',
+            linewidth=lw_mfa,
+            capstyle='round',
+            alpha=0.9,
+            zorder=10,
+            label='MFA' if i == 0 else ""
+        )
+
+        # FVA for models
+        for model_idx, (label, df) in enumerate(ordered_models):
+            if not {'rxn_id', 'fva_lb', 'fva_ub'}.issubset(df.columns):
+                continue
+            model_row = df[df['rxn_id'] == rxn]
+            if model_row.empty:
+                continue
+
+            fva_lb = float(model_row.iloc[0]['fva_lb'])
+            fva_ub = float(model_row.iloc[0]['fva_ub'])
+            xmins.append(fva_lb); xmaxs.append(fva_ub)
+
+            pos_idx = min(model_idx + 1, len(band_offsets) - 1)
+            y_line = y_center + band_offsets[pos_idx]
+
+
+            ax.hlines(
+                y=y_line,
+                xmin=fva_lb,
+                xmax=fva_ub,
+                color=model_color_map.get(label, '#777777'),
+                linewidth=lw_fva,
+                capstyle='round',
+                alpha=0.9,
+                label=label if i == 0 else ""
+            )
+
+            # ---- Compute I/U between MFA and this model's FVA interval ----
+            inter, union = _interval_intersection_union(mfa_lb, mfa_ub, fva_lb, fva_ub)
+
+            # Only label Baseline/Pre/Post bars (skip MFA; also skip any unexpected extra models)
+            # If you WANT to label every model, just delete this if-block.
+            wanted = {"Baseline GEM", "kinGEMs (Pre-Tuning)", "kinGEMs (Post-Tuning)"}
+            if label in wanted:
+                pending_labels.append({
+                    "x_end": fva_ub,
+                    "y": y_line,
+                    "inter": inter,
+                    "union": union
+                })
+
+    # ---- Y formatting ----
+    ax.set_yticks([i * band_height + 0.5 * band_height for i in range(len(rxn_ids))])
+    ax.set_yticklabels(rxn_ids, fontsize=FONT_SIZES['tick_label'], fontfamily='monospace')
+    ax.set_ylim(0, len(rxn_ids) * band_height)
+    ax.invert_yaxis()
+
+    for i in range(len(rxn_ids) + 1):
+        ax.axhline(i * band_height, color='black', linewidth=1, alpha=0.18, zorder=0)
+
+    # ---- X formatting ----
+    ax.set_xlabel('Flux (mmol/gDW/h)', fontsize=FONT_SIZES['axis_label'])
+    ax.set_title('MFA vs FVA Range Comparison', fontsize=FONT_SIZES['title'])
+    ax.grid(False)
+
+    # xlim start at 0, pad on right
+    if xmaxs:
+        xmax = max(xmaxs)
+        pad_data = 0.08 * xmax if xmax > 0 else 1.0
+        pad_text = 0.12 * xmax
+        ax.set_xlim(0, xmax + pad_data + pad_text)
+
+    # ---- Now place the I/U labels with consistent *pixel* spacing ----
+    # This avoids weird spacing when x-range is huge/small.
+    for item in pending_labels:
+        x_end = item["x_end"]
+        y = item["y"]
+        inter = item["inter"]
+        union = item["union"]
+
+        # Build a single packed label: "I=...  U=..."
+        t1 = TextArea(f"I={inter:.3g}", textprops=dict(color=inter_color, fontsize=iu_fontsize))
+        t2 = TextArea(f"  U={union:.3g}", textprops=dict(color=union_color, fontsize=iu_fontsize))
+        packed = HPacker(children=[t1, t2], align="center", pad=0, sep=2)
+
+        # Place label just to the right of bar end with a small fixed pixel offset
+        ab = AnnotationBbox(
+            packed,
+            (x_end, y),               # anchor at the bar end
+            xybox=(8, 0),             # 8 px to the right, centered vertically
+            xycoords="data",
+            boxcoords="offset points",
+            frameon=False,
+            box_alignment=(0, 0.5),   # left-middle of the packed text box
+            zorder=30
+        )
+        ax.add_artist(ab)
+
+
+    # ---- Main legend (ranges) ----
+    handles = [mlines.Line2D([], [], color='black', linewidth=lw_mfa, label='MFA')]
+    for label, _ in ordered_models:
+        handles.append(
+            mlines.Line2D([], [], color=model_color_map.get(label, '#777777'),
+                          linewidth=lw_fva, label=label)
+        )
+    leg1 = ax.legend(handles=handles, loc='upper right', frameon=True, fontsize=FONT_SIZES['legend'])
+
+    # ---- Bottom-right legend for I/U label colors ----
+    iu_handles = [
+        mlines.Line2D([], [], color=inter_color, linewidth=6, label="I = intersection"),
+        mlines.Line2D([], [], color=union_color, linewidth=6, label="U = union"),
+    ]
+    leg2 = ax.legend(handles=iu_handles, loc="lower right", frameon=True, fontsize=FONT_SIZES['legend'])
+    ax.add_artist(leg1)  # keep both legends
+
+    plt.tight_layout()
+
+    if output_path:
+        _safe_ensure_dir_for_file(output_path)
+        fig.savefig(output_path, dpi=DEFAULT_DPI, bbox_inches="tight")
+
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
+
+
+
+def plot_jaccard_index_comparison(
+    jaccard_indices: list[float],
+    zero_overlaps: list[int],
+    model_names: list[str] | None = None,
+    output_path: str | None = None,
+    show: bool = True,
+    n_total: list[int] | None = None
+) -> None:
+    set_plotting_style()
+
+    if model_names is None:
+        model_names = [f"Model {i+1}" for i in range(len(jaccard_indices))]
+
+    if not (len(jaccard_indices) == len(zero_overlaps) == len(model_names)):
+        raise ValueError("jaccard_indices, zero_overlaps, and model_names must have same length")
+
+    if n_total is not None and len(n_total) != len(model_names):
+        raise ValueError("n_total must be None or have the same length as model_names")
+
+    model_label_map = {
+        "COBRA FVA": "Baseline GEM",
+        "kinGEMs FVA (pre-tuning)": "kinGEMs (Pre-Tuning)",
+        "kinGEMs FVA": "kinGEMs (Post-Tuning)",
+        "COBRA FVA (pre-tuning)": "Baseline GEM (Pre-Tuning Cobra)",
+    }
+    model_color_map = {
+        "Baseline GEM": "#1f77b4",
+        "Baseline GEM (Pre-Tuning Cobra)": "#1f77b4",
+        "kinGEMs (Pre-Tuning)": "#8c564b",
+        "kinGEMs (Post-Tuning)": "#e377c2",
+    }
+
+    mapped_names = [model_label_map.get(n, n) for n in model_names]
+
+    # ---- Deduplicate labels after mapping (keep first occurrence) ----
+    seen = set()
+    keep_idx = []
+    for i, name in enumerate(mapped_names):
+        if name in seen:
+            continue
+        seen.add(name)
+        keep_idx.append(i)
+
+    if len(keep_idx) != len(mapped_names):
+        dropped = [mapped_names[i] for i in range(len(mapped_names)) if i not in keep_idx]
+        print(
+            "[plot_jaccard_index_comparison] Warning: duplicate model labels after mapping. "
+            f"Dropping duplicates: {dropped}"
+        )
+
+    mapped_names = [mapped_names[i] for i in keep_idx]
+    jaccard_indices = [float(jaccard_indices[i]) for i in keep_idx]
+    zero_overlaps = [int(zero_overlaps[i]) for i in keep_idx]
+    if n_total is not None:
+        n_total = [int(n_total[i]) for i in keep_idx]
+
+    # ---- Enforce canonical left-to-right order ----
+    desired_order = ["Baseline GEM", "kinGEMs (Pre-Tuning)", "kinGEMs (Post-Tuning)"]
+    order_index = {name: i for i, name in enumerate(desired_order)}
+    sort_idx = sorted(range(len(mapped_names)), key=lambda i: order_index.get(mapped_names[i], 999))
+
+    mapped_names = [mapped_names[i] for i in sort_idx]
+    jaccard_indices = [jaccard_indices[i] for i in sort_idx]
+    zero_overlaps = [zero_overlaps[i] for i in sort_idx]
+    if n_total is not None:
+        n_total = [n_total[i] for i in sort_idx]
+
+    # Colors
+    default_colors = ["#1f77b4", "#8c564b", "#e377c2", "#2ca02c", "#d62728", "#9467bd", "#7f7f7f"]
+    bar_colors = [
+        model_color_map.get(name, default_colors[i % len(default_colors)])
+        for i, name in enumerate(mapped_names)
+    ]
+
+    x = np.arange(len(mapped_names))
+
+    # ---- Layout: equal-sized subplots ----
+    fig_w = max(9, 1.9 * len(mapped_names) + 6)
+    fig_h = 6.2
+    fig, (ax_j, ax_z) = plt.subplots(
+        1, 2,
+        figsize=(fig_w, fig_h),
+        sharex=True  # ensures identical x scaling & bar spacing
+    )
+
+    bar_w = 0.55
+
+    # Left: mean Jaccard
+    bars_j = ax_j.bar(
+        x, jaccard_indices, width=bar_w, color=bar_colors, alpha=0.85,
+        edgecolor="black", linewidth=1
+    )
+    ax_j.set_ylabel("Mean Jaccard Index (↑ better)", fontsize=FONT_SIZES["axis_label"])
+    ax_j.set_xticks([])
+    ax_j.grid(axis="y", linestyle="--", alpha=0.3)
+
+    max_j = max(jaccard_indices) if jaccard_indices else 1.0
+    y_max = max(0.05, max_j * 1.25)
+    ax_j.set_ylim(0, y_max)
+
+    for bar in bars_j:
+        h = bar.get_height()
+        ax_j.text(
+            bar.get_x() + bar.get_width() / 2,
+            h,
+            f"{h:.3f}",
+            ha="center",
+            va="bottom",
+            fontsize=FONT_SIZES["annotation"]
+        )
+
+    # Right: zero overlaps
+    bars_z = ax_z.bar(
+        x, zero_overlaps, width=bar_w, color=bar_colors, alpha=0.85,
+        edgecolor="black", linewidth=1
+    )
+    ax_z.set_ylabel("# Reaction with No Overlap (↓ better)", fontsize=FONT_SIZES["axis_label"])
+    ax_z.set_xticks([])
+    ax_z.grid(axis="y", linestyle="--", alpha=0.3)
+
+    max_z = max(zero_overlaps) if zero_overlaps else 1
+    ax_z.set_ylim(0, max(1, int(max_z * 1.15) + 1))
+
+    for bar in bars_z:
+        h = bar.get_height()
+        ax_z.text(
+            bar.get_x() + bar.get_width() / 2,
+            h,
+            f"{int(h)}",
+            ha="center",
+            va="bottom",
+            fontsize=FONT_SIZES["annotation"]
+        )
+
+    # ---- Figure-level title (over both subplots) ----
+    title_n = None
+    if n_total is not None and len(n_total) > 0 and all(v == n_total[0] for v in n_total):
+        title_n = n_total[0]
+    fig.suptitle(
+        f"Over {title_n} Reactions" if title_n is not None else "Over Reactions",
+        fontsize=FONT_SIZES["subtitle"],
+        y=0.85  # lower and visually centered
+    )
+
+
+    # Tight layout with room for suptitle; no legend
+    plt.tight_layout(rect=[0, 0, 1, 0.9])
+
+    if output_path:
+        _safe_ensure_dir_for_file(output_path)
+        plt.savefig(output_path, dpi=DEFAULT_DPI, bbox_inches="tight")
+
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
+
+
+
+
+def plot_jaccard_index_comparison_overlapping(
+    jaccard_dfs: list[pd.DataFrame],
+    model_names: list[str] | None = None,
+    output_path: str | None = None,
+    show: bool = True
+) -> None:
+    """
+    Plot bar chart of mean Jaccard index for only overlapping reactions (J > 0).
+    Title includes number of overlapping reactions (per model).
+    Deduplicates labels AFTER mapping (keeps first).
+    Auto-scales y-axis to plotted values.
+    """
+    set_plotting_style()
+
+    if model_names is None:
+        model_names = [f"Model {i+1}" for i in range(len(jaccard_dfs))]
+
+    if len(model_names) != len(jaccard_dfs):
+        raise ValueError("model_names and jaccard_dfs must have the same length")
+
+    # Compute overlapping-only stats
+    mean_jaccards: list[float] = []
+    n_overlapping: list[int] = []
+    for df in jaccard_dfs:
+        if "jaccard" not in df.columns:
+            raise ValueError("Each dataframe in jaccard_dfs must contain a 'jaccard' column")
+        overlapping = df[df["jaccard"] > 0]
+        mean_jaccards.append(float(overlapping["jaccard"].mean()) if not overlapping.empty else 0.0)
+        n_overlapping.append(int(len(overlapping)))
+
+    model_label_map = {
+        "COBRA FVA": "Baseline GEM",
+        "kinGEMs FVA (pre-tuning)": "kinGEMs (Pre-Tuning)",
+        "kinGEMs FVA": "kinGEMs (Post-Tuning)",
+        # Optional if you add this upstream:
+        "COBRA FVA (pre-tuning)": "Baseline GEM (Pre-Tuning Cobra)",
+    }
+    model_color_map = {
+        "Baseline GEM": "#1f77b4",
+        "Baseline GEM (Pre-Tuning Cobra)": "#1f77b4",
+        "kinGEMs (Pre-Tuning)": "#8c564b",
+        "kinGEMs (Post-Tuning)": "#e377c2",
+    }
+
+    mapped_names = [model_label_map.get(n, n) for n in model_names]
+
+    # ---- Deduplicate labels after mapping (keep first occurrence) ----
+    seen = set()
+    keep_idx = []
+    for i, name in enumerate(mapped_names):
+        if name in seen:
+            continue
+        seen.add(name)
+        keep_idx.append(i)
+
+    if len(keep_idx) != len(mapped_names):
+        dropped = [mapped_names[i] for i in range(len(mapped_names)) if i not in keep_idx]
+        print(
+            "[plot_jaccard_index_comparison_overlapping] Warning: duplicate model labels after mapping. "
+            f"Dropping duplicates: {dropped}"
+        )
+
+    mapped_names = [mapped_names[i] for i in keep_idx]
+    mean_jaccards = [mean_jaccards[i] for i in keep_idx]
+    n_overlapping = [n_overlapping[i] for i in keep_idx]
+
+    # Colors
+    default_colors = ["#1f77b4", "#8c564b", "#e377c2", "#2ca02c", "#d62728", "#9467bd", "#7f7f7f"]
+    bar_colors = [
+        model_color_map.get(name, default_colors[i % len(default_colors)])
+        for i, name in enumerate(mapped_names)
+    ]
+
+    x = np.arange(len(mapped_names))
+    fig, ax = plt.subplots(figsize=DEFAULT_FIGSIZE_SINGLE)
+    bars = ax.bar(x, mean_jaccards, color=bar_colors, alpha=0.85, edgecolor="black", linewidth=1)
+
+    ax.set_ylabel("Mean Jaccard Index (overlapping only) (↑ better)", fontsize=FONT_SIZES["axis_label"])
+    ax.grid(axis="y", linestyle="--", alpha=0.3)
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(mapped_names, fontsize=FONT_SIZES["tick_label"])
+
+    # ---- Auto-scale y axis to values ----
+    max_j = max(mean_jaccards) if mean_jaccards else 1.0
+    y_max = max(0.05, max_j * 1.25)  # headroom, avoids a flat axis
+    ax.set_ylim(0, y_max)
+
+    # Title with n (overlapping counts)
+    n_str = (
+        f" (n={n_overlapping[0]})"
+        if all(v == n_overlapping[0] for v in n_overlapping)
+        else " (n=" + ", ".join(str(v) for v in n_overlapping) + ")"
+    )
+    ax.set_title(f"Mean Jaccard Index (Overlapping Only){n_str}", fontsize=FONT_SIZES["subtitle"])
+
+    # Annotate bars
+    for bar in bars:
+        height = bar.get_height()
+        ax.text(
+            bar.get_x() + bar.get_width() / 2.0,
+            height,
+            f"{height:.3f}",
+            ha="center",
+            va="bottom",
+            fontsize=FONT_SIZES["annotation"],
+        )
+
+    plt.tight_layout()
+
+    if output_path:
+        _safe_ensure_dir_for_file(output_path)
+        plt.savefig(output_path, dpi=DEFAULT_DPI, bbox_inches="tight")
+
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)

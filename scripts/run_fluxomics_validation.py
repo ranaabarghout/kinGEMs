@@ -4,10 +4,10 @@ kinGEMs Fluxomics Validation Pipeline Script
 ============================================
 
 This script provides a pipeline for validating a genome-scale metabolic model (GEM)
-against experimental fluxomics data. 
+against experimental fluxomics data.
 
-The experimental data comes from the study of Crown et al. (2015). It corresponds to 
-measured metabolic fluxes using 13C metabolic flux analysis (13C-MFA). The studied 
+The experimental data comes from the study of Crown et al. (2015). It corresponds to
+measured metabolic fluxes using 13C metabolic flux analysis (13C-MFA). The studied
 organism was a W3110 strain of E. coli, grown on M9 media.
 
 ============================================
@@ -18,40 +18,53 @@ The script will:
 2. Adjust the model to match the experimental conditions
 3. Run FVA simulations
 4. Match the simulated fluxes with the experimental fluxes
-5. Calculate metrics of: 
-    - consistency score, 
-    - range precision ratio, 
-    - normalized Euclidean distance, 
+5. Calculate metrics of:
+    - consistency score,
+    - range precision ratio,
+    - normalized Euclidean distance,
     - Jaccard index
 6. Return the plots for:
     - FVA vs 13C-MFA flux range comparison
     - Jaccard index comparison
 
-(Optionally) The script can also be used to provide existing FVA results 
+(Optionally) The script can also be used to provide existing FVA results
 to skip steps 1-3.
 
 ============================================
 
 Usage:
     python scripts/run_fluxomics_validation.py <config_file> <experimental_data_file>
-    
+
     (example command)
     python scripts/run_fluxomics_validation.py \
         configs/fluxomics_iML1515_GEM.json \
         data/experimental/crown_fluxomics_final.csv
-    
+
 Usage providing existing FVA results:
     python scripts/run_fluxomics_validation.py <experimental_data_file> <fva_results_file(s)>
-    
+
     (example command)
     python scripts/run_fluxomics_validation.py \
         data/experimental/crown_fluxomics_final.csv \
         results/tuning_results/iML1515_GEM_<run_name>/iML1515_GEM_fva_results.csv
 
+Usage to regenerate analysis on existing results folder:
+    python scripts/run_fluxomics_validation.py --regenerate_results <results_folder> [experimental_data_file]
+
+    (example command - uses default experimental data from config)
+    python scripts/run_fluxomics_validation.py --regenerate_results \
+        results/fluxomics_validation/iML1515_GEM_20260126_6698
+
+    (example command - specify experimental data file)
+    python scripts/run_fluxomics_validation.py --regenerate_results \
+        results/fluxomics_validation/iML1515_GEM_20260126_6698 \
+        data/raw/crown_fluxomics_final.csv
+
 Arguments:
     config_file: Path to JSON configuration file
     experimental_data_file: Path to the CSV file with experimental fluxomics data
     fva_results_file(s): Path to the CSV file(s) with FVA results
+    --regenerate_results: Flag to regenerate analysis on existing results folder
 """
 
 from __future__ import annotations
@@ -65,7 +78,18 @@ import random
 import sys
 from typing import Dict
 
+import numpy as np
 import pandas as pd
+
+# ============================================================================
+# REPRODUCIBILITY: Set fixed random seeds for deterministic results
+# ============================================================================
+# These seeds ensure that random operations produce the same results
+# across different systems and runs. For non-reproducible behavior,
+# comment out these lines or set PYTHONHASHSEED=0 at runtime.
+random.seed(42)
+np.random.seed(42)
+# ============================================================================
 
 # Add parent directory to Python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -77,9 +101,13 @@ from kinGEMs.fluxomics_validation import (
     calculate_range_precision_ratio,
     calculate_normalized_euclidean_dist,
     calculate_jaccard_index,
+)
+from kinGEMs.plots import (
     plot_fva_mfa_comparison,
+    plot_fva_mfa_comparison_zoom_with_jaccard_table,
     plot_fva_mfa_comparison_normalized,
     plot_jaccard_index_comparison,
+    plot_jaccard_index_comparison_overlapping
 )
 
 # Import pipeline core function (only used when running with config)
@@ -143,7 +171,7 @@ def run_fluxomics_analysis(
 ) -> None:
     """
     Run fluxomics validation analysis (steps 4-6).
-    
+
     Parameters
     ----------
     fva_specs : list[FVAResultSpec]
@@ -174,6 +202,7 @@ def run_fluxomics_analysis(
     metrics_summary = []
 
     # Step 4: Match simulated fluxes with experimental fluxes
+    n_total_list = []
     for spec in fva_specs:
         logger.info("Processing FVA source: %s", spec.label)
         label_slug = sanitize_label(spec.label)
@@ -200,6 +229,7 @@ def run_fluxomics_analysis(
         range_precision_ratio = calculate_range_precision_ratio(comparison_df)
         normalized_euclidean_dist = calculate_normalized_euclidean_dist(comparison_df)
         jaccard_index, jaccard_df, zero_overlaps = calculate_jaccard_index(comparison_df)
+        n_total_list.append(len(jaccard_df))
 
         # Save detailed results
         range_precision_path = os.path.join(analysis_dir, f"range_precision_ratio_{label_slug}.csv")
@@ -232,14 +262,28 @@ def run_fluxomics_analysis(
     jaccard_indices = [info[1] for info in jaccard_info]
     zero_overlaps_list = [info[2] for info in jaccard_info]
     jaccard_plot_path = os.path.join(analysis_dir, "jaccard_index_comparison.png")
+
+
     plot_jaccard_index_comparison(
         jaccard_indices=jaccard_indices,
         zero_overlaps=zero_overlaps_list,
         model_names=model_names,
         output_path=jaccard_plot_path,
-        show=show_plots
+        show=show_plots,
+        n_total=n_total_list
     )
     logger.info("Saved Jaccard index comparison plot: %s", jaccard_plot_path)
+
+    # Overlapping-only Jaccard plot
+    jaccard_dfs = [info[3] for info in jaccard_info]
+    jaccard_overlap_plot_path = os.path.join(analysis_dir, "jaccard_index_comparison_overlapping.png")
+    plot_jaccard_index_comparison_overlapping(
+        jaccard_dfs=jaccard_dfs,
+        model_names=model_names,
+        output_path=jaccard_overlap_plot_path,
+        show=show_plots
+    )
+    logger.info("Saved Jaccard index (overlapping only) plot: %s", jaccard_overlap_plot_path)
 
     # Use first model's Jaccard ranking to select top reactions
     ref_label, _, _, ref_jaccard_df = jaccard_info[0]
@@ -262,6 +306,17 @@ def run_fluxomics_analysis(
     )
     logger.info("Saved FVA vs MFA comparison plot: %s", fva_plot_path)
 
+    rxn_ids=["EX_ac_e", "PPC", "MALS"]
+    zoom_plot_path = os.path.join(analysis_dir, f"fva_mfa_comparison_zoom_{rxn_ids[0]}_{rxn_ids[1]}_{rxn_ids[2]}.png")
+    plot_fva_mfa_comparison_zoom_with_jaccard_table(
+        models_data=comparison_dfs,  # IMPORTANT: use full comparison_dfs (has MFA columns)
+        rxn_ids=rxn_ids,
+        output_path=zoom_plot_path,
+        show=show_plots
+    )
+    logger.info("Saved zoomed MFA vs FVA plot with intersection/union table: %s", zoom_plot_path)
+
+
     fva_plot_norm_path = os.path.join(analysis_dir, "fva_mfa_comparison_normalized.png")
     plot_fva_mfa_comparison_normalized(
         models_data=filtered_models,
@@ -278,6 +333,105 @@ def main() -> None:
         print(__doc__)
         sys.exit(1)
 
+    # Setup paths
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+    # =========================================================================
+    # REGENERATE RESULTS MODE: Regenerate analysis from existing results folder
+    # =========================================================================
+    if sys.argv[1] == "--regenerate_results":
+        if len(sys.argv) < 3:
+            print("Error: --regenerate_results requires a results folder path")
+            print("Usage: python scripts/run_fluxomics_validation.py --regenerate_results <results_folder> [experimental_data_file]")
+            sys.exit(1)
+
+        results_dir = os.path.abspath(sys.argv[2])
+        if not os.path.isdir(results_dir):
+            raise ValueError(f"Results folder not found: {results_dir}")
+
+        # Check for pipeline_results subfolder (indicates full pipeline run)
+        pipeline_dir = os.path.join(results_dir, "pipeline_results")
+        analysis_dir = os.path.join(results_dir, "fluxomics_analysis")
+
+        # Default experimental data file (can be overridden)
+        experimental_data_file = os.path.join(project_root, "data", "raw", "crown_fluxomics_final.csv")
+        if len(sys.argv) > 3:
+            experimental_data_file = sys.argv[3]
+
+        if not os.path.exists(experimental_data_file):
+            raise ValueError(f"Experimental data file not found: {experimental_data_file}")
+
+        # Find FVA result files
+        fva_specs = []
+        if os.path.isdir(pipeline_dir):
+            # Look for FVA files in pipeline_results
+            fva_patterns = [
+                ("COBRA FVA", "_cobra_fva_results.csv"),
+                ("kinGEMs FVA (pre-tuning)", "_pre_tuning_fva_results.csv"),
+                ("kinGEMs FVA", "_fva_results.csv"),  # Must come after pre_tuning to avoid matching it
+            ]
+
+            for filename in os.listdir(pipeline_dir):
+                if filename.endswith(".csv"):
+                    filepath = os.path.join(pipeline_dir, filename)
+                    for label, pattern in fva_patterns:
+                        if pattern in filename:
+                            # Avoid duplicate matches (e.g., pre_tuning should not match regular fva)
+                            if pattern == "_fva_results.csv" and "_pre_tuning_" in filename:
+                                continue
+                            if pattern == "_fva_results.csv" and "_cobra_" in filename:
+                                continue
+                            fva_specs.append(FVAResultSpec(label=label, path=filepath))
+                            break
+        else:
+            # Direct mode: look for FVA files in results_dir itself
+            analysis_dir = results_dir
+            for filename in os.listdir(results_dir):
+                if filename.endswith("_fva_results.csv") or filename.endswith("fva.csv"):
+                    filepath = os.path.join(results_dir, filename)
+                    label = os.path.basename(filename).replace(".csv", "")
+                    fva_specs.append(FVAResultSpec(label=label, path=filepath))
+
+        if not fva_specs:
+            raise ValueError(f"No FVA result files found in {results_dir}")
+
+        # Clear and recreate analysis directory
+        os.makedirs(analysis_dir, exist_ok=True)
+
+        # Setup logging
+        run_id = os.path.basename(results_dir)
+        logger = setup_logging(results_dir, log_name="regenerate_results.log")
+
+        logger.info("=== kinGEMs Fluxomics Validation (REGENERATE RESULTS MODE) ===")
+        logger.info("Results directory: %s", results_dir)
+        logger.info("Experimental data: %s", experimental_data_file)
+        logger.info("Found %d FVA result files:", len(fva_specs))
+        for spec in fva_specs:
+            logger.info("  - %s: %s", spec.label, spec.path)
+
+        # Default settings for regenerate_results
+        mfa_columns = ["rxn_id", "exp_flux_lb", "exp_flux_ub"]
+        top_jaccard_reactions = 15
+        show_plots = False
+
+        # Run fluxomics analysis
+        run_fluxomics_analysis(
+            fva_specs=fva_specs,
+            experimental_data_file=experimental_data_file,
+            analysis_dir=analysis_dir,
+            logger=logger,
+            mfa_columns=mfa_columns,
+            top_jaccard_reactions=top_jaccard_reactions,
+            show_plots=show_plots
+        )
+
+        logger.info("=== Fluxomics Validation Regenerate Results Complete ===")
+        logger.info("Results saved to: %s", analysis_dir)
+        return
+
+    # =========================================================================
+    # STANDARD MODE: Config file or CSV-only
+    # =========================================================================
     config_path = sys.argv[1]
     use_config = config_path.lower().endswith(".json")
     config = load_config(config_path) if use_config else {}
@@ -299,9 +453,6 @@ def main() -> None:
     mfa_columns = fluxomics_cfg.get("mfa_columns", ["rxn_id", "exp_flux_lb", "exp_flux_ub"])
     top_jaccard_reactions = fluxomics_cfg.get("top_jaccard_reactions", 15)
     show_plots = fluxomics_cfg.get("show_plots", False)
-
-    # Setup paths
-    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
     # Handle CSV-only mode (no config, just FVA result files)
     fva_specs = []

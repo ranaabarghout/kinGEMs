@@ -1,0 +1,11 @@
+2026-01-23 08:18:36.842 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+Traceback (most recent call last):
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_validation_parallel.py", line 37, in <module>
+    from kinGEMs.config import ECOLI_VALIDATION_DIR
+  File "/project/6000502/ranaab/kinGEMs_v2/kinGEMs/__init__.py", line 25, in <module>
+    from .modeling import flux_variability_analysis, run_optimization, simulated_annealing
+  File "/project/6000502/ranaab/kinGEMs_v2/kinGEMs/modeling/__init__.py", line 3, in <module>
+    from .tuning import simulated_annealing
+  File "/project/6000502/ranaab/kinGEMs_v2/kinGEMs/modeling/tuning.py", line 21, in <module>
+    from ..plots import plot_annealing_progress
+ImportError: cannot import name 'plot_annealing_progress' from 'kinGEMs.plots' (/project/6000502/ranaab/kinGEMs_v2/kinGEMs/plots.py)

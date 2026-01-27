@@ -2185,14 +2185,46 @@ def main():
     print(f"  ✓ Loaded experimental: {experimental.shape}")
 
     baseline_GEM = load_results(args.input, 'baseline')
-    pretuning_GEM = load_results(args.input, 'pre_tuning')
-    posttuning_GEM = load_results(args.input, 'post_tuning')
+
+    # Try loading pre-tuning (may be single variant or enzyme variants)
+    pretuning_GEM = load_results(args.input, 'pretuning')
+    pretuning_enzyme_removed = None
+    pretuning_enzyme_kept = None
+    try:
+        pretuning_enzyme_removed = np.load(os.path.join(args.input, 'pretuning_GEM_enzyme_removed.npy'))
+        print(f"  ✓ Loaded pre-tuning enzyme removed: {pretuning_enzyme_removed.shape}")
+    except FileNotFoundError:
+        pass
+    try:
+        pretuning_enzyme_kept = np.load(os.path.join(args.input, 'pretuning_GEM_enzyme_kept.npy'))
+        print(f"  ✓ Loaded pre-tuning enzyme kept: {pretuning_enzyme_kept.shape}")
+    except FileNotFoundError:
+        pass
+
+    # Try loading post-tuning (may be single variant or enzyme variants)
+    posttuning_GEM = load_results(args.input, 'posttuning')
+    posttuning_enzyme_removed = None
+    posttuning_enzyme_kept = None
+    try:
+        posttuning_enzyme_removed = np.load(os.path.join(args.input, 'posttuning_GEM_enzyme_removed.npy'))
+        print(f"  ✓ Loaded post-tuning enzyme removed: {posttuning_enzyme_removed.shape}")
+    except FileNotFoundError:
+        pass
+    try:
+        posttuning_enzyme_kept = np.load(os.path.join(args.input, 'posttuning_GEM_enzyme_kept.npy'))
+        print(f"  ✓ Loaded post-tuning enzyme kept: {posttuning_enzyme_kept.shape}")
+    except FileNotFoundError:
+        pass
 
     # Load model-specific wild-type growth (needed for fitness-based correlations)
     # Each model has its own wild-type growth WITH appropriate constraints
     baseline_wildtype = load_wild_type_growth(args.input, 'baseline')
     pretuning_wildtype = load_wild_type_growth(args.input, 'pretuning')
+    pretuning_wildtype_enzyme_removed = load_wild_type_growth(args.input, 'pretuning_enzyme_removed') if pretuning_enzyme_removed is not None else None
+    pretuning_wildtype_enzyme_kept = load_wild_type_growth(args.input, 'pretuning_enzyme_kept') if pretuning_enzyme_kept is not None else None
     posttuning_wildtype = load_wild_type_growth(args.input, 'posttuning')
+    posttuning_wildtype_enzyme_removed = load_wild_type_growth(args.input, 'posttuning_enzyme_removed') if posttuning_enzyme_removed is not None else None
+    posttuning_wildtype_enzyme_kept = load_wild_type_growth(args.input, 'posttuning_enzyme_kept') if posttuning_enzyme_kept is not None else None
 
     # Load metadata
     baseline_meta = load_metadata(args.input, 'baseline')
@@ -2227,7 +2259,11 @@ def main():
     models = [
         ('Baseline GEM', baseline_GEM, baseline_wildtype),
         ('Pre-tuning kinGEMs', pretuning_GEM, pretuning_wildtype),
-        ('Post-tuning kinGEMs', posttuning_GEM, posttuning_wildtype)
+        ('Pre-tuning kinGEMs (Enzyme Removed)', pretuning_enzyme_removed, pretuning_wildtype_enzyme_removed),
+        ('Pre-tuning kinGEMs (Enzyme Kept)', pretuning_enzyme_kept, pretuning_wildtype_enzyme_kept),
+        ('Post-tuning kinGEMs', posttuning_GEM, posttuning_wildtype),
+        ('Post-tuning kinGEMs (Enzyme Removed)', posttuning_enzyme_removed, posttuning_wildtype_enzyme_removed),
+        ('Post-tuning kinGEMs (Enzyme Kept)', posttuning_enzyme_kept, posttuning_wildtype_enzyme_kept),
     ]
 
     for model_name, model_data, model_wt in models:

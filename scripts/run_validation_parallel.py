@@ -271,6 +271,19 @@ def main():
     parser.add_argument('--config', required=True, help='Path to configuration JSON file')
     parser.add_argument('--output', required=True, help='Output directory for results')
 
+    # Enzyme constraint options (mutually exclusive)
+    enzyme_group = parser.add_mutually_exclusive_group()
+    enzyme_group.add_argument('--keep-enzyme-constraints', action='store_true',
+                       help='Keep enzyme constraints for knocked-out genes (immediate knockout effect). '
+                            'By default, enzyme constraints are removed when a gene is knocked out, '
+                            'which frees protein pool capacity. Use this flag to model total knockout '
+                            'with no proteome reallocation (enzyme cost is locked in/wasted).')
+    enzyme_group.add_argument('--remove-knockout-enzyme', action='store_true',
+                       help='Explicitly remove enzyme constraints for knocked-out genes (proteome reallocation). '
+                            'This is the DEFAULT behavior. Use this flag for clarity when enzyme removal is intended. '
+                            'When a gene is knocked out, its enzyme constraint is removed and protein pool is freed '
+                            'for other reactions (may result in slight growth improvements).')
+
     args = parser.parse_args()
 
     # Load configuration
@@ -294,6 +307,12 @@ def main():
     parallel_method = parallel_config.get('method', 'dask')
     chunk_size = parallel_config.get('chunk_size', None)
 
+    # Enzyme constraint handling
+    # When True, enzyme constraints are REMOVED for knocked-out genes (default behavior)
+    # When False, enzyme constraints are KEPT even for knocked-out genes (--keep-enzyme-constraints flag)
+    # The --remove-knockout-enzyme flag explicitly enables removal (same as default)
+    remove_knockout_enzyme = not args.keep_enzyme_constraints
+
     # Create output directory
     os.makedirs(args.output, exist_ok=True)
 
@@ -304,6 +323,15 @@ def main():
     print(f"Mode: {args.mode}")
     print(f"Output: {args.output}")
     print(f"Parallel: {use_parallel} ({parallel_method} with {n_workers or 'auto'} workers)")
+    if args.keep_enzyme_constraints:
+        print(f"Enzyme constraints: KEPT for knocked-out genes (--keep-enzyme-constraints)")
+        print(f"                   → Immediate knockout effect (no proteome reallocation)")
+    elif args.remove_knockout_enzyme:
+        print(f"Enzyme constraints: REMOVED for knocked-out genes (--remove-knockout-enzyme)")
+        print(f"                   → Proteome reallocation enabled (may show growth improvements)")
+    else:
+        print(f"Enzyme constraints: REMOVED for knocked-out genes (default)")
+        print(f"                   → Proteome reallocation enabled (may show growth improvements)")
     print("="*70)
 
     # === Step 1: Load Model ===
@@ -497,7 +525,8 @@ def main():
                 chunk_size=chunk_size,
                 method=parallel_method,
                 skip_baseline=True,
-                solver_name=solver_name if solver_name else 'glpk'
+                solver_name=solver_name if solver_name else 'glpk',
+                remove_knockout_enzyme=remove_knockout_enzyme
             )
         else:
             print("Running SEQUENTIAL pre-tuning validation...")
@@ -557,7 +586,8 @@ def main():
                 chunk_size=chunk_size,
                 method=parallel_method,
                 skip_baseline=True,
-                solver_name=solver_name if solver_name else 'glpk'
+                solver_name=solver_name if solver_name else 'glpk',
+                remove_knockout_enzyme=remove_knockout_enzyme
             )
         else:
             print("Running SEQUENTIAL post-tuning validation...")

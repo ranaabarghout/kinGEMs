@@ -49,10 +49,23 @@ mkdir -p logs results/validation_parallel
 
 # Run pre-tuning validation only
 echo "Running Pre-tuning kinGEMs validation..."
-python scripts/run_validation_parallel.py \
-    --mode pretuning \
-    --config configs/validation_iML1515.json \
-    --output results/validation_parallel
+# Optional: Add --keep-enzyme-constraints flag to keep enzyme constraints for knocked-out genes
+# This models immediate knockout effects without proteome reallocation
+# Set KEEP_ENZYME_CONSTRAINTS=1 to enable this option
+if [ "${KEEP_ENZYME_CONSTRAINTS}" = "1" ]; then
+    echo "  Using --keep-enzyme-constraints (enzyme constraints kept for knocked-out genes)"
+    python scripts/run_validation_parallel.py \
+        --mode pretuning \
+        --config configs/validation_iML1515.json \
+        --output results/validation_parallel \
+        --keep-enzyme-constraints
+else
+    echo "  Using default behavior (enzyme constraints removed for knocked-out genes)"
+    python scripts/run_validation_parallel.py \
+        --mode pretuning \
+        --config configs/validation_iML1515.json \
+        --output results/validation_parallel
+fi
 
 exitcode=$?
 

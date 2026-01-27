@@ -1,0 +1,114 @@
+2026-01-23 12:08:35.934 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-23 12:31:58.576 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-23 12:31:58.576 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-23 12:31:58.577 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-23 12:31:58.579 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-23 12:31:58.579 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-23 12:31:58.580 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-23 12:31:58.580 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-23 12:31:58.581 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-23 13:25:17,995 - distributed.client - ERROR - 
+Traceback (most recent call last):
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/utils.py", line 1923, in wait_for
+    return await fut
+           ^^^^^^^^^
+asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/utils.py", line 818, in wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/client.py", line 1928, in _close
+    await self.cluster.close()
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/deploy/spec.py", line 454, in _close
+    await self._correct_state()
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/deploy/spec.py", line 365, in _correct_state_internal
+    await asyncio.gather(*tasks)
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/nanny.py", line 619, in close
+    await self.kill(timeout=timeout, reason=reason)
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/nanny.py", line 400, in kill
+    await self.process.kill(reason=reason, timeout=timeout)
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/nanny.py", line 883, in kill
+    await process.join(max(0, deadline - time()))
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/process.py", line 330, in join
+    await wait_for(asyncio.shield(self._exit_future), timeout)
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/utils.py", line 1922, in wait_for
+    async with asyncio.timeout(timeout):
+  File "/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/lib/python3.11/asyncio/timeouts.py", line 111, in __aexit__
+    raise TimeoutError from exc_val
+TimeoutError
+2026-01-23 13:25:18,025 - tornado.application - ERROR - Exception in callback functools.partial(<bound method IOLoop._discard_future_result of <tornado.platform.asyncio.AsyncIOMainLoop object at 0x14569a03ae90>>, <Task finished name='Task-1768577' coro=<SpecCluster._correct_state_internal() done, defined at /project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/deploy/spec.py:352> exception=TimeoutError()>)
+Traceback (most recent call last):
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/utils.py", line 1923, in wait_for
+    return await fut
+           ^^^^^^^^^
+asyncio.exceptions.CancelledError
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/tornado/ioloop.py", line 758, in _run_callback
+    ret = callback()
+          ^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/tornado/ioloop.py", line 782, in _discard_future_result
+    future.result()
+TimeoutError
+2026-01-23 13:27:21.322 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-23 13:27:21.322 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-23 13:27:21.322 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-23 13:27:21.322 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-23 13:27:21.322 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-23 13:27:21.322 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-23 13:27:21.325 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+2026-01-23 13:27:21.325 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+Exception ignored in: <function Client.__del__ at 0x14569cd21c60>
+Traceback (most recent call last):
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/client.py", line 1726, in __del__
+    self.close()
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/client.py", line 1981, in close
+    sync(self.loop, self._close, fast=True, callback_timeout=timeout)
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/utils.py", line 446, in sync
+    raise TimeoutError(f"timed out after {timeout} s.")
+TimeoutError: timed out after 60 s.
+2026-01-23 13:29:14,580 - distributed.client - ERROR - 
+Traceback (most recent call last):
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/utils.py", line 818, in wrapper
+    return await func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/client.py", line 1928, in _close
+    await self.cluster.close()
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/distributed/deploy/spec.py", line 440, in _close
+    await asyncio.sleep(0.1)
+  File "/cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/lib/python3.11/asyncio/tasks.py", line 639, in sleep
+    return await future
+           ^^^^^^^^^^^^
+asyncio.exceptions.CancelledError
+Traceback (most recent call last):
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_fluxomics_validation.py", line 392, in <module>
+    main()
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_fluxomics_validation.py", line 377, in main
+    run_fluxomics_analysis(
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_fluxomics_validation.py", line 188, in run_fluxomics_analysis
+    comparison_df = create_fva_comparison_dataframe(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/kinGEMs/fluxomics_validation.py", line 118, in create_fva_comparison_dataframe
+    mfa_df = pd.read_csv(mfa_results_path)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
+    return _read(filepath_or_buffer, kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/pandas/io/parsers/readers.py", line 620, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/pandas/io/parsers/readers.py", line 1620, in __init__
+    self._engine = self._make_engine(f, self.engine)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
+    self.handles = get_handle(
+                   ^^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/pandas/io/common.py", line 873, in get_handle
+    handle = open(
+             ^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'data/experimental/crown_fluxomics_final.csv'

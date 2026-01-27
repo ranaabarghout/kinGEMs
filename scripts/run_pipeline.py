@@ -39,6 +39,7 @@ import cobra
 from cobra.flux_analysis import flux_variability_analysis as cobra_fva
 from cobra.io import write_sbml_model
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 
 # Add parent directory to Python path

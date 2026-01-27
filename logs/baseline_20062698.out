@@ -1,0 +1,184 @@
+=========================================
+Job: Baseline GEM Validation
+Job ID: 20062698
+Node: fc30406
+Current working directory: /project/def-mahadeva/ranaab/kinGEMs_v2
+Starting run at: Thu Jan 22 10:47:12 PST 2026
+=========================================
+Running Baseline GEM validation...
+Loading configuration from: configs/validation_iML1515.json
+
+======================================================================
+=== kinGEMs Parallel Validation: BASELINE ===
+======================================================================
+Model: iML1515_GEM
+Mode: baseline
+Output: results/validation_parallel
+Parallel: True (multiprocessing with 6 workers)
+======================================================================
+
+=== Step 1: Loading model ===
+  Genes: 1516
+  Reactions: 3706
+  ⚠️  WARNING: CPLEX requested but not available to Pyomo!
+  Pyomo will fall back to GLPK (slower)
+  ⚠️  Could not set solver to cplex: cplex is not a valid solver interface. Pick one from glpk_exact, glpk, scipy.
+  Using default solver: optlang.glpk_interface
+  ⚠️  WARNING: Using GLPK solver (slow)
+  ⚠️  Consider loading CPLEX: module load cplex
+  Objective: BIOMASS_Ec_iML1515_core_75p37M
+
+=== Step 2: Preparing validation environment ===
+Using irreversible model handling: converting to non-negative exchange format
+  Model has _reverse exchanges - using forward/reverse pairs for directionality
+Matching model genes to data genes...
+Matched 1339 genes.
+Matching experimental carbon sources to model carbon sources...
+Matched 54 carbon sources.
+Shape of matched fitness data: (1339, 54)
+Averaging fitness data for replicate carbon sources...
+Final shape of averaged fitness data: (1339, 27)
+Unique carbon sources after averaging: 27
+Removing strain genes:
+['b0066' 'b0348' 'b3909']
+Removing essential genes: 
+b0003
+b0004
+b0052
+b0071
+b0072
+b0074
+b0088
+b0109
+b0131
+b0133
+b0134
+b0142
+b0242
+b0243
+b0386
+b0423
+b0522
+b0523
+b0641
+b0720
+b0750
+b0774
+b0775
+b0776
+b0777
+b0778
+b0908
+b1062
+b1260
+b1261
+b1262
+b1263
+b1264
+b1281
+b1693
+b1812
+b2019
+b2020
+b2021
+b2022
+b2023
+b2024
+b2025
+b2026
+b2103
+b2312
+b2329
+b2476
+b2499
+b2564
+b2574
+b2599
+b2600
+b2687
+b2750
+b2751
+b2752
+b2762
+b2763
+b2764
+b2818
+b2838
+b3040
+b3172
+b3196
+b3198
+b3199
+b3360
+b3368
+b3389
+b3412
+b3642
+b3774
+b3870
+b3939
+b3941
+b3957
+b3958
+b3959
+b3960
+b3990
+b3991
+b3992
+b3993
+b3994
+b4005
+b4006
+b4013
+b4177
+b4214
+b4245
+b2557
+b3770
+b3771
+b4407
+Removing carbon sources: 
+['man' 'sucr']
+  Matched genes: 1241
+  Carbon sources: 25
+
+=== Step 3: Running BASELINE simulation ===
+Running Baseline GEM (no enzyme constraints)...
+
+  Calculating baseline wild-type growth...
+  Calculating wild-type growth for 25 carbon sources...
+  Wild-type growth progress: 1/25  Wild-type growth progress: 2/25  Wild-type growth progress: 3/25  Wild-type growth progress: 4/25  Wild-type growth progress: 5/25  Wild-type growth progress: 5/25 carbon sources completed
+  Wild-type growth progress: 6/25  Wild-type growth progress: 7/25  Wild-type growth progress: 8/25  Wild-type growth progress: 9/25  Wild-type growth progress: 10/25  Wild-type growth progress: 10/25 carbon sources completed
+  Wild-type growth progress: 11/25  Wild-type growth progress: 12/25  Wild-type growth progress: 13/25  Wild-type growth progress: 14/25  Wild-type growth progress: 15/25  Wild-type growth progress: 15/25 carbon sources completed
+  Wild-type growth progress: 16/25  Wild-type growth progress: 17/25  Wild-type growth progress: 18/25  Wild-type growth progress: 19/25  Wild-type growth progress: 20/25  Wild-type growth progress: 20/25 carbon sources completed
+  Wild-type growth progress: 21/25  Wild-type growth progress: 22/25  Wild-type growth progress: 23/25  Wild-type growth progress: 24/25  Wild-type growth progress: 25/25  Wild-type growth progress: 25/25 carbon sources completed
+
+  Wild-type growth calculation complete (25 carbon sources).
+  Mean growth rate: 17.511787
+  Range: 8.139926 to 27.026611
+  Saved: results/validation_parallel/baseline_wildtype.npy
+  Baseline GEM progress: 1/25  Baseline GEM progress: 2/25  Baseline GEM progress: 3/25  Baseline GEM progress: 4/25  Baseline GEM progress: 5/25  Baseline GEM progress: 5/25 carbon sources completed
+  Baseline GEM progress: 6/25  Baseline GEM progress: 7/25  Baseline GEM progress: 8/25  Baseline GEM progress: 9/25  Baseline GEM progress: 10/25  Baseline GEM progress: 10/25 carbon sources completed
+  Baseline GEM progress: 11/25  Baseline GEM progress: 12/25  Baseline GEM progress: 13/25  Baseline GEM progress: 14/25  Baseline GEM progress: 15/25  Baseline GEM progress: 15/25 carbon sources completed
+  Baseline GEM progress: 16/25  Baseline GEM progress: 17/25  Baseline GEM progress: 18/25  Baseline GEM progress: 19/25  Baseline GEM progress: 20/25  Baseline GEM progress: 20/25 carbon sources completed
+  Baseline GEM progress: 21/25  Baseline GEM progress: 22/25  Baseline GEM progress: 23/25  Baseline GEM progress: 24/25  Baseline GEM progress: 25/25  Baseline GEM progress: 25/25 carbon sources completed
+
+  Baseline GEM simulation complete (1241 genes × 25 carbon sources).
+  Saved: results/validation_parallel/baseline_GEM.npy
+  Saved: results/validation_parallel/baseline_metadata.json
+
+======================================================================
+=== BASELINE Validation Complete ===
+======================================================================
+Results saved to: results/validation_parallel
+======================================================================
+
+Memory Usage Statistics:
+20062698                                      
+20062698.ba+                                  
+20062698.ex+                                  
+Peak memory usage:            
+=========================================
+Finished at: Thu Jan 22 10:50:00 PST 2026
+Exit code: 0
+=========================================

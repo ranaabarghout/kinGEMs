@@ -1,0 +1,2 @@
+2026-01-21 12:06:13.463 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+slurmstepd: error: *** JOB 19923853 ON fc30352 CANCELLED AT 2026-01-22T09:26:05 ***

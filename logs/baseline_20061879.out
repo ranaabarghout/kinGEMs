@@ -1,0 +1,18 @@
+=========================================
+Job: Baseline GEM Validation
+Job ID: 20061879
+Node: fc30555
+Current working directory: /project/def-mahadeva/ranaab/kinGEMs_v2
+Starting run at: Thu Jan 22 10:38:01 PST 2026
+=========================================
+Running Baseline GEM validation...
+
+Memory Usage Statistics:
+20061879                                      
+20061879.ba+                                  
+20061879.ex+                                  
+Peak memory usage:            
+=========================================
+Finished at: Thu Jan 22 10:39:48 PST 2026
+Exit code: 1
+=========================================
