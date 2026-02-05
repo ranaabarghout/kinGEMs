@@ -1,0 +1,110 @@
+=========================================
+Job: kinGEMs Fluxomics Validation Pipeline
+Job ID: 21765723
+Node: fc30570
+Current working directory: /project/def-mahadeva/ranaab/kinGEMs_v2
+Starting run at: Wed Feb  4 17:50:13 PST 2026
+=========================================
+Using configuration: configs/fluxomics_iML1515_GEM.json
+Using experimental data: data/experimental/crown_fluxomics_final.csv
+
+CPUs allocated: 8
+
+Configuration: configs/fluxomics_iML1515_GEM.json
+Experimental data: data/experimental/crown_fluxomics_final.csv
+Running fluxomics validation (config mode)...
+2026-02-04 17:50:23,635 | INFO | === kinGEMs Fluxomics Validation ===
+2026-02-04 17:50:23,635 | INFO | Run ID: iML1515_GEM_20260204_2824
+2026-02-04 17:50:23,635 | INFO | Results directory: /project/6000502/ranaab/kinGEMs_v2/results/fluxomics_validation/iML1515_GEM_20260204_2824
+2026-02-04 17:50:23,635 | INFO | Config file: /tmp/tmp.f2N4yOCHrK.json
+2026-02-04 17:50:23,635 | INFO | Pipeline output: /project/6000502/ranaab/kinGEMs_v2/results/fluxomics_validation/iML1515_GEM_20260204_2824/pipeline_results
+2026-02-04 17:50:23,635 | INFO | Analysis output: /project/6000502/ranaab/kinGEMs_v2/results/fluxomics_validation/iML1515_GEM_20260204_2824/fluxomics_analysis
+2026-02-04 17:50:23,635 | INFO | === Running Pipeline (Steps 1-3) ===
+2026-02-04 17:50:23,637 | INFO | === kinGEMs Pipeline for iML1515_GEM ===
+2026-02-04 17:50:23,637 | INFO | Run ID: iML1515_GEM_20260204_2824
+2026-02-04 17:50:23,637 | INFO | Model type: Standard
+2026-02-04 17:50:23,637 | INFO | Organism: E coli
+2026-02-04 17:50:23,637 | INFO | Results directory: /project/6000502/ranaab/kinGEMs_v2/results/fluxomics_validation/iML1515_GEM_20260204_2824/pipeline_results
+2026-02-04 17:50:23,637 | INFO | Solver: glpk
+2026-02-04 17:50:25,380 | INFO | Biomass reaction: BIOMASS_Ec_iML1515_core_75p37M
+2026-02-04 17:50:25,492 | INFO | Baseline growth: 0.8770
+2026-02-04 17:50:25,492 | INFO | === Step 1: Preparing model data ===
+2026-02-04 17:50:25,572 | INFO |   Found existing files, loading cached data
+Warning: Model has 8 validation errors
+2026-02-04 17:50:43,478 | INFO |   Model: 1516 genes, 3682 reactions
+2026-02-04 17:50:43,478 | INFO | === Step 2: Merging substrate and sequence data ===
+2026-02-04 17:50:43,593 | INFO |   Merged data: 12229 rows
+2026-02-04 17:50:43,593 | INFO | === Step 3: Processing CPI-Pred kcat values ===
+2026-02-04 17:50:43,629 | INFO |   Processed data: 11789 rows
+2026-02-04 17:50:44,855 | INFO | === Step 4: Running optimization ===
+2026-02-04 17:50:44,855 | INFO |   Applying medium conditions (fixed fluxes)
+2026-02-04 17:50:44,963 | INFO |   COBRApy biomass: 0.4851
+2026-02-04 17:50:47,389 | INFO |   kinGEMs biomass: 0.0230
+2026-02-04 17:50:47,389 | INFO | === Step 5: Running simulated annealing ===
+  [DEBUG] Iter 1: Optimization failed (biomass=None)
+    - Perturbed 386 enzymes with increases ranging 0-2%
+    - This suggests even small increases overwhelm constraints
+  Iter 1/1000: biomass=0.022992, temp=100.0000  [DEBUG] Iter 2: Optimization succeeded! biomass=1.907329e-03
+  Iter 2/1000: biomass=0.001907, temp=95.0000  [DEBUG] Iter 3: Optimization failed (biomass=None)
+    - Perturbed 810 enzymes with increases ranging 0-2%
+    - This suggests even small increases overwhelm constraints
+  Iter 3/1000: biomass=0.001907, temp=90.2500  [DEBUG] Iter 4: Optimization succeeded! biomass=3.313583e-04
+  Iter 4/1000: biomass=0.000331, temp=85.7375  [DEBUG] Iter 5: Optimization succeeded! biomass=2.366897e-03
+    - IMPROVEMENT: +614.301%
+  Iter 5/1000: biomass=0.002367, temp=81.4506  Iter 6/1000: biomass=0.002367, temp=77.3781  Iter 7/1000: biomass=0.001732, temp=73.5092  Iter 8/1000: biomass=0.001732, temp=69.8337  Iter 9/1000: biomass=0.001493, temp=66.3420  Iter 10/1000: biomass=0.003262, temp=63.0249  Iter 11/1000: biomass=0.003956, temp=59.8737  Iter 12/1000: biomass=0.005978, temp=56.8800  Iter 13/1000: biomass=0.009395, temp=54.0360  Iter 14/1000: biomass=0.017725, temp=51.3342  Iter 15/1000: biomass=0.016002, temp=48.7675  Iter 16/1000: biomass=0.016724, temp=46.3291  Iter 17/1000: biomass=0.016872, temp=44.0127  Iter 18/1000: biomass=0.017770, temp=41.8120  Iter 19/1000: biomass=0.018432, temp=39.7214  Iter 20/1000: biomass=0.018402, temp=37.7354  Iter 21/1000: biomass=0.017182, temp=35.8486  Iter 22/1000: biomass=0.018004, temp=34.0562  Iter 23/1000: biomass=0.023267, temp=32.3534  Iter 24/1000: biomass=0.024118, temp=30.7357  Iter 25/1000: biomass=0.034400, temp=29.1989  Iter 26/1000: biomass=0.035176, temp=27.7390  Iter 27/1000: biomass=0.035740, temp=26.3520  Iter 28/1000: biomass=0.034818, temp=25.0344  Iter 29/1000: biomass=0.034986, temp=23.7827  Iter 30/1000: biomass=0.036124, temp=22.5936  Iter 31/1000: biomass=0.043405, temp=21.4639  Iter 32/1000: biomass=0.043986, temp=20.3907  Iter 33/1000: biomass=0.045540, temp=19.3711  Iter 34/1000: biomass=0.045891, temp=18.4026  Iter 35/1000: biomass=0.047255, temp=17.4825  Iter 36/1000: biomass=0.049679, temp=16.6083  Iter 37/1000: biomass=0.049904, temp=15.7779  Iter 38/1000: biomass=0.029109, temp=14.9890  Iter 39/1000: biomass=0.029385, temp=14.2396  Iter 40/1000: biomass=0.044993, temp=13.5276  Iter 41/1000: biomass=0.045312, temp=12.8512  Iter 42/1000: biomass=0.045282, temp=12.2087  Iter 43/1000: biomass=0.045586, temp=11.5982  Iter 44/1000: biomass=0.045769, temp=11.0183  Iter 45/1000: biomass=0.045785, temp=10.4674  Iter 46/1000: biomass=0.046219, temp=9.9440  Iter 47/1000: biomass=0.046512, temp=9.4468  Iter 48/1000: biomass=0.024217, temp=8.9745  Iter 49/1000: biomass=0.024250, temp=8.5258  Iter 50/1000: biomass=0.024379, temp=8.0995  Iter 51/1000: biomass=0.024436, temp=7.6945  Iter 52/1000: biomass=0.024500, temp=7.3098  Iter 53/1000: biomass=0.024692, temp=6.9443  Iter 54/1000: biomass=0.024826, temp=6.5971  Iter 55/1000: biomass=0.024866, temp=6.2672  Iter 56/1000: biomass=0.024890, temp=5.9539  Iter 57/1000: biomass=0.024894, temp=5.6562  Iter 58/1000: biomass=0.010221, temp=5.3734  Iter 59/1000: biomass=0.010264, temp=5.1047  Iter 60/1000: biomass=0.034325, temp=4.8495  Iter 61/1000: biomass=0.034475, temp=4.6070  Iter 62/1000: biomass=0.031801, temp=4.3766  Iter 63/1000: biomass=0.034263, temp=4.1578  Iter 64/1000: biomass=0.034254, temp=3.9499  Iter 65/1000: biomass=0.034715, temp=3.7524  Iter 66/1000: biomass=0.034770, temp=3.5648  Iter 67/1000: biomass=0.034772, temp=3.3866  Iter 68/1000: biomass=0.034847, temp=3.2172  Iter 69/1000: biomass=0.034890, temp=3.0564  Iter 70/1000: biomass=0.034910, temp=2.9035  Iter 71/1000: biomass=0.059894, temp=2.7584  Iter 72/1000: biomass=0.059988, temp=2.6205  Iter 73/1000: biomass=0.057143, temp=2.4894  Iter 74/1000: biomass=0.057189, temp=2.3650  Iter 75/1000: biomass=0.057163, temp=2.2467  Iter 76/1000: biomass=0.057783, temp=2.1344  Iter 77/1000: biomass=0.057919, temp=2.0277  Iter 78/1000: biomass=0.057504, temp=1.9263  Iter 79/1000: biomass=0.057586, temp=1.8300  Iter 80/1000: biomass=0.057652, temp=1.7385  Iter 81/1000: biomass=0.057669, temp=1.6515  Iter 82/1000: biomass=0.064736, temp=1.5690  Iter 83/1000: biomass=0.051985, temp=1.4905  Iter 84/1000: biomass=0.053095, temp=1.4160  Iter 85/1000: biomass=0.053178, temp=1.3452  Iter 86/1000: biomass=0.037478, temp=1.2779  Iter 87/1000: biomass=0.037560, temp=1.2140  Iter 88/1000: biomass=0.060091, temp=1.1533  Iter 89/1000: biomass=0.060009, temp=1.0957  Iter 90/1000: biomass=0.060308, temp=1.0409  Iter 91/1000: biomass=0.060312, temp=0.9888  Iter 92/1000: biomass=0.087991, temp=0.9394  Iter 93/1000: biomass=0.088266, temp=0.8924  Iter 94/1000: biomass=0.088220, temp=0.8478  Iter 95/1000: biomass=0.078084, temp=0.8054  Iter 96/1000: biomass=0.077759, temp=0.7651  Iter 97/1000: biomass=0.077977, temp=0.7269  Iter 98/1000: biomass=0.077927, temp=0.6905  Iter 99/1000: biomass=0.078081, temp=0.6560  Iter 100/1000: biomass=0.078153, temp=0.6232  Iter 101/1000: biomass=0.078407, temp=0.5921  Iter 102/1000: biomass=0.078563, temp=0.5625  Iter 103/1000: biomass=0.078615, temp=0.5343  Iter 104/1000: biomass=0.078622, temp=0.5076  Iter 105/1000: biomass=0.078736, temp=0.4822  Iter 106/1000: biomass=0.078476, temp=0.4581  Iter 107/1000: biomass=0.078544, temp=0.4352  Iter 108/1000: biomass=0.078560, temp=0.4135  Iter 109/1000: biomass=0.079250, temp=0.3928  Iter 110/1000: biomass=0.079430, temp=0.3731  Iter 111/1000: biomass=0.079474, temp=0.3545  Iter 112/1000: biomass=0.127788, temp=0.3368  Iter 113/1000: biomass=0.147529, temp=0.3199  Iter 114/1000: biomass=0.165061, temp=0.3039  Iter 115/1000: biomass=0.171510, temp=0.2887  Iter 116/1000: biomass=0.171064, temp=0.2743  Iter 117/1000: biomass=0.171164, temp=0.2606  Iter 118/1000: biomass=0.180691, temp=0.2475  Iter 119/1000: biomass=0.180380, temp=0.2352  Iter 120/1000: biomass=0.180783, temp=0.2234  Iter 121/1000: biomass=0.180713, temp=0.2122  Iter 122/1000: biomass=0.180982, temp=0.2016  Iter 123/1000: biomass=0.181325, temp=0.1915  Iter 124/1000: biomass=0.181546, temp=0.1820  Iter 125/1000: biomass=0.182177, temp=0.1729  Iter 126/1000: biomass=0.182184, temp=0.1642  Iter 127/1000: biomass=0.182113, temp=0.1560  Iter 128/1000: biomass=0.182075, temp=0.1482  Iter 129/1000: biomass=0.208314, temp=0.1408  Iter 130/1000: biomass=0.243185, temp=0.1338  Iter 131/1000: biomass=0.242333, temp=0.1271  Iter 132/1000: biomass=0.248995, temp=0.1207  Iter 133/1000: biomass=0.249091, temp=0.1147  Iter 134/1000: biomass=0.249389, temp=0.1090  Iter 135/1000: biomass=0.250513, temp=0.1035  Iter 136/1000: biomass=0.249407, temp=0.0983  Iter 137/1000: biomass=0.249280, temp=0.0934  Iter 138/1000: biomass=0.249487, temp=0.0887  Iter 139/1000: biomass=0.250005, temp=0.0843  Iter 140/1000: biomass=0.250030, temp=0.0801  Iter 141/1000: biomass=0.251250, temp=0.0761  Iter 142/1000: biomass=0.251217, temp=0.0723  Iter 143/1000: biomass=0.252381, temp=0.0687  Iter 144/1000: biomass=0.252036, temp=0.0652  Iter 145/1000: biomass=0.251421, temp=0.0620  Iter 146/1000: biomass=0.251680, temp=0.0589  Iter 147/1000: biomass=0.253116, temp=0.0559  Iter 148/1000: biomass=0.253116, temp=0.0531  Iter 149/1000: biomass=0.251811, temp=0.0505  Iter 150/1000: biomass=0.252156, temp=0.0480  Iter 151/1000: biomass=0.251433, temp=0.0456  Iter 152/1000: biomass=0.251451, temp=0.0433  Iter 153/1000: biomass=0.251227, temp=0.0411  Iter 154/1000: biomass=0.251851, temp=0.0391  Iter 155/1000: biomass=0.248063, temp=0.0371  Iter 156/1000: biomass=0.248603, temp=0.0352  Iter 157/1000: biomass=0.260811, temp=0.0335  Iter 158/1000: biomass=0.261099, temp=0.0318  Iter 159/1000: biomass=0.267842, temp=0.0302  Iter 160/1000: biomass=0.267127, temp=0.0287  Iter 161/1000: biomass=0.269103, temp=0.0273  Iter 162/1000: biomass=0.268206, temp=0.0259  Iter 163/1000: biomass=0.280263, temp=0.0246  Iter 164/1000: biomass=0.280927, temp=0.0234  Iter 165/1000: biomass=0.281011, temp=0.0222  Iter 166/1000: biomass=0.280321, temp=0.0211  Iter 167/1000: biomass=0.280321, temp=0.0201  Iter 168/1000: biomass=0.281712, temp=0.0190  Iter 169/1000: biomass=0.283666, temp=0.0181  Iter 170/1000: biomass=0.282407, temp=0.0172  Iter 171/1000: biomass=0.279220, temp=0.0163  Iter 172/1000: biomass=0.279162, temp=0.0155  Iter 173/1000: biomass=0.280101, temp=0.0147  Iter 174/1000: biomass=0.280364, temp=0.0140  Iter 175/1000: biomass=0.280331, temp=0.0133  Iter 176/1000: biomass=0.279732, temp=0.0126  Iter 177/1000: biomass=0.279387, temp=0.0120  Iter 178/1000: biomass=0.279472, temp=0.0114  Iter 179/1000: biomass=0.279558, temp=0.0108  Iter 180/1000: biomass=0.280443, temp=0.0103  Iter 181/1000: biomass=0.280393, temp=0.0098  Iter 182/1000: biomass=0.281184, temp=0.0093  Iter 183/1000: biomass=0.283780, temp=0.0088  Iter 184/1000: biomass=0.284293, temp=0.0084  Iter 185/1000: biomass=0.285290, temp=0.0080  Iter 186/1000: biomass=0.285070, temp=0.0076  Iter 187/1000: biomass=0.284714, temp=0.0072  Iter 188/1000: biomass=0.283771, temp=0.0068  Iter 189/1000: biomass=0.283777, temp=0.0065  Iter 190/1000: biomass=0.282461, temp=0.0062  Iter 191/1000: biomass=0.283063, temp=0.0059  Iter 192/1000: biomass=0.283185, temp=0.0056  Iter 193/1000: biomass=0.282180, temp=0.0053  Iter 194/1000: biomass=0.282205, temp=0.0050  Iter 195/1000: biomass=0.282205, temp=0.0048  Iter 196/1000: biomass=0.283997, temp=0.0045  Iter 197/1000: biomass=0.286235, temp=0.0043  Iter 198/1000: biomass=0.285310, temp=0.0041  Iter 199/1000: biomass=0.285398, temp=0.0039  Iter 200/1000: biomass=0.284543, temp=0.0037  Iter 201/1000: biomass=0.283671, temp=0.0035  Iter 202/1000: biomass=0.281883, temp=0.0033  Iter 203/1000: biomass=0.282741, temp=0.0032  Iter 204/1000: biomass=0.282768, temp=0.0030  Iter 205/1000: biomass=0.282995, temp=0.0029  Iter 206/1000: biomass=0.283001, temp=0.0027  Iter 207/1000: biomass=0.281088, temp=0.0026  Iter 208/1000: biomass=0.283759, temp=0.0024  Iter 209/1000: biomass=0.282802, temp=0.0023  Iter 210/1000: biomass=0.282802, temp=0.0022  Iter 211/1000: biomass=0.283609, temp=0.0021  Iter 212/1000: biomass=0.283356, temp=0.0020  Iter 213/1000: biomass=0.285265, temp=0.0019  Iter 214/1000: biomass=0.285301, temp=0.0018  Iter 215/1000: biomass=0.285612, temp=0.0017  Iter 216/1000: biomass=0.285583, temp=0.0016  Iter 217/1000: biomass=0.284516, temp=0.0015  Iter 218/1000: biomass=0.284341, temp=0.0015  Iter 219/1000: biomass=0.284771, temp=0.0014  Iter 220/1000: biomass=0.284984, temp=0.0013  Iter 221/1000: biomass=0.284948, temp=0.0013  Iter 222/1000: biomass=0.284999, temp=0.0012  Iter 223/1000: biomass=0.285015, temp=0.0011  Iter 224/1000: biomass=0.283482, temp=0.0011  Iter 225/1000: biomass=0.283482, temp=0.0010
+2026-02-04 18:21:42,228 | INFO |   Annealing complete! Initial: 0.0230, Final: 0.2835, Improvement: 1133.0%
+2026-02-04 18:21:42,331 | INFO |   Saved tuned dataframe: /project/6000502/ranaab/kinGEMs_v2/results/fluxomics_validation/iML1515_GEM_20260204_2824/pipeline_results/df_new.csv
+2026-02-04 18:21:42,549 | INFO | === Step 6: Running Flux Variability Analysis ===
+2026-02-04 18:21:42,549 | INFO |   Running COBRApy FVA (opt_ratio=0.9)...
+2026-02-04 18:21:49,770 | INFO |   Saved COBRApy FVA: /project/6000502/ranaab/kinGEMs_v2/results/fluxomics_validation/iML1515_GEM_20260204_2824/pipeline_results/iML1515_GEM_cobra_fva_results.csv
+
+=== Step 6: Running Flux Variability Analysis ===
+  Using parallel FVA with 8 workers...
+  Parallel FVA configuration:
+    Method: dask
+    Workers: 8
+    Reactions: 3682
+    Chunk size: 30
+    Number of chunks: 123
+    Estimated memory: ~2.0 GB
+
+  Running baseline optimization...
+  [KCAT DEBUG] Sample kcat values:
+    ALATA_D2_b2551: kcat=4.310e+00
+    ALATA_D2_b0870: kcat=7.364e-01
+    ALATA_D2_b2551: kcat=3.861e+00
+GLPSOL--GLPK LP/MIP Solver 5.0
+Parameter(s) specified in the command line:
+ --tmlim 300 --write /tmp/tmpqvkjod4p.glpk.raw --wglp /tmp/tmp523a2y9n.glpk.glp
+ --cpxlp /tmp/tmp44srkcjd.pyomo.lp
+Reading problem data from '/tmp/tmp44srkcjd.pyomo.lp'...
+6586 rows, 5199 columns, 30644 non-zeros
+55611 lines were read
+Writing problem data to '/tmp/tmp523a2y9n.glpk.glp'...
+50825 lines were written
+GLPK Simplex Optimizer 5.0
+6586 rows, 5199 columns, 30644 non-zeros
+Preprocessing...
+5963 rows, 4347 columns, 27884 non-zeros
+Scaling...
+ A: min|aij| =  4.198e-10  max|aij| =  2.382e+09  ratio =  5.674e+18
+GM: min|aij| =  1.276e-02  max|aij| =  7.835e+01  ratio =  6.139e+03
+EQ: min|aij| =  1.629e-04  max|aij| =  1.000e+00  ratio =  6.139e+03
+Constructing initial basis...
+Size of triangular part is 5810
+      0: obj =  -0.000000000e+00 inf =   1.933e+01 (21)
+    892: obj =  -0.000000000e+00 inf =   1.261e-14 (0) 6
+Perturbing LP to avoid stalling [1095]...
+Removing LP perturbation [2190]...
+   2192: obj =   2.299171334e-02 inf =   7.554e-07 (0) 10
+OPTIMAL LP SOLUTION FOUND
+Time used:   0.3 secs
+Memory used: 9.6 Mb (10099819 bytes)
+Writing basic solution to '/tmp/tmpqvkjod4p.glpk.raw'...
+11794 lines were written
+  Optimal biomass: 0.022992
+  Biomass constraint: 0.020693 ≤ biomass ≤ 0.022992 (opt_ratio=0.9)
+
+  Starting parallel FVA with 123 chunks...
+  FVA will analyze 3682 reactions independently
+  Progress will be shown by chunk completion...

@@ -1,20 +1,54 @@
 {
   "model_name": "iML1515_GEM",
   "organism": "E coli",
-  "biomass_reaction": "BIOMASS_Ec_iML1515_core_75p37M",
-  "enzyme_upper_bound": 0.2,
+  "biomass_reaction": null,
+  "enzyme_upper_bound": 0.25,
   "solver": "glpk",
   "enable_fva": false,
   "enable_biolog_validation": false,
+  "enable_maintenance_sweep": false,
+  "edit_ngam": false,
+  "ngam_rxn_id": "ATPM",
+  "_comment_edit_ngam": "Set to true to set NGAM (ATPM) lower bound to 0 during optimization",
+  "_comment_ngam_rxn_id": "Reaction ID for NGAM/ATPM (default: 'ATPM')",
+  "_comment_enable_maintenance_sweep": "Set to true to run NGAM/GAM parameter sweep",
+
+  "fva": {
+    "parallel": true,
+    "workers": 4,
+    "chunk_size": 50,
+    "method": "dask",
+    "opt_ratio": 0.9,
+    "_comment_opt_ratio": "Fraction of optimal biomass to constrain during FVA (0.9 = 90% of optimal)",
+    "_comment_method": "Options: 'dask' (distributed, scalable) or 'multiprocessing' (simpler, single-machine)",
+    "_comment_workers": "Set to null for auto-detection (uses all CPU cores)",
+    "_comment_chunk_size": "Number of reactions per task. null = auto-calculate. Larger = less overhead but less load balancing"
+  },
+
+
   "simulated_annealing": {
-    "temperature": 1.0,
-    "cooling_rate": 0.975,
+    "temperature": 100,
+    "cooling_rate": 0.95,
     "min_temperature": 0.001,
-    "max_iterations": 100,
-    "max_unchanged_iterations": 5,
-    "change_threshold": 0.009,
-    "biomass_goal": 0.5,
-    "n_top_enzymes": 65,
-    "verbose": false
+    "max_iterations": 1000,
+    "max_unchanged_iterations": 50,
+    "change_threshold": 0.001,
+    "biomass_goal": 0.87,
+    "n_top_enzymes": 500,
+    "verbose": false,
+    "_comment_aggressive": "AGGRESSIVE SETTINGS - larger perturbations and longer search",
+    "_comment_temperature": "High starting temp (100) for large initial exploration",
+    "_comment_cooling_rate": "Moderate cooling (0.95) for thorough exploration",
+    "_comment_change_threshold": "Standard threshold (0.1%) for meaningful improvements",
+    "_comment_biomass_goal": "Target goal of 0.2 biomass",
+    "_comment_n_top_enzymes": "Tune top 500 enzymes for sufficient optimization flexibility"
+  },
+
+  "maintenance_sweep": {
+    "ngam_range": [0, 1, 2, 3.15, 5, 7, 10, 15, 20],
+    "gam_range": [10, 20, 30, 40, 50, 60, 70, 75.55, 80, 90],
+    "verbose": false,
+    "_comment_ngam_range": "NGAM values to test (ATPM lower bound in mmol/gDW/h). 0-20 range, ~6.86 is default for iML1515",
+    "_comment_gam_range": "GAM values to test (ATP in biomass, mmol/gDW). 75.55 is the original iML1515 value. Removed 0 as it creates invalid reactions."
   }
 }

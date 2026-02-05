@@ -1,0 +1,8 @@
+2026-02-04 17:34:31.547 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+Traceback (most recent call last):
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_fva_ablation.py", line 396, in <module>
+    main()
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_fva_ablation.py", line 242, in main
+    fva_df, biomass = run_single_enzyme_fva(
+                      ^^^^^^^^^^^^^^^^^^^^^^
+TypeError: run_single_enzyme_fva() takes from 4 to 8 positional arguments but 9 were given

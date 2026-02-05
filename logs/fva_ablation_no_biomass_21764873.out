@@ -1,0 +1,61 @@
+=========================================
+Job: FVA Ablation Study (No Biomass Constraint)
+Job ID: 21764873
+Node: fc30356
+Current working directory: /project/def-mahadeva/ranaab/kinGEMs_v2
+Starting run at: Wed Feb  4 17:33:12 PST 2026
+=========================================
+
+Configuration: configs/iML1515_GEM_fva_ablation_no_biomass_constraint.json
+Workers: 8
+Biomass Constraint: DISABLED (biomass can vary freely)
+
+Running FVA ablation study without biomass constraint...
+Loading configuration from: configs/iML1515_GEM_fva_ablation_no_biomass_constraint.json
+
+================================================================================
+=== kinGEMs FVA Ablation Study: iML1515_GEM ===
+================================================================================
+Run ID: iML1515_GEM_FVA_ablation_20260204_9563
+Organism: E coli
+Enzyme upper bound: 0.25
+Constrain biomass: False
+Parallel FVA: True
+Workers: 8
+Method: dask
+Chunk size: 50
+Results directory: /project/6000502/ranaab/kinGEMs_v2/results/fva_ablation/iML1515_GEM_FVA_ablation_20260204_9563
+================================================================================
+
+=== Loading Model and Data ===
+Warning: Model has 8 validation errors
+Biomass reaction: BIOMASS_Ec_iML1515_core_75p37M
+Loaded processed data: 11789 rows
+
+================================================================================
+=== ABLATION STUDY CONSTRAINT CONFIGURATION ===
+================================================================================
+Level                          Multi-Enzyme Isoenzymes  Complexes  Promiscuous  Description
+--------------------------------------------------------------------------------
+1: Baseline GEM                N/A          N/A         N/A        N/A          No constraints (irreversible)
+2: Single Enzyme               ✓ Enabled    ✗ Disabled  ✗ Disabled ✗ Disabled   Basic enzyme constraints only
+3a: + Isoenzymes               ✓ Enabled    ✓ Enabled   ✗ Disabled ✗ Disabled   + OR-GPR handling
+3b: + Complexes                ✓ Enabled    ✗ Disabled  ✓ Enabled  ✗ Disabled   + AND-GPR handling
+3c: + Promiscuous              ✓ Enabled    ✗ Disabled  ✗ Disabled ✓ Enabled    + Cross-reaction sharing
+4: All Constraints             ✓ Enabled    ✓ Enabled   ✓ Enabled  ✓ Enabled    Complete kinGEMs
+5: Post-Tuned                  ✓ Enabled    ✓ Enabled   ✓ Enabled  ✓ Enabled    + Optimized kcat values
+================================================================================
+
+=== Level 1: Baseline GEM (irreversible, no enzyme constraints) ===
+  Biomass: 0.8770
+  Reactions analyzed: 3682
+
+Memory Usage Statistics:
+21764873                                      
+21764873.ba+                                  
+21764873.ex+                                  
+Peak memory usage:            
+=========================================
+Finished at: Wed Feb  4 17:35:23 PST 2026
+Exit code: 1
+=========================================

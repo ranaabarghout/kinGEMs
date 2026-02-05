@@ -1,0 +1,46 @@
+{
+  "model_name": "iML1515_GEM",
+  "organism": "E coli",
+  "biomass_reaction": null,
+  "enzyme_upper_bound": 0.25,
+  "solver": "glpk",
+  "enable_fva": false,
+  "enable_biolog_validation": false,
+  "enable_maintenance_sweep": false,
+  "edit_ngam": false,
+  "ngam_rxn_id": "ATPM",
+  "_comment_edit_ngam": "Set to true to set NGAM (ATPM) lower bound to 0 during optimization",
+  "_comment_ngam_rxn_id": "Reaction ID for NGAM/ATPM (default: 'ATPM')",
+  "_comment_enable_maintenance_sweep": "Set to true to run NGAM/GAM parameter sweep",
+  "_comment_biomass_constraint": "This config is for FVA without biomass constraint - use with --no-biomass-constraint flag",
+
+
+  "fva": {
+    "parallel": true,
+    "workers": 8,
+    "chunk_size": 50,
+    "method": "dask",
+    "_comment_method": "Use dask for better task scheduling and monitoring - verified working in SLURM",
+    "_comment_workers": "Set to match SLURM_CPUS_PER_TASK for optimal performance",
+    "_comment_chunk_size": "Number of reactions per task. Smaller chunks = better memory efficiency",
+    "_comment_no_biomass": "Biomass will NOT be constrained during FVA - allows exploration of full flux space"
+  },
+
+  "simulated_annealing": {
+    "temperature": 100,
+    "cooling_rate": 0.95,
+    "min_temperature": 0.001,
+    "max_iterations": 1000,
+    "max_unchanged_iterations": 50,
+    "change_threshold": 0.001,
+    "biomass_goal": 0.87,
+    "n_top_enzymes": 500,
+    "verbose": false,
+    "_comment_aggressive": "AGGRESSIVE SETTINGS - larger perturbations and longer search",
+    "_comment_temperature": "High starting temp (100) for large initial exploration",
+    "_comment_cooling_rate": "Moderate cooling (0.95) for thorough exploration",
+    "_comment_change_threshold": "Standard threshold (0.1%) for meaningful improvements",
+    "_comment_biomass_goal": "Target goal of 0.87 biomass",
+    "_comment_n_top_enzymes": "Tune top 500 enzymes for sufficient optimization flexibility"
+  }
+}

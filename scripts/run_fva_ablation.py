@@ -71,7 +71,9 @@ def main():
     parser.add_argument('--workers', type=int, default=None, help='Number of workers for parallel FVA')
     parser.add_argument('--skip-tuning', action='store_true', help='Skip simulated annealing (use existing tuned file)')
     parser.add_argument('--tuned-file', type=str, default=None, help='Path to pre-tuned data file')
-    parser.add_argument('--replot', type=str, default=None, 
+    parser.add_argument('--no-biomass-constraint', action='store_true',
+                        help='Run FVA without constraining biomass to near-optimal (allows biomass to vary freely)')
+    parser.add_argument('--replot', type=str, default=None,
                         help='Path to existing results directory to regenerate figures only (skip FVA)')
 
     args = parser.parse_args()
@@ -92,24 +94,24 @@ def main():
         if not os.path.isdir(results_dir):
             print(f"Error: Results directory not found: {results_dir}")
             sys.exit(1)
-        
+
         print("\n" + "="*80)
         print(f"=== REPLOT MODE: Regenerating Figures ===")
         print("="*80)
         print(f"Model: {model_name}")
         print(f"Results directory: {results_dir}")
         print("="*80)
-        
+
         # Load existing results
         fva_results, biomass_values = load_existing_results(results_dir)
-        
+
         # Generate plots
         print("\n=== Regenerating Figures ===")
         create_fva_ablation_dashboard(
             fva_results, biomass_values, model_name, results_dir,
             prefix="fva_ablation", show=False
         )
-        
+
         print("\n" + "="*80)
         print("=== Replot Complete ===")
         print("="*80)
@@ -121,7 +123,7 @@ def main():
         print("  - fva_ablation_biomass_progression.png")
         print("  - fva_ablation_summary.csv")
         print("="*80)
-        
+
         return  # Exit early - don't run FVA computations
 
     # =======================================================================
@@ -134,6 +136,7 @@ def main():
     n_workers = args.workers or fva_config.get('workers', None)
     fva_method = fva_config.get('method', 'dask')
     chunk_size = fva_config.get('chunk_size', None)
+    constrain_biomass = not args.no_biomass_constraint  # Invert flag for parameter
 
     # Generate run ID
     run_id = f"{model_name}_FVA_ablation_{datetime.today().strftime('%Y%m%d')}_{random.randint(1000, 9999)}"
@@ -155,6 +158,7 @@ def main():
     print(f"Run ID: {run_id}")
     print(f"Organism: {organism}")
     print(f"Enzyme upper bound: {enzyme_upper_bound}")
+    print(f"Constrain biomass: {constrain_biomass}")
     print(f"Parallel FVA: {use_parallel}")
     if use_parallel:
         print(f"Workers: {n_workers or 'auto'}")
@@ -216,18 +220,18 @@ def main():
     # ===================================================================
     print("\n=== Level 1: Baseline GEM (irreversible, no enzyme constraints) ===")
     fva_results_irrev = cobra_fva(model, fraction_of_optimum=0.9)
-    
+
     fva_df = pd.DataFrame({
         'Reactions': fva_results_irrev.index,
         'Min Solutions': fva_results_irrev['minimum'],
         'Max Solutions': fva_results_irrev['maximum'],
         'Solution Biomass': [model.slim_optimize()] * len(fva_results_irrev)
     })
-    
+
     biomass = model.slim_optimize()
     print(f"  Biomass: {biomass:.4f}")
     print(f"  Reactions analyzed: {len(fva_df)}")
-    
+
     fva_results['Level 1: Baseline GEM'] = fva_df
     biomass_values['Level 1: Baseline GEM'] = biomass
     fva_df.to_csv(os.path.join(results_dir, 'level1_baseline_irreversible.csv'), index=False)
@@ -237,7 +241,7 @@ def main():
     # ===================================================================
     fva_df, biomass = run_single_enzyme_fva(
         model, processed_df, biomass_reaction, enzyme_upper_bound,
-        use_parallel, n_workers, fva_method, chunk_size
+        use_parallel, n_workers, fva_method, chunk_size, constrain_biomass
     )
     fva_results['Level 2: Single Enzyme'] = fva_df
     biomass_values['Level 2: Single Enzyme'] = biomass
@@ -248,7 +252,7 @@ def main():
     # ===================================================================
     fva_df, biomass = run_isoenzymes_fva(
         model, processed_df, biomass_reaction, enzyme_upper_bound,
-        use_parallel, n_workers, fva_method, chunk_size
+        use_parallel, n_workers, fva_method, chunk_size, constrain_biomass
     )
     fva_results['Level 3a: + Isoenzymes'] = fva_df
     biomass_values['Level 3a: + Isoenzymes'] = biomass
@@ -259,7 +263,7 @@ def main():
     # ===================================================================
     fva_df, biomass = run_complexes_fva(
         model, processed_df, biomass_reaction, enzyme_upper_bound,
-        use_parallel, n_workers, fva_method, chunk_size
+        use_parallel, n_workers, fva_method, chunk_size, constrain_biomass
     )
     fva_results['Level 3b: + Complexes'] = fva_df
     biomass_values['Level 3b: + Complexes'] = biomass
@@ -270,7 +274,7 @@ def main():
     # ===================================================================
     fva_df, biomass = run_promiscuous_fva(
         model, processed_df, biomass_reaction, enzyme_upper_bound,
-        use_parallel, n_workers, fva_method, chunk_size
+        use_parallel, n_workers, fva_method, chunk_size, constrain_biomass
     )
     fva_results['Level 3c: + Promiscuous'] = fva_df
     biomass_values['Level 3c: + Promiscuous'] = biomass
@@ -281,7 +285,7 @@ def main():
     # ===================================================================
     fva_df, biomass = run_all_constraints_fva(
         model, processed_df, biomass_reaction, enzyme_upper_bound,
-        use_parallel, n_workers, fva_method, chunk_size
+        use_parallel, n_workers, fva_method, chunk_size, constrain_biomass
     )
     fva_results['Level 4: All Constraints'] = fva_df
     biomass_values['Level 4: All Constraints'] = biomass
@@ -345,7 +349,7 @@ def main():
     if tuned_df is not None:
         fva_df, biomass = run_tuned_fva(
             model, tuned_df, biomass_reaction, enzyme_upper_bound,
-            use_parallel, n_workers, fva_method, chunk_size
+            use_parallel, n_workers, fva_method, chunk_size, constrain_biomass
         )
         fva_results['Level 5: Post-Tuned'] = fva_df
         biomass_values['Level 5: Post-Tuned'] = biomass

@@ -43,7 +43,7 @@ def base_rxn_ids(mod, reverse_suffix="_reverse"):
 def flux_variability_analysis(model, processed_df, biomass_reaction,
                                output_file=None, enzyme_upper_bound=0.15, opt_ratio=0.9, enzyme_ratio=True,
                                multi_enzyme_off=False, isoenzymes_off=False,
-                               promiscuous_off=False, complexes_off=False):
+                               promiscuous_off=False, complexes_off=False, constrain_biomass=True):
     """
     Perform Flux Variability Analysis (FVA) using enzyme-constrained optimization
     with kcat values from a processed dataframe.
@@ -60,10 +60,15 @@ def flux_variability_analysis(model, processed_df, biomass_reaction,
         File path to save FVA results
     enzyme_upper_bound : float, optional
         Enzyme pool constraint
+    opt_ratio : float, optional
+        Fraction of optimal biomass for constraint (default: 0.9)
     enzyme_ratio : bool, optional
         Whether to apply enzyme ratio constraint
     multi_enzyme_off, isoenzymes_off, promiscuous_off, complexes_off : bool
         Logic switches for model complexity
+    constrain_biomass : bool, optional
+        If True, constrain biomass to opt_ratio*optimal during FVA (default: True)
+        If False, biomass can vary freely during FVA
 
     Returns
     -------
@@ -91,10 +96,14 @@ def flux_variability_analysis(model, processed_df, biomass_reaction,
 
     print(f"Optimal biomass: {solution_biomass:.6f}")
 
-    # Step 2: Fix biomass value
-    biomass_rxn = model.reactions.get_by_id(biomass_reaction)
-    biomass_rxn.lower_bound = solution_biomass * opt_ratio
-    biomass_rxn.upper_bound = solution_biomass
+    # Step 2: Fix biomass value (if constraining)
+    if constrain_biomass:
+        print(f"Constraining biomass: {solution_biomass * opt_ratio:.6f} ≤ biomass ≤ {solution_biomass:.6f} (opt_ratio={opt_ratio})")
+        biomass_rxn = model.reactions.get_by_id(biomass_reaction)
+        biomass_rxn.lower_bound = solution_biomass * opt_ratio
+        biomass_rxn.upper_bound = solution_biomass
+    else:
+        print("Running FVA without biomass constraint (biomass can vary freely)")
 
     # Step 3: Run FVA
     min_fluxes = []
@@ -599,7 +608,7 @@ def flux_variability_analysis_parallel_chunked(model, processed_df, biomass_reac
                                enzyme_upper_bound=0.15, opt_ratio=0.9, enzyme_ratio=True,
                                multi_enzyme_off=False, isoenzymes_off=False,
                                promiscuous_off=False, complexes_off=False,
-                               n_workers=None, chunk_size=None, method='dask'):
+                               n_workers=None, chunk_size=None, method='dask', constrain_biomass=True):
     """
     Perform Flux Variability Analysis (FVA) in parallel with chunking support.
 
@@ -631,6 +640,9 @@ def flux_variability_analysis_parallel_chunked(model, processed_df, biomass_reac
         Number of reactions per chunk (default: auto-calculated)
     method : str, optional
         Parallelization method: 'dask' or 'multiprocessing' (default: 'dask')
+    constrain_biomass : bool, optional
+        If True, constrain biomass to opt_ratio*optimal during FVA (default: True)
+        If False, biomass can vary freely during FVA
 
     Returns
     -------
@@ -698,9 +710,16 @@ def flux_variability_analysis_parallel_chunked(model, processed_df, biomass_reac
         verbose=True
     )
     print(f"  Optimal biomass: {sol_biomass:.6f}")
-    print(f"  Biomass constraint: {sol_biomass * opt_ratio:.6f} ≤ biomass ≤ {sol_biomass:.6f} (opt_ratio={opt_ratio})")
 
-    biomass_bounds = (biomass_reaction, sol_biomass * opt_ratio, sol_biomass)
+    # Set biomass bounds based on constrain_biomass parameter
+    if constrain_biomass:
+        print(f"  Biomass constraint: {sol_biomass * opt_ratio:.6f} ≤ biomass ≤ {sol_biomass:.6f} (opt_ratio={opt_ratio})")
+        biomass_bounds = (biomass_reaction, sol_biomass * opt_ratio, sol_biomass)
+    else:
+        print("  Running FVA without biomass constraint (biomass can vary freely)")
+        # Get original bounds from model
+        biomass_rxn = model.reactions.get_by_id(biomass_reaction)
+        biomass_bounds = (biomass_reaction, biomass_rxn.lower_bound, biomass_rxn.upper_bound)
 
     # 2) Create reaction chunks from all reactions (forward and reverse)
     # All reactions will be analyzed independently, then combined post-hoc
@@ -884,7 +903,7 @@ def flux_variability_analysis_parallel(model, processed_df, biomass_reaction,
                                       enzyme_upper_bound=0.15, opt_ratio=0.9, enzyme_ratio=True,
                                       multi_enzyme_off=False, isoenzymes_off=False,
                                       promiscuous_off=False, complexes_off=False,
-                                      n_workers=None, chunk_size=None, method='dask'):
+                                      n_workers=None, chunk_size=None, method='dask', constrain_biomass=True):
     """
     Parallel FVA wrapper that auto-selects chunked implementation.
 
@@ -893,6 +912,8 @@ def flux_variability_analysis_parallel(model, processed_df, biomass_reaction,
 
     For backward compatibility, this function has the same signature as the
     original flux_variability_analysis_parallel but now uses chunking by default.
+
+    Set constrain_biomass=False to run FVA without fixing biomass to near-optimal value.
     """
     return flux_variability_analysis_parallel_chunked(
         model=model,
@@ -908,5 +929,6 @@ def flux_variability_analysis_parallel(model, processed_df, biomass_reaction,
         complexes_off=complexes_off,
         n_workers=n_workers,
         chunk_size=chunk_size,
-        method=method
+        method=method,
+        constrain_biomass=constrain_biomass
     )

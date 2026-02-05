@@ -1199,75 +1199,89 @@ def main():
     # === Step 7: Save Final Model ===
     print("\n=== Step 7: Saving final model ===")
 
-    # Apply optimal maintenance parameters if found from sweep
-    if optimal_ngam is not None and optimal_gam is not None:
-        print(f"  Applying optimal maintenance parameters:")
-        print(f"    - Setting NGAM ({ngam_rxn_id}) lower bound to {optimal_ngam:.2f}")
-        try:
-            ngam_rxn = model.reactions.get_by_id(ngam_rxn_id)
-            ngam_rxn.lower_bound = optimal_ngam
-        except KeyError:
-            print(f"    Warning: NGAM reaction '{ngam_rxn_id}' not found")
-
-        # Apply GAM scaling
-        print(f"    - Scaling GAM to {optimal_gam:.2f} mmol ATP/gDW")
-        try:
-            biomass_rxn = model.reactions.get_by_id(biomass_reaction)
-            atp_met_ids = ['atp_c', 'ATP_c', 'cpd00002_c0']
-
-            # Find ATP and get current GAM
-            current_gam = None
-            atp_met = None
-            for met_id in atp_met_ids:
-                try:
-                    met = model.metabolites.get_by_id(met_id)
-                    if met in biomass_rxn.metabolites:
-                        current_gam = abs(biomass_rxn.metabolites[met])
-                        atp_met = met
-                        break
-                except KeyError:
-                    continue
-
-            if current_gam and atp_met:
-                scale = optimal_gam / current_gam
-                current_mets = biomass_rxn.metabolites.copy()
-
-                # Scale ATP maintenance block (ATP, H2O, ADP, Pi, H+)
-                met_mappings = {
-                    'h2o': ['h2o_c', 'H2O_c', 'cpd00001_c0'],
-                    'adp': ['adp_c', 'ADP_c', 'cpd00008_c0'],
-                    'pi': ['pi_c', 'Pi_c', 'cpd00009_c0'],
-                    'h': ['h_c', 'H_c', 'cpd00067_c0']
-                }
-
-                mets_to_scale = [atp_met]
-                for met_type, possible_ids in met_mappings.items():
-                    for met_id in possible_ids:
-                        try:
-                            met = model.metabolites.get_by_id(met_id)
-                            if met in current_mets:
-                                mets_to_scale.append(met)
-                                break
-                        except KeyError:
-                            continue
-
-                for met in mets_to_scale:
-                    old_coef = current_mets[met]
-                    biomass_rxn.add_metabolites({met: old_coef * (scale - 1.0)}, combine=True)
-
-                print(f"    ✓ GAM scaled from {current_gam:.2f} to {optimal_gam:.2f}")
-            else:
-                print(f"    Warning: Could not find ATP in biomass reaction for GAM scaling")
-
-        except KeyError:
-            print(f"    Warning: Biomass reaction '{biomass_reaction}' not found")
-
     model_output_dir = os.path.join(project_root, "models")
     os.makedirs(model_output_dir, exist_ok=True)
     model_output_path = os.path.join(model_output_dir, f"{run_id}.xml")
 
+    # Assign kcats first
     model_with_kcats = assign_kcats_to_model(model, df_new)
+
+    # Apply optimal maintenance parameters to the model copy if found from sweep
+    if optimal_ngam is not None and optimal_gam is not None:
+        print(f"  Applying optimal maintenance parameters to final model:")
+        print(f"    - Setting NGAM ({ngam_rxn_id}) lower bound to {optimal_ngam:.2f}")
+        try:
+            ngam_rxn = model_with_kcats.reactions.get_by_id(ngam_rxn_id)
+            ngam_rxn.lower_bound = float(optimal_ngam)  # Ensure float
+        except KeyError:
+            print(f"    Warning: NGAM reaction '{ngam_rxn_id}' not found")
+
+        # Apply GAM scaling (only if GAM > 0 to avoid creating invalid reactions)
+        if optimal_gam > 0:
+            print(f"    - Scaling GAM to {optimal_gam:.2f} mmol ATP/gDW")
+            try:
+                biomass_rxn = model_with_kcats.reactions.get_by_id(biomass_reaction)
+                atp_met_ids = ['atp_c', 'ATP_c', 'cpd00002_c0']
+
+                # Find ATP and get current GAM
+                current_gam = None
+                atp_met = None
+                for met_id in atp_met_ids:
+                    try:
+                        met = model_with_kcats.metabolites.get_by_id(met_id)
+                        if met in biomass_rxn.metabolites:
+                            current_gam = abs(biomass_rxn.metabolites[met])
+                            atp_met = met
+                            break
+                    except KeyError:
+                        continue
+
+                if current_gam and atp_met:
+                    scale = optimal_gam / current_gam
+                    current_mets = biomass_rxn.metabolites.copy()
+
+                    # Scale ATP maintenance block (ATP, H2O, ADP, Pi, H+)
+                    met_mappings = {
+                        'h2o': ['h2o_c', 'H2O_c', 'cpd00001_c0'],
+                        'adp': ['adp_c', 'ADP_c', 'cpd00008_c0'],
+                        'pi': ['pi_c', 'Pi_c', 'cpd00009_c0'],
+                        'h': ['h_c', 'H_c', 'cpd00067_c0']
+                    }
+
+                    mets_to_scale = [atp_met]
+                    for met_type, possible_ids in met_mappings.items():
+                        for met_id in possible_ids:
+                            try:
+                                met = model_with_kcats.metabolites.get_by_id(met_id)
+                                if met in current_mets:
+                                    mets_to_scale.append(met)
+                                    break
+                            except KeyError:
+                                continue
+
+                    for met in mets_to_scale:
+                        old_coef = current_mets[met]
+                        biomass_rxn.add_metabolites({met: old_coef * (scale - 1.0)}, combine=True)
+
+                    print(f"    ✓ GAM scaled from {current_gam:.2f} to {optimal_gam:.2f}")
+                else:
+                    print(f"    Warning: Could not find ATP in biomass reaction for GAM scaling")
+
+            except KeyError:
+                print(f"    Warning: Biomass reaction '{biomass_reaction}' not found")
+        else:
+            print(f"    ⚠️  Skipping GAM scaling: GAM=0 would create an invalid biomass reaction")
+            print(f"       Keeping original GAM value in the saved model")
+
     model_with_kcats = clean_annotations(model_with_kcats)
+
+    # Ensure all reaction bounds are floats for SBML export (not integers)
+    for rxn in model_with_kcats.reactions:
+        if isinstance(rxn.lower_bound, int):
+            rxn.lower_bound = float(rxn.lower_bound)
+        if isinstance(rxn.upper_bound, int):
+            rxn.upper_bound = float(rxn.upper_bound)
+
     write_sbml_model(model_with_kcats, model_output_path)
     print(f"  Final GEM saved to: {model_output_path}")
 
