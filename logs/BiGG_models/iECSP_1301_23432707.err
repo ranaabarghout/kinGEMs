@@ -1,0 +1,13 @@
+2026-02-19 09:14:18.831 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+Traceback (most recent call last):
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_pipeline.py", line 1098, in <module>
+    main()
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_pipeline.py", line 896, in main
+    pipeline_results = run_pipeline_core(
+                       ^^^^^^^^^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_pipeline.py", line 405, in run_pipeline_core
+    predictions_csv_path = find_predictions_file(model_name, CPIPred_data_dir)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_pipeline.py", line 168, in find_predictions_file
+    raise FileNotFoundError(
+FileNotFoundError: No CPI-Pred predictions file found for model 'iECSP_1301' in /project/6000502/ranaab/kinGEMs_v2/data/interim/CPI-Pred predictions

@@ -102,6 +102,7 @@ from kinGEMs.fluxomics_validation import (
     calculate_normalized_euclidean_dist,
     calculate_jaccard_index,
     calculate_mean_to_mean_distance,
+    calculate_per_reaction_distances,
 )
 from kinGEMs.plots import (
     plot_fva_mfa_comparison,
@@ -109,7 +110,8 @@ from kinGEMs.plots import (
     plot_fva_mfa_comparison_normalized,
     plot_jaccard_index_comparison,
     plot_jaccard_index_comparison_stacked,
-    plot_jaccard_index_comparison_overlapping
+    plot_jaccard_index_comparison_overlapping,
+    plot_mean_to_mean_distance_stacked,
 )
 
 # Import pipeline core function (only used when running with config)
@@ -201,6 +203,7 @@ def run_fluxomics_analysis(
 
     comparison_dfs: Dict[str, pd.DataFrame] = {}
     jaccard_info = []
+    distance_info = []  # (label, per_rxn_distances)
     metrics_summary = []
 
     # Step 4: Match simulated fluxes with experimental fluxes
@@ -253,6 +256,8 @@ def run_fluxomics_analysis(
             "zero_overlaps": zero_overlaps
         })
         jaccard_info.append((spec.label, jaccard_index, zero_overlaps, jaccard_df))
+        per_rxn_dists = calculate_per_reaction_distances(comparison_df)
+        distance_info.append((spec.label, per_rxn_dists))
 
     # Save metrics summary
     metrics_path = os.path.join(analysis_dir, "metrics_summary.csv")
@@ -332,6 +337,18 @@ def run_fluxomics_analysis(
     )
     logger.info("Saved stacked Jaccard comparison plot: %s", jaccard_stacked_plot_path)
 
+    # --- Stacked mean-to-mean distance plot ---
+    distance_distributions = {label: dists for (label, dists) in distance_info}
+    mean_to_mean_stacked_path = os.path.join(analysis_dir, "mean_to_mean_distance_stacked.png")
+    plot_mean_to_mean_distance_stacked(
+        distance_distributions=distance_distributions,
+        zero_overlaps=zero_overlaps_map,
+        model_names=model_names,
+        output_path=mean_to_mean_stacked_path,
+        show=show_plots,
+        n_total=n_total_list
+    )
+    logger.info("Saved mean-to-mean distance stacked plot: %s", mean_to_mean_stacked_path)
 
     # Use first model's Jaccard ranking to select top reactions
     ref_label, _, _, ref_jaccard_df = jaccard_info[0]
@@ -372,6 +389,21 @@ def run_fluxomics_analysis(
         show=show_plots
     )
     logger.info("Saved normalized FVA vs MFA comparison plot: %s", fva_plot_norm_path)
+
+    # All-reactions normalized plot (split into chunks of 46)
+    fva_plot_norm_all_path = os.path.join(analysis_dir, "fva_mfa_comparison_normalized_all.png")
+    comparison_dfs_no_biomass = {
+        name: df[~df["rxn_id"].str.contains("BIOMASS", case=False, na=False)]
+        for name, df in comparison_dfs.items()
+    }
+    plot_fva_mfa_comparison_normalized(
+        models_data=comparison_dfs_no_biomass,
+        output_path=fva_plot_norm_all_path,
+        split_charts=True,
+        reactions_per_plot=46,
+        show=show_plots
+    )
+    logger.info("Saved all-reactions normalized FVA vs MFA comparison plot: %s", fva_plot_norm_all_path)
 
     logger.info("=== Fluxomics Validation Analysis Complete ===")
 

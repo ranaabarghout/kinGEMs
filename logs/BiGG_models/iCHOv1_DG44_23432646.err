@@ -1,0 +1,23 @@
+2026-02-19 09:09:31.351 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+Traceback (most recent call last):
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_pipeline.py", line 1098, in <module>
+    main()
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_pipeline.py", line 896, in main
+    pipeline_results = run_pipeline_core(
+                       ^^^^^^^^^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_pipeline.py", line 375, in run_pipeline_core
+    model, substrate_df, sequences_df = prepare_model_data(
+                                        ^^^^^^^^^^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/kinGEMs/dataset.py", line 841, in prepare_model_data
+    irrev_model = convert_to_irreversible(model)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/kinGEMs/dataset.py", line 159, in convert_to_irreversible
+    reaction.lower_bound = max(0, reaction.lower_bound)
+    ^^^^^^^^^^^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/cobra/util/context.py", line 111, in wrapper
+    func(self, new_value)
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/cobra/core/reaction.py", line 370, in lower_bound
+    self._check_bounds(value, self._upper_bound)
+  File "/project/6000502/ranaab/kinGEMs_v2/venv/lib/python3.11/site-packages/cobra/core/reaction.py", line 293, in _check_bounds
+    raise ValueError(
+ValueError: The lower bound must be less than or equal to the upper bound (0 <= -0.02013).

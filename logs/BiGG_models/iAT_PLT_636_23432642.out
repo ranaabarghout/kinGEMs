@@ -1,0 +1,23 @@
+Starting kinGEMs pipeline for iAT_PLT_636
+Config: configs/BiGG_models/iAT_PLT_636.json
+Time: Thu Feb 19 09:07:13 PST 2026
+
+Restricted license - for non-production use only - expires 2026-11-23
+Loading configuration from: configs/BiGG_models/iAT_PLT_636.json
+
+======================================================================
+=== kinGEMs Pipeline for iAT_PLT_636 ===
+======================================================================
+Run ID: iAT_PLT_636_20260219_5870
+Model type: Standard
+Organism: Human
+Results directory: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iAT_PLT_636_20260219_5870
+======================================================================
+=== kinGEMs Pipeline for iAT_PLT_636 ===
+Run ID: iAT_PLT_636_20260219_5870
+Model type: Standard
+Organism: Human
+Results directory: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iAT_PLT_636_20260219_5870
+Solver: glpk
+
+Completed at: Thu Feb 19 09:10:22 PST 2026

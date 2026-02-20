@@ -1,0 +1,23 @@
+Starting kinGEMs pipeline for iRC1080
+Config: configs/BiGG_models/iRC1080.json
+Time: Thu Feb 19 09:21:10 PST 2026
+
+Restricted license - for non-production use only - expires 2026-11-23
+Loading configuration from: configs/BiGG_models/iRC1080.json
+
+======================================================================
+=== kinGEMs Pipeline for iRC1080 ===
+======================================================================
+Run ID: iRC1080_20260219_4932
+Model type: Standard
+Organism: E coli
+Results directory: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iRC1080_20260219_4932
+======================================================================
+=== kinGEMs Pipeline for iRC1080 ===
+Run ID: iRC1080_20260219_4932
+Model type: Standard
+Organism: E coli
+Results directory: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iRC1080_20260219_4932
+Solver: glpk
+
+Completed at: Thu Feb 19 09:21:46 PST 2026

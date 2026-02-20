@@ -1,0 +1,23 @@
+Starting kinGEMs pipeline for iMM1415
+Config: configs/BiGG_models/iMM1415.json
+Time: Thu Feb 19 09:17:41 PST 2026
+
+Restricted license - for non-production use only - expires 2026-11-23
+Loading configuration from: configs/BiGG_models/iMM1415.json
+
+======================================================================
+=== kinGEMs Pipeline for iMM1415 ===
+======================================================================
+Run ID: iMM1415_20260219_1974
+Model type: Standard
+Organism: Mouse
+Results directory: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iMM1415_20260219_1974
+======================================================================
+=== kinGEMs Pipeline for iMM1415 ===
+Run ID: iMM1415_20260219_1974
+Model type: Standard
+Organism: Mouse
+Results directory: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iMM1415_20260219_1974
+Solver: glpk
+
+Completed at: Thu Feb 19 09:17:52 PST 2026

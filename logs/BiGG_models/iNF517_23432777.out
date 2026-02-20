@@ -1,0 +1,28 @@
+Starting kinGEMs pipeline for iNF517
+Config: configs/BiGG_models/iNF517.json
+Time: Thu Feb 19 09:18:07 PST 2026
+
+Restricted license - for non-production use only - expires 2026-11-23
+Loading configuration from: configs/BiGG_models/iNF517.json
+
+======================================================================
+=== kinGEMs Pipeline for iNF517 ===
+======================================================================
+Run ID: iNF517_20260219_7696
+Model type: Standard
+Organism: L lactis
+Results directory: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iNF517_20260219_7696
+======================================================================
+=== kinGEMs Pipeline for iNF517 ===
+Run ID: iNF517_20260219_7696
+Model type: Standard
+Organism: L lactis
+Results directory: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iNF517_20260219_7696
+Solver: glpk
+Biomass reaction: BIOMASS_LLA
+Baseline growth: 0.0426
+=== Step 1: Preparing model data ===
+Warning: Model has 8 validation errors
+Loaded model with 754 reactions and 650 metabolites
+
+Completed at: Thu Feb 19 09:18:16 PST 2026

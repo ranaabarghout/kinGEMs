@@ -351,6 +351,28 @@ def calculate_mean_to_mean_distance(
     return mean_of_distances
 
 
+def calculate_per_reaction_distances(
+    comparison_df: pd.DataFrame
+) -> list[float]:
+    """
+    Return per-reaction absolute distance between FVA and MFA range midpoints.
+
+    Parameters
+    ----------
+    comparison_df : pd.DataFrame
+        DataFrame with columns: 'rxn_id', 'fva_lb', 'fva_ub', 'mfa_lb', 'mfa_ub'
+
+    Returns
+    -------
+    list[float]
+        One distance value per reaction (NaN rows dropped).
+    """
+    df = comparison_df.dropna(subset=['mfa_lb', 'mfa_ub', 'fva_lb', 'fva_ub']).copy()
+    fva_mean = (df['fva_lb'] + df['fva_ub']) / 2
+    mfa_mean = (df['mfa_lb'] + df['mfa_ub']) / 2
+    return np.abs(fva_mean - mfa_mean).tolist()
+
+
 # Plotting functions have been moved to kinGEMs/plots.py
 # Import them from there:
 #   from kinGEMs.plots import (

@@ -786,11 +786,14 @@ def plot_kcat_annealing_comparison(initial_df, tuned_df, output_path=None,
 
     # Create figure with subplots - add space for stats on right
     fig = plt.figure(figsize=figsize)
-    gs = fig.add_gridspec(2, 3, hspace=0.3, wspace=0.3, width_ratios=[1, 1, 0.85])
+    gs = fig.add_gridspec(2, 3, hspace=0.3, wspace=0.3,
+                          width_ratios=[1, 1, 0.85])
 
     # 1. Scatter plot: Initial vs Tuned
     ax1 = fig.add_subplot(gs[0, :2])
-    ax1.scatter(merged['kcat_mean'], merged['kcat_updated'], alpha=0.6, s=50, color='#1f77b4')
+
+    ax1.scatter(merged['kcat_mean'], merged['kcat_updated'],
+                alpha=0.6, s=50, color='#1f77b4')
 
     # Add diagonal line (y=x)
     lims = [
@@ -816,6 +819,13 @@ def plot_kcat_annealing_comparison(initial_df, tuned_df, output_path=None,
     log_initial = np.log10(merged['kcat_mean'])
     log_initial_clean = log_initial[np.isfinite(log_initial)]
 
+    # Compute shared x-axis limits across both KDE panels (in log10 space)
+    log_tuned = np.log10(merged['kcat_updated'])
+    log_tuned_clean = log_tuned[np.isfinite(log_tuned)]
+    all_log = pd.concat([log_initial_clean, log_tuned_clean])
+    shared_xmin = 10 ** (all_log.min() - 0.5)
+    shared_xmax = 10 ** (all_log.max() + 0.5)
+
     if len(log_initial_clean) > 1:
         from scipy.stats import gaussian_kde
         kde_initial = gaussian_kde(log_initial_clean)
@@ -825,6 +835,7 @@ def plot_kcat_annealing_comparison(initial_df, tuned_df, output_path=None,
 
     ax2.axvline(initial_median, color='#8c564b', linestyle='--', linewidth=2.5, label=f'Median: {initial_median:.1f}')
     ax2.set_xscale('log')
+    ax2.set_xlim(shared_xmin, shared_xmax)
     ax2.set_xlabel('kcat (1/hr)', fontsize=FONT_SIZES['axis_label'])
     ax2.set_ylabel('Density', fontsize=FONT_SIZES['axis_label'])
     ax2.set_title('Initial kcat Distribution', fontsize=FONT_SIZES['subtitle'])
@@ -833,9 +844,6 @@ def plot_kcat_annealing_comparison(initial_df, tuned_df, output_path=None,
 
     # 3. KDE: Post-annealing kcat distribution
     ax3 = fig.add_subplot(gs[1, 1])
-    # Use log10 transformed data for KDE
-    log_tuned = np.log10(merged['kcat_updated'])
-    log_tuned_clean = log_tuned[np.isfinite(log_tuned)]
 
     if len(log_tuned_clean) > 1:
         kde_tuned = gaussian_kde(log_tuned_clean)
@@ -845,6 +853,7 @@ def plot_kcat_annealing_comparison(initial_df, tuned_df, output_path=None,
 
     ax3.axvline(tuned_median, color='#e377c2', linestyle='--', linewidth=2.5, label=f'Median: {tuned_median:.1f}')
     ax3.set_xscale('log')
+    ax3.set_xlim(shared_xmin, shared_xmax)
     ax3.set_xlabel('kcat (1/hr)', fontsize=FONT_SIZES['axis_label'])
     ax3.set_ylabel('Density', fontsize=FONT_SIZES['axis_label'])
     ax3.set_title('Post-Annealing kcat Distribution', fontsize=FONT_SIZES['subtitle'])
@@ -881,6 +890,380 @@ def plot_kcat_annealing_comparison(initial_df, tuned_df, output_path=None,
         print(f"  Saved kcat comparison plot to: {output_path}")
 
     # Show if requested
+    if show:
+        plt.show()
+
+    return fig
+
+
+def plot_kcat_annealing_comparison_by_subsystem(
+        initial_df, tuned_df, subsystem_col,
+        output_path=None, figsize=(20, 16), show=False,
+        model_name=None, max_subsystems=12, ncols=4):
+    """
+    Compare initial and post-annealing kcat values in a grid of scatter subplots,
+    one panel per metabolic subsystem.
+
+    Parameters
+    ----------
+    initial_df : pandas.DataFrame
+        DataFrame with initial kcat values (must have 'kcat_mean' column).
+        Must also contain ``subsystem_col``.
+    tuned_df : pandas.DataFrame
+        DataFrame with tuned kcat values (must have 'kcat_updated' column).
+    subsystem_col : str
+        Column name in ``initial_df`` containing subsystem labels.
+    output_path : str, optional
+        Path to save the figure.
+    figsize : tuple, optional
+        Figure size (width, height).
+    show : bool, optional
+        Whether to display the plot.
+    model_name : str, optional
+        Name of the model for the overall figure title.
+    max_subsystems : int, optional
+        Maximum number of individually plotted subsystems (default 12).
+        Remaining subsystems are grouped into an "Other" panel.
+    ncols : int, optional
+        Number of subplot columns (default 4).
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+    """
+    set_plotting_style()
+
+    if 'kcat_mean' not in initial_df.columns:
+        raise ValueError("No 'kcat_mean' column found in initial_df")
+    if 'kcat_updated' not in tuned_df.columns:
+        raise ValueError("No 'kcat_updated' column found in tuned_df")
+    if subsystem_col not in initial_df.columns:
+        raise ValueError(f"Column '{subsystem_col}' not found in initial_df")
+
+    # Merge on shared identifier columns
+    merge_cols = []
+    if 'Reactions' in initial_df.columns and 'Reactions' in tuned_df.columns:
+        merge_cols.append('Reactions')
+    if 'Single_gene' in initial_df.columns and 'Single_gene' in tuned_df.columns:
+        merge_cols.append('Single_gene')
+    if not merge_cols:
+        raise ValueError("Cannot merge dataframes: no common identifier columns found")
+
+    merged = pd.merge(
+        initial_df[merge_cols + ['kcat_mean', subsystem_col]],
+        tuned_df[merge_cols + ['kcat_updated']],
+        on=merge_cols,
+        how='inner'
+    ).dropna(subset=['kcat_mean', 'kcat_updated'])
+
+    if len(merged) == 0:
+        print("Warning: No matching kcat values found between initial and tuned datasets")
+        return None
+
+    # Group rare subsystems into "Other"
+    top_subs = (
+        merged[subsystem_col]
+        .value_counts()
+        .head(max_subsystems)
+        .index.tolist()
+    )
+    merged['_sub_label'] = merged[subsystem_col].where(
+        merged[subsystem_col].isin(top_subs), other='Other'
+    )
+
+    # Plot order: top subsystems by count, "Other" at end
+    sub_counts = merged['_sub_label'].value_counts()
+    groups = [s for s in top_subs if s in sub_counts.index]
+    if 'Other' in sub_counts.index:
+        groups.append('Other')
+
+    n_groups = len(groups)
+    nrows = int(np.ceil(n_groups / ncols))
+
+    # Colour palette: tab20 for named subsystems, grey for Other
+    tab20 = plt.cm.get_cmap('tab20', len(top_subs) + 1)
+    palette = {sub: tab20(i) for i, sub in enumerate(top_subs)}
+    palette['Other'] = (0.6, 0.6, 0.6, 1.0)
+
+    fig, axes = plt.subplots(nrows, ncols, figsize=figsize, squeeze=False)
+
+    # Shared axis limits across all panels
+    all_vals = pd.concat([merged['kcat_mean'], merged['kcat_updated']]).dropna()
+    pos_vals = all_vals[all_vals > 0]
+    global_min = pos_vals.min() * 0.5
+    global_max = pos_vals.max() * 2.0
+    lims = [global_min, global_max]
+
+    for idx, sub in enumerate(groups):
+        row, col = divmod(idx, ncols)
+        ax = axes[row][col]
+
+        grp = merged[merged['_sub_label'] == sub]
+        color = palette.get(sub, palette['Other'])
+
+        ax.scatter(
+            grp['kcat_mean'], grp['kcat_updated'],
+            alpha=0.6, s=20, color=color, rasterized=True
+        )
+
+        # y = x diagonal
+        ax.plot(lims, lims, 'k--', alpha=0.5, linewidth=1.2)
+
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+        ax.set_xlim(lims)
+        ax.set_ylim(lims)
+        ax.grid(True, alpha=0.3)
+        ax.set_title(
+            f'{sub}\n(n={len(grp):,})',
+            fontsize=FONT_SIZES['annotation'],
+            fontweight='bold',
+            pad=4
+        )
+        ax.tick_params(labelsize=FONT_SIZES['tick_label'] - 2)
+
+    # Hide unused axes
+    for idx in range(n_groups, nrows * ncols):
+        row, col = divmod(idx, ncols)
+        axes[row][col].set_visible(False)
+
+    # Shared axis labels
+    fig.supxlabel('Initial kcat (1/hr)', fontsize=FONT_SIZES['axis_label'], y=0.01)
+    fig.supylabel('Post-Annealing kcat (1/hr)', fontsize=FONT_SIZES['axis_label'], x=0.01)
+
+    suptitle = 'Initial vs Post-Annealing kcat by Subsystem'
+    if model_name:
+        suptitle = f'{model_name}: {suptitle}'
+    fig.suptitle(suptitle, fontsize=FONT_SIZES['title'], fontweight='bold', y=1.01)
+
+    plt.tight_layout()
+
+    if output_path:
+        ensure_dir_exists(os.path.dirname(output_path))
+        plt.savefig(output_path, dpi=DEFAULT_DPI, bbox_inches='tight')
+        print(f"  Saved kcat subsystem comparison plot to: {output_path}")
+
+    if show:
+        plt.show()
+
+    return fig
+
+
+def plot_davidi_kcat_kmax_analysis(df_kcat_kmax, df_kapp=None, output_path=None,
+                                   figsize=(18, 10), show=False):
+    """
+    Analyze and visualize kcat vs. kmax data from Davidi et al. 2016 PNAS.
+
+    Creates a comprehensive figure with:
+    1. Scatter plot of kcat[s-1] vs kmax[s-1] (log-log scale, colored by kcat/kmax ratio)
+    2. KDE of kcat[s-1] distribution
+    3. KDE of kmax[s-1] distribution
+    4. KDE of all kapp[s-1] values across conditions (if df_kapp provided)
+    5. Summary statistics panel
+
+    Parameters
+    ----------
+    df_kcat_kmax : pandas.DataFrame
+        DataFrame from the 'kcat vs. kmax' sheet (read with header=2).
+        Must contain columns 'kcat [s-1]' and 'kmax [s-1]'.
+    df_kapp : pandas.DataFrame, optional
+        DataFrame from the 'kapp 1s' sheet (read with header=2).
+        Condition columns (after 'bnumber') are flattened and plotted.
+    output_path : str, optional
+        Path to save the figure.
+    figsize : tuple, optional
+        Figure size (width, height).
+    show : bool, optional
+        Whether to display the plot.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+        The plot figure.
+    """
+    from scipy.stats import gaussian_kde, spearmanr
+
+    set_plotting_style()
+
+    # --- Parse kcat vs. kmax data ---
+    kcat_col = 'kcat [s-1]'
+    kmax_col = 'kmax [s-1]'
+    ratio_col = 'kcat / kmax'
+
+    df = df_kcat_kmax[[kcat_col, kmax_col, ratio_col]].dropna()
+    kcat = df[kcat_col].values.astype(float)
+    kmax = df[kmax_col].values.astype(float)
+    ratio = df[ratio_col].values.astype(float)
+
+    # --- Parse kapp data (melt all condition columns to 1-D) ---
+    kapp_values = None
+    if df_kapp is not None:
+        id_cols = [c for c in df_kapp.columns if c in ('reaction (model name)', 'bnumber')]
+        cond_cols = [c for c in df_kapp.columns if c not in id_cols]
+        raw = df_kapp[cond_cols].values.flatten().astype(float)
+        kapp_values = raw[np.isfinite(raw) & (raw > 0)]
+
+    # --- Layout ---
+    n_kde_panels = 3 if kapp_values is not None else 2
+    ncols = n_kde_panels + 1          # KDE panels + stats
+    width_ratios = [1] * n_kde_panels + [0.85]
+    fig = plt.figure(figsize=figsize)
+    gs = fig.add_gridspec(2, ncols, hspace=0.35, wspace=0.35,
+                          width_ratios=width_ratios)
+
+    # =========================================================
+    # 1.  Scatter: kcat vs kmax  (spans top row, all KDE cols)
+    # =========================================================
+    ax1 = fig.add_subplot(gs[0, :n_kde_panels])
+
+    log_ratio = np.log10(ratio)
+    vmax = np.percentile(np.abs(log_ratio), 95)
+    sc = ax1.scatter(kcat, kmax, c=log_ratio, cmap='RdBu_r',
+                     vmin=-vmax, vmax=vmax,
+                     alpha=0.75, s=60, edgecolors='k', linewidths=0.4)
+    cbar = plt.colorbar(sc, ax=ax1, pad=0.01)
+    cbar.set_label('log₁₀(kcat / kmax)', fontsize=FONT_SIZES['annotation'])
+    cbar.ax.tick_params(labelsize=FONT_SIZES['annotation'])
+
+    # y = x line
+    lims = [min(kcat.min(), kmax.min()) * 0.5,
+            max(kcat.max(), kmax.max()) * 2]
+    ax1.plot(lims, lims, 'k--', alpha=0.55, linewidth=2, label='kcat = kmax (y = x)')
+    ax1.set_xlim(lims)
+    ax1.set_ylim(lims)
+    ax1.set_xscale('log')
+    ax1.set_yscale('log')
+    ax1.set_xlabel('kcat [s⁻¹]  (in-vitro)', fontsize=FONT_SIZES['axis_label'])
+    ax1.set_ylabel('kmax [s⁻¹]  (max in-vivo kapp)', fontsize=FONT_SIZES['axis_label'])
+    ax1.set_title('kcat vs. kmax — Davidi et al. 2016 (N = {:d})'.format(len(df)),
+                  fontsize=FONT_SIZES['title'], fontweight='bold')
+    ax1.legend(fontsize=FONT_SIZES['legend'], loc='upper left')
+    ax1.grid(True, alpha=0.3)
+
+    # =========================================================
+    # 2.  KDE — kcat
+    # =========================================================
+    ax2 = fig.add_subplot(gs[1, 0])
+    kcat_color = '#8c564b'
+    log_kcat = np.log10(kcat[kcat > 0])
+    if len(log_kcat) > 1:
+        kde = gaussian_kde(log_kcat)
+        xr = np.linspace(log_kcat.min(), log_kcat.max(), 300)
+        ax2.fill_between(10**xr, kde(xr), alpha=0.7, color=kcat_color)
+        ax2.plot(10**xr, kde(xr), color='#5a3328', linewidth=2)
+    med_kcat = np.median(kcat)
+    ax2.axvline(med_kcat, color=kcat_color, linestyle='--', linewidth=2.5,
+                label=f'Median: {med_kcat:.1f}')
+    ax2.set_xscale('log')
+    ax2.set_xlabel('kcat [s⁻¹]', fontsize=FONT_SIZES['axis_label'])
+    ax2.set_ylabel('Density', fontsize=FONT_SIZES['axis_label'])
+    ax2.set_title('kcat Distribution', fontsize=FONT_SIZES['subtitle'])
+    ax2.legend(fontsize=FONT_SIZES['legend'], loc='upper center',
+               bbox_to_anchor=(0.5, -0.18), ncol=2)
+    ax2.grid(True, alpha=0.3, axis='y')
+
+    # =========================================================
+    # 3.  KDE — kmax
+    # =========================================================
+    ax3 = fig.add_subplot(gs[1, 1])
+    kmax_color = '#e377c2'
+    log_kmax = np.log10(kmax[kmax > 0])
+    if len(log_kmax) > 1:
+        kde = gaussian_kde(log_kmax)
+        xr = np.linspace(log_kmax.min(), log_kmax.max(), 300)
+        ax3.fill_between(10**xr, kde(xr), alpha=0.7, color=kmax_color)
+        ax3.plot(10**xr, kde(xr), color='#8f3d7a', linewidth=2)
+    med_kmax = np.median(kmax)
+    ax3.axvline(med_kmax, color=kmax_color, linestyle='--', linewidth=2.5,
+                label=f'Median: {med_kmax:.1f}')
+    ax3.set_xscale('log')
+    ax3.set_xlabel('kmax [s⁻¹]', fontsize=FONT_SIZES['axis_label'])
+    ax3.set_ylabel('Density', fontsize=FONT_SIZES['axis_label'])
+    ax3.set_title('kmax Distribution', fontsize=FONT_SIZES['subtitle'])
+    ax3.legend(fontsize=FONT_SIZES['legend'], loc='upper center',
+               bbox_to_anchor=(0.5, -0.18), ncol=2)
+    ax3.grid(True, alpha=0.3, axis='y')
+
+    # =========================================================
+    # 4.  KDE — kapp (all conditions, optional)
+    # =========================================================
+    if kapp_values is not None and n_kde_panels == 3:
+        ax4 = fig.add_subplot(gs[1, 2])
+        kapp_color = '#1f77b4'
+        log_kapp = np.log10(kapp_values[kapp_values > 0])
+        if len(log_kapp) > 1:
+            kde = gaussian_kde(log_kapp)
+            xr = np.linspace(log_kapp.min(), log_kapp.max(), 300)
+            ax4.fill_between(10**xr, kde(xr), alpha=0.7, color=kapp_color)
+            ax4.plot(10**xr, kde(xr), color='#174f7a', linewidth=2)
+        med_kapp = np.median(kapp_values)
+        ax4.axvline(med_kapp, color=kapp_color, linestyle='--', linewidth=2.5,
+                    label=f'Median: {med_kapp:.2f}')
+        ax4.set_xscale('log')
+        ax4.set_xlabel('kapp [s⁻¹]', fontsize=FONT_SIZES['axis_label'])
+        ax4.set_ylabel('Density', fontsize=FONT_SIZES['axis_label'])
+        ax4.set_title('kapp Distribution\n(all conditions)', fontsize=FONT_SIZES['subtitle'])
+        ax4.legend(fontsize=FONT_SIZES['legend'], loc='upper center',
+                   bbox_to_anchor=(0.5, -0.18), ncol=2)
+        ax4.grid(True, alpha=0.3, axis='y')
+
+    # =========================================================
+    # 5.  Summary statistics panel
+    # =========================================================
+    ax_stats = fig.add_subplot(gs[:, -1])
+    ax_stats.axis('off')
+
+    rho, p_val = spearmanr(np.log10(kcat), np.log10(kmax))
+    n_above = (ratio > 1).sum()   # kcat > kmax  (enzyme not at capacity in vivo)
+    n_below = (ratio < 1).sum()   # kmax > kcat  (apparent saturation > in-vitro)
+
+    stats_lines = [
+        'Summary Statistics',
+        '=' * 20,
+        '',
+        f'N pairs = {len(df)}',
+        '',
+        f'Median kcat:',
+        f'  {med_kcat:.2f} s⁻¹',
+        '',
+        f'Median kmax:',
+        f'  {med_kmax:.2f} s⁻¹',
+        '',
+        f'Spearman ρ:',
+        f'  {rho:.3f}  (p={p_val:.2e})',
+        '',
+        f'kcat > kmax:',
+        f'  {n_above} ({100*n_above/len(df):.1f}%)',
+        '',
+        f'kmax > kcat:',
+        f'  {n_below} ({100*n_below/len(df):.1f}%)',
+        '',
+        f'Median kcat/kmax:',
+        f'  {np.median(ratio):.1f}×',
+    ]
+    if kapp_values is not None:
+        stats_lines += [
+            '',
+            f'kapp (all conds):',
+            f'  N = {len(kapp_values)}',
+            f'  Median = {med_kapp:.2f} s⁻¹',
+        ]
+
+    stats_text = '\n'.join(stats_lines)
+    ax_stats.text(0.5, 0.5, stats_text, transform=ax_stats.transAxes,
+                  fontsize=FONT_SIZES['annotation'],
+                  verticalalignment='center', horizontalalignment='center',
+                  fontweight='bold', family='monospace',
+                  bbox=dict(boxstyle='round', facecolor='white', alpha=0.9,
+                            edgecolor='black', linewidth=2, pad=1))
+
+    plt.tight_layout()
+
+    if output_path:
+        ensure_dir_exists(os.path.dirname(output_path))
+        plt.savefig(output_path, dpi=DEFAULT_DPI, bbox_inches='tight')
+        print(f"  Saved Davidi 2016 analysis plot to: {output_path}")
+
     if show:
         plt.show()
 
@@ -2898,6 +3281,218 @@ def plot_jaccard_index_comparison_stacked(
         plt.close(fig)
 
 
+def plot_mean_to_mean_distance_stacked(
+    distance_distributions: list[list[float]] | dict[str, list[float]],
+    zero_overlaps: list[int] | dict[str, int],
+    model_names: list[str] | None = None,
+    output_path: str | None = None,
+    show: bool = True,
+    n_total: list[int] | None = None,
+) -> None:
+    """
+    Stacked plot: per-reaction mean-to-mean distance (boxplot, top) and
+    # Disjoint Reactions (bar chart, bottom).  Mirrors
+    plot_jaccard_index_comparison_stacked with the metric swapped.
+
+    Parameters
+    ----------
+    distance_distributions : list or dict
+        Per-reaction |fva_mean - mfa_mean| values for each model.
+    zero_overlaps : list or dict
+        Number of disjoint (zero-Jaccard) reactions per model.
+    model_names : list[str], optional
+        Ordered model labels.
+    output_path : str, optional
+        Save path for the figure.
+    show : bool
+        Whether to display interactively.
+    n_total : list[int], optional
+        Total reaction counts used in the figure title.
+    """
+    set_plotting_style()
+
+    # --- Normalize to lists ---
+    if isinstance(distance_distributions, dict):
+        if model_names is None:
+            model_names = list(distance_distributions.keys())
+        dists_list = [list(map(float, distance_distributions[m])) for m in model_names]
+    else:
+        if model_names is None:
+            model_names = [f"Model {i+1}" for i in range(len(distance_distributions))]
+        dists_list = [list(map(float, xs)) for xs in distance_distributions]
+
+    if isinstance(zero_overlaps, dict):
+        zero_overlaps_list = [int(zero_overlaps[m]) for m in model_names]
+    else:
+        zero_overlaps_list = [int(v) for v in zero_overlaps]
+
+    if not (len(dists_list) == len(zero_overlaps_list) == len(model_names)):
+        raise ValueError("distance_distributions, zero_overlaps, and model_names must have same length")
+
+    if n_total is not None and len(n_total) != len(model_names):
+        raise ValueError("n_total must be None or have the same length as model_names")
+
+    # --- Label / color mapping (same convention as Jaccard stacked plot) ---
+    model_label_map = {
+        "COBRA FVA": "Baseline GEM",
+        "kinGEMs FVA (pre-tuning)": "kinGEMs (Pre-Tuning)",
+        "kinGEMs FVA": "kinGEMs (Post-Tuning)",
+        "COBRA FVA (pre-tuning)": "Baseline GEM (Pre-Tuning Cobra)",
+    }
+    model_color_map = {
+        "Baseline GEM": "#1f77b4",
+        "Baseline GEM (Pre-Tuning Cobra)": "#1f77b4",
+        "kinGEMs (Pre-Tuning)": "#8c564b",
+        "kinGEMs (Post-Tuning)": "#e377c2",
+    }
+
+    mapped_names = [model_label_map.get(n, n) for n in model_names]
+
+    # Deduplicate after mapping (keep first occurrence)
+    seen = set()
+    keep_idx = []
+    for i, name in enumerate(mapped_names):
+        if name in seen:
+            continue
+        seen.add(name)
+        keep_idx.append(i)
+
+    if len(keep_idx) != len(mapped_names):
+        dropped = [mapped_names[i] for i in range(len(mapped_names)) if i not in keep_idx]
+        print(
+            "[plot_mean_to_mean_distance_stacked] Warning: duplicate model labels after mapping. "
+            f"Dropping duplicates: {dropped}"
+        )
+
+    mapped_names = [mapped_names[i] for i in keep_idx]
+    dists_list = [dists_list[i] for i in keep_idx]
+    zero_overlaps_list = [zero_overlaps_list[i] for i in keep_idx]
+    if n_total is not None:
+        n_total = [int(n_total[i]) for i in keep_idx]
+
+    # Canonical order
+    desired_order = ["Baseline GEM", "kinGEMs (Pre-Tuning)", "kinGEMs (Post-Tuning)"]
+    order_index = {name: i for i, name in enumerate(desired_order)}
+    sort_idx = sorted(range(len(mapped_names)), key=lambda i: order_index.get(mapped_names[i], 999))
+
+    mapped_names = [mapped_names[i] for i in sort_idx]
+    dists_list = [dists_list[i] for i in sort_idx]
+    zero_overlaps_list = [zero_overlaps_list[i] for i in sort_idx]
+    if n_total is not None:
+        n_total = [n_total[i] for i in sort_idx]
+
+    default_colors = ["#1f77b4", "#8c564b", "#e377c2", "#2ca02c", "#d62728", "#9467bd", "#7f7f7f"]
+    colors = [
+        model_color_map.get(name, default_colors[i % len(default_colors)])
+        for i, name in enumerate(mapped_names)
+    ]
+
+    # --- Layout ---
+    x_step = 1.1
+    x = np.arange(len(mapped_names)) * x_step
+    bar_w = 0.62
+    box_w = 0.62
+
+    fig, (ax_d, ax_z) = plt.subplots(
+        2, 1,
+        figsize=(8.4, 8.0),
+        sharex=True,
+        gridspec_kw={"height_ratios": [1.2, 1.0], "hspace": 0.30}
+    )
+
+    # --- Top: boxplot + jitter ---
+    bp = ax_d.boxplot(
+        dists_list,
+        positions=x,
+        widths=box_w,
+        patch_artist=True,
+        showfliers=False,
+        medianprops={"color": "black", "linewidth": 1.5},
+        whiskerprops={"color": "black", "linewidth": 1},
+        capprops={"color": "black", "linewidth": 1},
+        boxprops={"edgecolor": "black", "linewidth": 1},
+    )
+
+    for i, box in enumerate(bp["boxes"]):
+        box.set_facecolor(colors[i])
+        box.set_alpha(0.75)
+
+    all_vals = [v for sub in dists_list for v in sub]
+    ymax = max(0.1, (max(all_vals) * 1.15) if all_vals else 0.1)
+    ax_d.set_ylim(0, ymax)
+    ax_d.set_ylabel("Mean-to-Mean Distance (↓ better)", fontsize=FONT_SIZES["axis_label"])
+    ax_d.grid(axis="y", linestyle="--", alpha=0.25)
+
+    rng = np.random.default_rng(0)
+    for i, vals in enumerate(dists_list):
+        if not vals:
+            continue
+        jitter = rng.normal(loc=0.0, scale=0.06, size=len(vals))
+        xs = np.full(len(vals), x[i]) + jitter
+        ax_d.scatter(xs, vals, s=22, alpha=0.55, color=colors[i], edgecolors="none", zorder=3)
+
+        mean_v = float(np.mean(vals))
+        q1, q3 = np.percentile(vals, [25, 75])
+        iqr = q3 - q1
+        upper_whisker = min(max(vals), q3 + 1.5 * iqr)
+        y_text = min(ymax * 0.98, upper_whisker + 0.02 * ymax)
+        ax_d.text(
+            x[i], y_text, f"{mean_v:.3f}",
+            ha="center", va="bottom",
+            fontsize=FONT_SIZES["annotation"], zorder=6
+        )
+
+    # --- Bottom: # Disjoint Reactions bar chart ---
+    bars_z = ax_z.bar(
+        x, zero_overlaps_list,
+        width=bar_w,
+        color=colors,
+        alpha=0.85,
+        edgecolor="black",
+        linewidth=1
+    )
+
+    ax_z.set_ylabel("# Disjoint Reactions (↓ better)", fontsize=FONT_SIZES["axis_label"])
+    ax_z.grid(axis="y", linestyle="--", alpha=0.3)
+
+    max_z = max(zero_overlaps_list) if zero_overlaps_list else 1
+    ax_z.set_ylim(0, max(1, int(max_z * 1.15) + 1))
+
+    for bar in bars_z:
+        h = bar.get_height()
+        ax_z.text(
+            bar.get_x() + bar.get_width() / 2, h, f"{int(h)}",
+            ha="center", va="bottom", fontsize=FONT_SIZES["annotation"]
+        )
+
+    ax_z.set_xticks(x)
+    ax_z.set_xticklabels(mapped_names, fontsize=FONT_SIZES["tick_label"], rotation=0)
+
+    # --- Title ---
+    title_n = None
+    if n_total is not None and len(n_total) > 0 and all(v == n_total[0] for v in n_total):
+        title_n = n_total[0]
+
+    fig.suptitle(
+        f"Over {title_n} Reactions" if title_n is not None else "Over Reactions",
+        fontsize=FONT_SIZES["subtitle"],
+        y=0.93
+    )
+
+    plt.tight_layout(rect=[0, 0, 1, 0.94])
+
+    fig.canvas.draw()
+    ax_d.yaxis.set_label_coords(-0.085, 0.5)
+    ax_z.yaxis.set_label_coords(-0.085, 0.5)
+
+    if output_path:
+        _safe_ensure_dir_for_file(output_path)
+        plt.savefig(output_path, dpi=DEFAULT_DPI, bbox_inches="tight")
+
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
 
 
 def plot_jaccard_index_comparison_overlapping(
@@ -2912,7 +3507,7 @@ def plot_jaccard_index_comparison_overlapping(
     Title includes number of overlapping reactions (per model).
     Deduplicates labels AFTER mapping (keeps first).
     Auto-scales y-axis to plotted values.
-    
+
     Parameters
     ----------
     jaccard_dfs : list[pd.DataFrame]
@@ -2924,7 +3519,7 @@ def plot_jaccard_index_comparison_overlapping(
     show : bool
         Whether to display the plot
     normalize_by_coverage : bool
-        If True, normalize Jaccard by coverage (n/n_max) to account for 
+        If True, normalize Jaccard by coverage (n/n_max) to account for
         fewer reactions having inflated scores
     """
     set_plotting_style()

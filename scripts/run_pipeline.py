@@ -62,7 +62,8 @@ from kinGEMs.modeling.fva import (
 )
 from kinGEMs.plots import (
     plot_cumulative_fvi_distribution,
-    plot_kcat_annealing_comparison
+    plot_kcat_annealing_comparison,
+    plot_kcat_annealing_comparison_by_subsystem,
 )
 from kinGEMs.modeling.optimize import run_optimization_with_dataframe
 from kinGEMs.modeling.tuning import simulated_annealing, sweep_maintenance_parameters
@@ -517,6 +518,32 @@ def run_pipeline_core(
         log(f"  Saved kcat comparison plot: {kcat_comparison_plot_path}")
     except Exception as e:
         log(f"  Warning: Could not generate kcat comparison plot: {e}")
+
+    # Generate per-subsystem kcat comparison grid
+    log("  Generating per-subsystem kcat comparison plot...")
+    kcat_subsystem_plot_path = os.path.join(output_dir, "kcat_comparison_by_subsystem.png")
+    try:
+        sub_map = {
+            r.id: (r.subsystem if r.subsystem else 'Unknown')
+            for r in model.reactions
+        }
+        df_new_sub = df_new.copy()
+        df_new_sub['subsystem'] = df_new_sub['Reactions'].map(sub_map).fillna('Unknown')
+        initial_df_sub = processed_data.copy()
+        initial_df_sub['subsystem'] = initial_df_sub['Reactions'].map(sub_map).fillna('Unknown')
+        plot_kcat_annealing_comparison_by_subsystem(
+            initial_df=initial_df_sub,
+            tuned_df=df_new_sub,
+            subsystem_col='subsystem',
+            output_path=kcat_subsystem_plot_path,
+            model_name=model_name,
+            max_subsystems=12,
+            ncols=4,
+            show=False,
+        )
+        log(f"  Saved per-subsystem kcat comparison plot: {kcat_subsystem_plot_path}")
+    except Exception as e:
+        log(f"  Warning: Could not generate per-subsystem kcat comparison plot: {e}")
 
     # === Step 5b: Maintenance Parameter Sweep (if enabled) ===
     optimal_ngam = None

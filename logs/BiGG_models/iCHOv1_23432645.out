@@ -1,0 +1,395 @@
+Starting kinGEMs pipeline for iCHOv1
+Config: configs/BiGG_models/iCHOv1.json
+Time: Thu Feb 19 09:07:13 PST 2026
+
+Restricted license - for non-production use only - expires 2026-11-23
+Loading configuration from: configs/BiGG_models/iCHOv1.json
+
+======================================================================
+=== kinGEMs Pipeline for iCHOv1 ===
+======================================================================
+Run ID: iCHOv1_20260219_6045
+Model type: Standard
+Organism: Chinese Hamster Ovary
+Results directory: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iCHOv1_20260219_6045
+======================================================================
+=== kinGEMs Pipeline for iCHOv1 ===
+Run ID: iCHOv1_20260219_6045
+Model type: Standard
+Organism: Chinese Hamster Ovary
+Results directory: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iCHOv1_20260219_6045
+Solver: glpk
+Biomass reaction: BIOMASS_cho
+Baseline growth: 0.0324
+=== Step 1: Preparing model data ===
+  Found existing files, loading cached data
+Warning: Model has 8 validation errors
+  Model: 1766 genes, 9879 reactions
+=== Step 2: Merging substrate and sequence data ===
+  Merged data: 38004 rows
+=== Step 3: Processing CPI-Pred kcat values ===
+  Found predictions file: X06A_kinGEMs_iCHOv1_predictions.csv
+  Processed data: 32817 rows
+=== Step 4: Running optimization ===
+  COBRApy biomass: 0.0324
+  kinGEMs biomass: 0.0227
+=== Step 5: Running simulated annealing ===
+  [DEBUG] Iter 1: Optimization succeeded! biomass=1.984893e-02
+  Iter 1/1000: biomass=0.019849, temp=100.0000  [DEBUG] Iter 2: Optimization succeeded! biomass=1.985157e-02
+    - IMPROVEMENT: +0.013%
+  Iter 2/1000: biomass=0.019852, temp=95.0000  [DEBUG] Iter 3: Optimization succeeded! biomass=1.977707e-02
+  Iter 3/1000: biomass=0.019777, temp=90.2500  [DEBUG] Iter 4: Optimization succeeded! biomass=1.981584e-02
+    - IMPROVEMENT: +0.196%
+  Iter 4/1000: biomass=0.019816, temp=85.7375  [DEBUG] Iter 5: Optimization succeeded! biomass=1.993994e-02
+    - IMPROVEMENT: +0.626%
+  Iter 5/1000: biomass=0.019940, temp=81.4506  Iter 6/1000: biomass=0.021202, temp=77.3781  Iter 7/1000: biomass=0.020971, temp=73.5092  Iter 8/1000: biomass=0.020418, temp=69.8337  Iter 9/1000: biomass=0.020351, temp=66.3420  Iter 10/1000: biomass=0.020330, temp=63.0249  Iter 11/1000: biomass=0.020596, temp=59.8737  Iter 12/1000: biomass=0.020611, temp=56.8800  Iter 13/1000: biomass=0.020319, temp=54.0360  Iter 14/1000: biomass=0.020848, temp=51.3342  Iter 15/1000: biomass=0.020881, temp=48.7675  Iter 16/1000: biomass=0.019475, temp=46.3291  Iter 17/1000: biomass=0.019477, temp=44.0127  Iter 18/1000: biomass=0.019477, temp=41.8120  Iter 19/1000: biomass=0.019477, temp=39.7214  Iter 20/1000: biomass=0.019471, temp=37.7354  Iter 21/1000: biomass=0.019477, temp=35.8486  Iter 22/1000: biomass=0.019477, temp=34.0562  Iter 23/1000: biomass=0.019479, temp=32.3534  Iter 24/1000: biomass=0.024296, temp=30.7357  Iter 25/1000: biomass=0.024440, temp=29.1989  Iter 26/1000: biomass=0.024517, temp=27.7390  Iter 27/1000: biomass=0.029461, temp=26.3520  Iter 28/1000: biomass=0.032369, temp=25.0344  Iter 29/1000: biomass=0.032369, temp=23.7827  Iter 30/1000: biomass=0.032369, temp=22.5936  Iter 31/1000: biomass=0.032369, temp=21.4639  Iter 32/1000: biomass=0.032369, temp=20.3907  Iter 33/1000: biomass=0.032369, temp=19.3711  Iter 34/1000: biomass=0.032369, temp=18.4026  Iter 35/1000: biomass=0.032369, temp=17.4825  Iter 36/1000: biomass=0.032369, temp=16.6083  Iter 37/1000: biomass=0.032369, temp=15.7779  Iter 38/1000: biomass=0.032369, temp=14.9890  Iter 39/1000: biomass=0.032369, temp=14.2396  Iter 40/1000: biomass=0.032369, temp=13.5276  Iter 41/1000: biomass=0.032369, temp=12.8512  Iter 42/1000: biomass=0.032369, temp=12.2087  Iter 43/1000: biomass=0.032369, temp=11.5982  Iter 44/1000: biomass=0.032369, temp=11.0183  Iter 45/1000: biomass=0.032369, temp=10.4674  Iter 46/1000: biomass=0.032369, temp=9.9440  Iter 47/1000: biomass=0.032369, temp=9.4468  Iter 48/1000: biomass=0.032369, temp=8.9745  Iter 49/1000: biomass=0.032369, temp=8.5258  Iter 50/1000: biomass=0.032369, temp=8.0995  Iter 51/1000: biomass=0.032369, temp=7.6945  Iter 52/1000: biomass=0.032369, temp=7.3098  Iter 53/1000: biomass=0.032369, temp=6.9443  Iter 54/1000: biomass=0.032369, temp=6.5971  Iter 55/1000: biomass=0.032369, temp=6.2672  Iter 56/1000: biomass=0.032369, temp=5.9539  Iter 57/1000: biomass=0.032369, temp=5.6562  Iter 58/1000: biomass=0.032369, temp=5.3734  Iter 59/1000: biomass=0.032369, temp=5.1047  Iter 60/1000: biomass=0.032369, temp=4.8495  Iter 61/1000: biomass=0.032369, temp=4.6070  Iter 62/1000: biomass=0.032369, temp=4.3766  Iter 63/1000: biomass=0.032369, temp=4.1578  Iter 64/1000: biomass=0.032369, temp=3.9499  Iter 65/1000: biomass=0.032369, temp=3.7524  Iter 66/1000: biomass=0.032369, temp=3.5648  Iter 67/1000: biomass=0.032369, temp=3.3866  Iter 68/1000: biomass=0.032369, temp=3.2172  Iter 69/1000: biomass=0.032369, temp=3.0564  Iter 70/1000: biomass=0.032369, temp=2.9035  Iter 71/1000: biomass=0.032369, temp=2.7584  Iter 72/1000: biomass=0.032369, temp=2.6205  Iter 73/1000: biomass=0.032369, temp=2.4894  Iter 74/1000: biomass=0.032369, temp=2.3650  Iter 75/1000: biomass=0.032369, temp=2.2467  Iter 76/1000: biomass=0.032369, temp=2.1344  Iter 77/1000: biomass=0.032369, temp=2.0277  Iter 78/1000: biomass=0.032369, temp=1.9263
+  Early stop: No change for 50 iterations
+
+  Annealing complete! Initial: 0.0227, Final: 0.0324, Improvement: 42.6%
+  Saved tuned dataframe: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iCHOv1_20260219_6045/df_new.csv
+  Generating kcat comparison plot...
+  Saved kcat comparison plot to: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iCHOv1_20260219_6045/kcat_comparison_initial_vs_tuned.png
+  Saved kcat comparison plot: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iCHOv1_20260219_6045/kcat_comparison_initial_vs_tuned.png
+=== Step 6: Running Flux Variability Analysis ===
+  Running COBRApy FVA (opt_ratio=0.9)...
+  Saved COBRApy FVA: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iCHOv1_20260219_6045/iCHOv1_cobra_fva_results.csv
+
+=== Step 6: Running Flux Variability Analysis ===
+  Using parallel FVA with 4 workers...
+  Parallel FVA configuration:
+    Method: dask
+    Workers: 4
+    Reactions: 9879
+    Chunk size: 164
+    Number of chunks: 61
+    Estimated memory: ~2.5 GB
+
+  Running baseline optimization...
+  [KCAT DEBUG] Sample kcat values:
+    24_25VITD2Hm_100751280: kcat=1.757e+00
+    24_25VITD2Hm_100751853: kcat=3.189e+00
+    24_25VITD2Hm_100773278: kcat=4.590e+00
+GLPSOL--GLPK LP/MIP Solver 5.0
+Parameter(s) specified in the command line:
+ --tmlim 300 --write /tmp/tmp4ajxpiw1.glpk.raw --wglp /tmp/tmpp806vby6.glpk.glp
+ --cpxlp /tmp/tmp63m5jsq1.pyomo.lp
+Reading problem data from '/tmp/tmp63m5jsq1.pyomo.lp'...
+10280 rows, 11646 columns, 62201 non-zeros
+104697 lines were read
+Writing problem data to '/tmp/tmpp806vby6.glpk.glp'...
+99835 lines were written
+GLPK Simplex Optimizer 5.0
+10280 rows, 11646 columns, 62201 non-zeros
+Preprocessing...
+8861 rows, 9693 columns, 54686 non-zeros
+Scaling...
+ A: min|aij| =  6.697e-10  max|aij| =  1.493e+09  ratio =  2.230e+18
+GM: min|aij| =  5.120e-02  max|aij| =  1.953e+01  ratio =  3.815e+02
+EQ: min|aij| =  2.820e-03  max|aij| =  1.000e+00  ratio =  3.546e+02
+Constructing initial basis...
+Size of triangular part is 8293
+*     0: obj =  -0.000000000e+00 inf =   0.000e+00 (1)
+Perturbing LP to avoid stalling [230]...
+Removing LP perturbation [3538]...
+*  3538: obj =   2.270527605e-02 inf =   1.079e-16 (0) 27
+OPTIMAL LP SOLUTION FOUND
+Time used:   0.9 secs
+Memory used: 17.6 Mb (18472645 bytes)
+Writing basic solution to '/tmp/tmp4ajxpiw1.glpk.raw'...
+21935 lines were written
+  Optimal biomass: 0.022705
+  Biomass constraint: 0.020435 ≤ biomass ≤ 0.022705 (opt_ratio=0.9)
+
+  Starting parallel FVA with 61 chunks...
+  FVA will analyze 9879 reactions independently
+  Progress will be shown by chunk completion...
+Restricted license - for non-production use only - expires 2026-11-23
+Restricted license - for non-production use only - expires 2026-11-23
+Restricted license - for non-production use only - expires 2026-11-23
+Restricted license - for non-production use only - expires 2026-11-23
+Writing problem data to '/tmp/tmpabmuiojv.glpk'...
+Writing problem data to '/tmp/tmppgyikb2n.glpk'...
+Writing problem data to '/tmp/tmp0zge2xto.glpk'...
+Writing problem data to '/tmp/tmpf3gzt1oj.glpk'...
+119778 lines were written
+119778 lines were written
+119778 lines were written
+119778 lines were written
+[FVA] Starting optimization for reaction: EX_c8crn_e
+[FVA] Starting optimization for reaction: EX_5htrp_e
+[FVA] Starting optimization for reaction: r0614_reverse
+[FVA] Starting optimization for reaction: UMPK_reverse
+[FVA] Starting optimization for reaction: r0620
+[FVA] Starting optimization for reaction: EX_5htrp_e_reverse
+[FVA] Starting optimization for reaction: EX_c8crn_e_reverse
+[FVA] Starting optimization for reaction: UMPKm
+[FVA] Starting optimization for reaction: r0620_reverse
+[FVA] Starting optimization for reaction: EX_5mta_e
+[FVA] Starting optimization for reaction: EX_c8dc_e
+[FVA] Starting optimization for reaction: UMPKm_reverse
+[FVA] Starting optimization for reaction: EX_c8dc_e_reverse
+[FVA] Starting optimization for reaction: r0627
+[FVA] Starting optimization for reaction: EX_5mta_e_reverse
+[FVA] Starting optimization for reaction: UMPKn
+[FVA] Starting optimization for reaction: EX_5mthf_e
+[FVA] Starting optimization for reaction: EX_ca2_e
+[FVA] Starting optimization for reaction: r0627_reverse
+[FVA] Starting optimization for reaction: UMPKn_reverse
+[FVA] Starting optimization for reaction: EX_5mthf_e_reverse
+[FVA] Starting optimization for reaction: r0629
+[FVA] Starting optimization for reaction: EX_ca2_e_reverse
+[FVA] Starting optimization for reaction: UMPtr
+[FVA] Starting optimization for reaction: EX_5oxpro_e
+[FVA] Starting optimization for reaction: r0629_reverse
+[FVA] Starting optimization for reaction: EX_camp_e
+[FVA] Starting optimization for reaction: UMPtr_reverse
+[FVA] Starting optimization for reaction: EX_5oxpro_e_reverse
+[FVA] Starting optimization for reaction: r0630
+[FVA] Starting optimization for reaction: EX_camp_e_reverse
+[FVA] Starting optimization for reaction: UNK2_cho
+[FVA] Starting optimization for reaction: EX_5thf_e
+[FVA] Starting optimization for reaction: r0630_reverse
+[FVA] Starting optimization for reaction: EX_carn_e
+[FVA] Starting optimization for reaction: UNK3
+[FVA] Starting optimization for reaction: EX_5thf_e_reverse
+[FVA] Starting optimization for reaction: r0636
+[FVA] Starting optimization for reaction: EX_carn_e_reverse
+[FVA] Starting optimization for reaction: UPP3S
+[FVA] Starting optimization for reaction: EX_6dhf_e
+[FVA] Starting optimization for reaction: EX_caro_e
+[FVA] Starting optimization for reaction: r0637
+[FVA] Starting optimization for reaction: UPPDC1
+[FVA] Starting optimization for reaction: EX_6dhf_e_reverse
+[FVA] Starting optimization for reaction: EX_caro_e_reverse
+[FVA] Starting optimization for reaction: r0641
+[FVA] Starting optimization for reaction: UPPN
+[FVA] Starting optimization for reaction: EX_6htststerone_e
+[FVA] Starting optimization for reaction: EX_carveol_e
+[FVA] Starting optimization for reaction: r0641_reverse
+[FVA] Starting optimization for reaction: UPPRT
+[FVA] Starting optimization for reaction: EX_6htststerone_e_reverse
+[FVA] Starting optimization for reaction: EX_carveol_e_reverse
+[FVA] Starting optimization for reaction: r0642
+[FVA] Starting optimization for reaction: URAOX
+[FVA] Starting optimization for reaction: EX_6thf_e
+[FVA] Starting optimization for reaction: EX_cbasp_e
+[FVA] Starting optimization for reaction: r0642_reverse
+[FVA] Starting optimization for reaction: URATEt
+[FVA] Starting optimization for reaction: EX_6thf_e_reverse
+[FVA] Starting optimization for reaction: EX_cbasp_e_reverse
+[FVA] Starting optimization for reaction: r0643
+[FVA] Starting optimization for reaction: URATEtx
+[FVA] Starting optimization for reaction: EX_7dhf_e
+[FVA] Starting optimization for reaction: EX_cca_d3_e
+[FVA] Starting optimization for reaction: r0643_reverse
+[FVA] Starting optimization for reaction: URAt
+[FVA] Starting optimization for reaction: EX_7dhf_e_reverse
+[FVA] Starting optimization for reaction: EX_cca_d3_e_reverse
+[FVA] Starting optimization for reaction: r0644
+[FVA] Starting optimization for reaction: URAt_reverse
+[FVA] Starting optimization for reaction: EX_7thf_e
+[FVA] Starting optimization for reaction: EX_cdp_e
+[FVA] Starting optimization for reaction: r0647
+[FVA] Starting optimization for reaction: URCN
+[FVA] Starting optimization for reaction: EX_7thf_e_reverse
+[FVA] Starting optimization for reaction: EX_cdp_e_reverse
+[FVA] Starting optimization for reaction: r0647_reverse
+[FVA] Starting optimization for reaction: UREAt
+[FVA] Starting optimization for reaction: EX_9_cis_retfa_e
+[FVA] Starting optimization for reaction: EX_cgly_e
+[FVA] Starting optimization for reaction: r0647m
+[FVA] Starting optimization for reaction: UREAt5
+[FVA] Starting optimization for reaction: EX_9_cis_retfa_e_reverse
+[FVA] Starting optimization for reaction: EX_cgly_e_reverse
+[FVA] Starting optimization for reaction: r0647m_reverse
+[FVA] Starting optimization for reaction: UREAt5_reverse
+[FVA] Starting optimization for reaction: EX_C02470_e
+[FVA] Starting optimization for reaction: EX_chol_e
+[FVA] Starting optimization for reaction: r0648
+[FVA] Starting optimization for reaction: UREAt_reverse
+[FVA] Starting optimization for reaction: EX_C02470_e_reverse
+[FVA] Starting optimization for reaction: EX_chol_e_reverse
+[FVA] Starting optimization for reaction: r0648_reverse
+[FVA] Starting optimization for reaction: UREAtm
+[FVA] Starting optimization for reaction: EX_C02528_e
+[FVA] Starting optimization for reaction: EX_cholate_e
+[FVA] Starting optimization for reaction: r0649
+[FVA] Starting optimization for reaction: UREAtm_reverse
+[FVA] Starting optimization for reaction: EX_C02528_e_reverse
+[FVA] Starting optimization for reaction: EX_cholate_e_reverse
+[FVA] Starting optimization for reaction: r0649_reverse
+[FVA] Starting optimization for reaction: URIDK2m
+[FVA] Starting optimization for reaction: EX_C04849_e
+[FVA] Starting optimization for reaction: EX_chsterol_e
+[FVA] Starting optimization for reaction: r0650
+[FVA] Starting optimization for reaction: URIDK2m_reverse
+[FVA] Starting optimization for reaction: EX_C04849_e_reverse
+[FVA] Starting optimization for reaction: EX_chsterol_e_reverse
+[FVA] Starting optimization for reaction: r0651
+[FVA] Starting optimization for reaction: URIDK2r
+[FVA] Starting optimization for reaction: EX_CE0074_e
+[FVA] Starting optimization for reaction: EX_chtn_e
+[FVA] Starting optimization for reaction: r0652
+[FVA] Starting optimization for reaction: URIDK2r_reverse
+[FVA] Starting optimization for reaction: EX_CE0074_e_reverse
+[FVA] Starting optimization for reaction: EX_chtn_e_reverse
+[FVA] Starting optimization for reaction: r0652_reverse
+[FVA] Starting optimization for reaction: URIK1
+[FVA] Starting optimization for reaction: EX_CE1925_e
+[FVA] Starting optimization for reaction: EX_cit_e
+[FVA] Starting optimization for reaction: r0656
+[FVA] Starting optimization for reaction: URIK2
+[FVA] Starting optimization for reaction: EX_CE1925_e_reverse
+[FVA] Starting optimization for reaction: EX_cit_e_reverse
+[FVA] Starting optimization for reaction: r0668
+[FVA] Starting optimization for reaction: URIt
+[FVA] Starting optimization for reaction: EX_CE1926_e
+[FVA] Starting optimization for reaction: EX_citr__L_e
+[FVA] Starting optimization for reaction: r0668_reverse
+[FVA] Starting optimization for reaction: URIt4
+[FVA] Starting optimization for reaction: EX_CE1926_e_reverse
+[FVA] Starting optimization for reaction: r0670
+[FVA] Starting optimization for reaction: EX_citr__L_e_reverse
+[FVA] Starting optimization for reaction: EX_CE1935_e
+[FVA] Starting optimization for reaction: URIt5
+[FVA] Starting optimization for reaction: r0672
+[FVA] Starting optimization for reaction: EX_cl_e
+[FVA] Starting optimization for reaction: EX_CE1935_e_reverse
+[FVA] Starting optimization for reaction: URIt_reverse
+[FVA] Starting optimization for reaction: r0672_reverse
+[FVA] Starting optimization for reaction: EX_cl_e_reverse
+[FVA] Starting optimization for reaction: EX_CE1936_e
+[FVA] Starting optimization for reaction: UROLACer
+[FVA] Starting optimization for reaction: r0673
+[FVA] Starting optimization for reaction: EX_clpnd_e
+[FVA] Starting optimization for reaction: EX_CE1936_e_reverse
+[FVA] Starting optimization for reaction: UROLACer_reverse
+[FVA] Starting optimization for reaction: r0679
+[FVA] Starting optimization for reaction: EX_clpnd_e_reverse
+[FVA] Starting optimization for reaction: EX_CE1939_e
+[FVA] Starting optimization for reaction: UTPtn
+[FVA] Starting optimization for reaction: r0680
+[FVA] Starting optimization for reaction: EX_cmp_e
+[FVA] Starting optimization for reaction: EX_CE1939_e_reverse
+[FVA] Starting optimization for reaction: UTPtn_reverse
+[FVA] Starting optimization for reaction: r0680_reverse
+[FVA] Starting optimization for reaction: EX_cmp_e_reverse
+[FVA] Starting optimization for reaction: EX_CE1940_e
+[FVA] Starting optimization for reaction: Uritl
+[FVA] Starting optimization for reaction: r0686
+[FVA] Starting optimization for reaction: EX_co2_e
+    [Chunk 13]  25.0% complete (41/164 reactions)
+[FVA] Starting optimization for reaction: EX_CE1940_e_reverse
+[FVA] Starting optimization for reaction: Uritl_reverse
+    [Chunk 51]  25.0% complete (41/164 reactions)
+[FVA] Starting optimization for reaction: r0686_reverse
+    [Chunk 15]  25.0% complete (41/164 reactions)
+[FVA] Starting optimization for reaction: EX_co2_e_reverse
+[FVA] Starting optimization for reaction: EX_CE1943_e
+    [Chunk 49]  25.0% complete (41/164 reactions)
+[FVA] Starting optimization for reaction: Uritm
+[FVA] Starting optimization for reaction: r0706
+[FVA] Starting optimization for reaction: EX_co_e
+[FVA] Starting optimization for reaction: EX_CE1943_e_reverse
+[FVA] Starting optimization for reaction: Uritm_reverse
+[FVA] Starting optimization for reaction: EX_co_e_reverse
+[FVA] Starting optimization for reaction: r0707
+[FVA] Starting optimization for reaction: EX_CE2011_e
+[FVA] Starting optimization for reaction: Uritn
+[FVA] Starting optimization for reaction: r0707_reverse
+[FVA] Starting optimization for reaction: EX_coa_e
+[FVA] Starting optimization for reaction: EX_CE2011_e_reverse
+[FVA] Starting optimization for reaction: Uritn_reverse
+[FVA] Starting optimization for reaction: r0708
+[FVA] Starting optimization for reaction: EX_coa_e_reverse
+[FVA] Starting optimization for reaction: EX_CE2250_e
+[FVA] Starting optimization for reaction: VACCt
+[FVA] Starting optimization for reaction: r0708_reverse
+[FVA] Starting optimization for reaction: EX_coumarin_e
+[FVA] Starting optimization for reaction: EX_CE2250_e_reverse
+[FVA] Starting optimization for reaction: VACCt_reverse
+[FVA] Starting optimization for reaction: r0714
+[FVA] Starting optimization for reaction: EX_coumarin_e_reverse
+[FVA] Starting optimization for reaction: EX_CE2838_e
+[FVA] Starting optimization for reaction: VALATB0tc
+[FVA] Starting optimization for reaction: EX_cpppg1_e
+[FVA] Starting optimization for reaction: r0716
+[FVA] Starting optimization for reaction: EX_CE2838_e_reverse
+[FVA] Starting optimization for reaction: VALLAT1tc
+[FVA] Starting optimization for reaction: r0720
+[FVA] Starting optimization for reaction: EX_cpppg1_e_reverse
+[FVA] Starting optimization for reaction: EX_CE2839_e
+[FVA] Starting optimization for reaction: VALLAT1tc_reverse
+[FVA] Starting optimization for reaction: r0737
+[FVA] Starting optimization for reaction: EX_creat_e
+[FVA] Starting optimization for reaction: EX_CE2839_e_reverse
+[FVA] Starting optimization for reaction: r0737_reverse
+[FVA] Starting optimization for reaction: EX_creat_e_reverse
+[FVA] Starting optimization for reaction: VALPHELAT2tc
+[FVA] Starting optimization for reaction: EX_CE2915_e
+[FVA] Starting optimization for reaction: EX_crm_cho_e
+[FVA] Starting optimization for reaction: VALPHELAT2tc_reverse
+[FVA] Starting optimization for reaction: r0739
+[FVA] Starting optimization for reaction: EX_CE2915_e_reverse
+[FVA] Starting optimization for reaction: r0739_reverse
+[FVA] Starting optimization for reaction: EX_crm_cho_e_reverse
+[FVA] Starting optimization for reaction: VALTA
+[FVA] Starting optimization for reaction: EX_CE2916_e
+[FVA] Starting optimization for reaction: r0743
+[FVA] Starting optimization for reaction: EX_crmp_cho_e
+[FVA] Starting optimization for reaction: VALTA_reverse
+[FVA] Starting optimization for reaction: EX_CE2916_e_reverse
+[FVA] Starting optimization for reaction: VALTAim
+[FVA] Starting optimization for reaction: r0744
+[FVA] Starting optimization for reaction: EX_crmp_cho_e_reverse
+[FVA] Starting optimization for reaction: EX_CE2917_e
+[FVA] Starting optimization for reaction: r0747
+[FVA] Starting optimization for reaction: EX_crn_e
+[FVA] Starting optimization for reaction: VALTAim_reverse
+[FVA] Starting optimization for reaction: EX_CE2917_e_reverse
+[FVA] Starting optimization for reaction: r0747_reverse
+[FVA] Starting optimization for reaction: EX_crn_e_reverse
+[FVA] Starting optimization for reaction: VALt4
+[FVA] Starting optimization for reaction: EX_CE4633_e
+[FVA] Starting optimization for reaction: VALt5m
+[FVA] Starting optimization for reaction: r0750
+[FVA] Starting optimization for reaction: EX_crtsl_e
+[FVA] Starting optimization for reaction: EX_CE4633_e_reverse
+[FVA] Starting optimization for reaction: r0750_reverse
+[FVA] Starting optimization for reaction: EX_crtsl_e_reverse
+[FVA] Starting optimization for reaction: VALt5m_reverse
+[FVA] Starting optimization for reaction: EX_CE4722_e
+[FVA] Starting optimization for reaction: r0752
+[FVA] Starting optimization for reaction: EX_crtstrn_e
+[FVA] Starting optimization for reaction: VALtec
+[FVA] Starting optimization for reaction: EX_CE4722_e_reverse
+[FVA] Starting optimization for reaction: r0752_reverse
+[FVA] Starting optimization for reaction: VALtec_reverse
+[FVA] Starting optimization for reaction: EX_crtstrn_e_reverse
+[FVA] Starting optimization for reaction: EX_CE4723_e
+[FVA] Starting optimization for reaction: r0753
+[FVA] Starting optimization for reaction: EX_crvnc_e
+[FVA] Starting optimization for reaction: VD3
+[FVA] Starting optimization for reaction: EX_CE4723_e_reverse
+[FVA] Starting optimization for reaction: r0753_reverse
+[FVA] Starting optimization for reaction: EX_crvnc_e_reverse
+[FVA] Starting optimization for reaction: VD3_reverse
+[FVA] Starting optimization for reaction: EX_CE4724_e
+[FVA] Starting optimization for reaction: r0754
+[FVA] Starting optimization for reaction: EX_csn_e
+[FVA] Starting optimization for reaction: VITD2Hm
+[FVA] Starting optimization for reaction: EX_CE4724_e_reverse
+[FVA] Starting optimization for reaction: r0754_reverse
+[FVA] Starting optimization for reaction: EX_csn_e_reverse
+[FVA] Starting optimization for reaction: VITD2t
+[FVA] Starting optimization for reaction: EX_CE4881_e
+[FVA] Starting optimization for reaction: r0755
+[FVA] Starting optimization for reaction: EX_cspg_a_e
+[FVA] Starting optimization for reaction: VITD2tm
+[FVA] Starting optimization for reaction: EX_CE4881_e_reverse
+[FVA] Starting optimization for reaction: r0755_reverse
+[FVA] Starting optimization for reaction: EX_cspg_a_e_reverse
+[FVA] Starting optimization for reaction: VITD2tm_reverse
+[FVA] Starting optimization for reaction: EX_CE5786_e
+
+Completed at: Thu Feb 19 10:17:55 PST 2026

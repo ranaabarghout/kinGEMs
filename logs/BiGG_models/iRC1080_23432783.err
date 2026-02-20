@@ -1,0 +1,14 @@
+2026-02-19 09:21:33.515 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+No objective coefficients in model. Unclear what should be optimized
+Traceback (most recent call last):
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_pipeline.py", line 1098, in <module>
+    main()
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_pipeline.py", line 896, in main
+    pipeline_results = run_pipeline_core(
+                       ^^^^^^^^^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_pipeline.py", line 351, in run_pipeline_core
+    biomass_reaction = config.get('biomass_reaction') or determine_biomass_reaction(temp_model)
+                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_pipeline.py", line 184, in determine_biomass_reaction
+    raise ValueError("No objective reaction found in model")
+ValueError: No objective reaction found in model
