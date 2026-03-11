@@ -1,0 +1,28 @@
+Starting kinGEMs pipeline for iAF987
+Config: configs/BiGG_models/iAF987.json
+Starting run at: Tue Mar 10 09:17:53 PDT 2026
+
+Restricted license - for non-production use only - expires 2026-11-23
+Loading configuration from: configs/BiGG_models/iAF987.json
+
+======================================================================
+=== kinGEMs Pipeline for iAF987 ===
+======================================================================
+Run ID: iAF987_20260310_7132
+Model type: Standard
+Organism: Geobacter
+Results directory: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iAF987_20260310_7132
+======================================================================
+=== kinGEMs Pipeline for iAF987 ===
+Run ID: iAF987_20260310_7132
+Model type: Standard
+Organism: Geobacter
+Results directory: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iAF987_20260310_7132
+Solver: glpk
+Biomass reaction: EX_gua_e
+Baseline growth: 0.0473
+=== Step 1: Preparing model data ===
+Warning: Model has 8 validation errors
+Loaded model with 1285 reactions and 1109 metabolites
+
+Completed at: Tue Mar 10 09:18:13 PDT 2026

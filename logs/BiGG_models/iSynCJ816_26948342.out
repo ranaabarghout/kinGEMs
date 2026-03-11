@@ -1,0 +1,23 @@
+Starting kinGEMs pipeline for iSynCJ816
+Config: configs/BiGG_models/iSynCJ816.json
+Starting run at: Tue Mar 10 09:45:32 PDT 2026
+
+Restricted license - for non-production use only - expires 2026-11-23
+Loading configuration from: configs/BiGG_models/iSynCJ816.json
+
+======================================================================
+=== kinGEMs Pipeline for iSynCJ816 ===
+======================================================================
+Run ID: iSynCJ816_20260310_4715
+Model type: Standard
+Organism: Synechocystis
+Results directory: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iSynCJ816_20260310_4715
+======================================================================
+=== kinGEMs Pipeline for iSynCJ816 ===
+Run ID: iSynCJ816_20260310_4715
+Model type: Standard
+Organism: Synechocystis
+Results directory: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iSynCJ816_20260310_4715
+Solver: glpk
+
+Completed at: Tue Mar 10 09:45:39 PDT 2026

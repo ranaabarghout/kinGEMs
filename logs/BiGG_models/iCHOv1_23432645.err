@@ -1,7 +1,0 @@
-2026-02-19 09:09:31.351 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
-2026-02-19 09:48:04.778 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
-2026-02-19 09:48:04.779 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
-2026-02-19 09:48:04.796 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
-2026-02-19 09:48:04.808 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
-/localscratch/spool/slurmd/job23432645/slurm_script: line 29: 3628808 Killed                  python scripts/run_pipeline.py configs/BiGG_models/iCHOv1.json
-slurmstepd: error: Detected 1 oom_kill event in StepId=23432645.batch. Some of the step tasks have been OOM Killed.

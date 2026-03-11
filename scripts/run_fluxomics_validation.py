@@ -103,6 +103,7 @@ from kinGEMs.fluxomics_validation import (
     calculate_jaccard_index,
     calculate_mean_to_mean_distance,
     calculate_per_reaction_distances,
+    calculate_average_interval_widths,
 )
 from kinGEMs.plots import (
     plot_fva_mfa_comparison,
@@ -235,6 +236,7 @@ def run_fluxomics_analysis(
         normalized_euclidean_dist = calculate_normalized_euclidean_dist(comparison_df)
         jaccard_index, jaccard_df, zero_overlaps = calculate_jaccard_index(comparison_df)
         mean_to_mean_dist = calculate_mean_to_mean_distance(comparison_df)
+        w_fva_avg, w_fva_std, w_mfa_avg, w_mfa_std = calculate_average_interval_widths(comparison_df)
         n_total_list.append(len(jaccard_df))
 
         # Save detailed results
@@ -253,7 +255,11 @@ def run_fluxomics_analysis(
             "normalized_euclidean_dist": normalized_euclidean_dist,
             "mean_to_mean_distance": mean_to_mean_dist,
             "jaccard_index": jaccard_index,
-            "zero_overlaps": zero_overlaps
+            "zero_overlaps": zero_overlaps,
+            "avg_interval_width_fva": w_fva_avg,
+            "std_interval_width_fva": w_fva_std,
+            "avg_interval_width_mfa": w_mfa_avg,
+            "std_interval_width_mfa": w_mfa_std
         })
         jaccard_info.append((spec.label, jaccard_index, zero_overlaps, jaccard_df))
         per_rxn_dists = calculate_per_reaction_distances(comparison_df)

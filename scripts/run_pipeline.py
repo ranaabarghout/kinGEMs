@@ -33,6 +33,7 @@ import logging
 import os
 import random
 import sys
+import time
 import warnings
 
 import cobra
@@ -260,6 +261,23 @@ class PipelineResults:
     output_dir: str
     optimal_ngam: float | None
     optimal_gam: float | None
+    # Timing (seconds per pipeline step)
+    time_data_prep_s: float = 0.0
+    time_optimization_s: float = 0.0
+    time_sa_s: float = 0.0
+    time_total_pipeline_s: float = 0.0
+    # Model structure
+    n_reactions: int = 0
+    n_genes: int = 0
+    n_metabolites: int = 0
+    # kcat / CPI-Pred coverage
+    n_rxn_gene_pairs: int = 0
+    n_unique_proteins: int = 0
+    n_unique_substrates: int = 0
+    cobra_biomass: float = 0.0
+    initial_ec_biomass: float = 0.0
+    final_ec_biomass: float = 0.0
+    sa_iterations: int = 0
 
 
 def run_pipeline_core(
@@ -299,6 +317,10 @@ def run_pipeline_core(
             logger.info(msg)
         else:
             print(msg)
+
+    # ---- Timing ----
+    _t_pipeline_start = time.time()
+    _t_step_start = time.time()
 
     # Extract configuration
     model_name = config['model_name']
@@ -420,6 +442,9 @@ def run_pipeline_core(
     # Annotate model
     model = annotate_model_with_kcat_and_gpr(model=model, df=processed_data)
 
+    _time_data_prep_s = time.time() - _t_step_start
+    log(f"  Data preparation (steps 1-3) took {_time_data_prep_s:.1f}s")
+
     # === Step 4: Optimization ===
     log("=== Step 4: Running optimization ===")
 
@@ -462,6 +487,10 @@ def run_pipeline_core(
     )
     log(f"  kinGEMs biomass: {solution_value:.4f}")
 
+    _time_optimization_s = time.time() - _t_step_start - _time_data_prep_s
+    log(f"  Optimization (step 4) took {_time_optimization_s:.1f}s")
+    _t_sa_start = time.time()
+
     # === Step 5: Simulated Annealing ===
     log("=== Step 5: Running simulated annealing ===")
     kcat_dict, top_targets, df_new, iterations, biomasses, df_FBA = simulated_annealing(
@@ -486,6 +515,9 @@ def run_pipeline_core(
 
     improvement = (biomasses[-1] - biomasses[0]) / biomasses[0] * 100 if biomasses[0] > 0 else 0
     log(f"  Annealing complete! Initial: {biomasses[0]:.4f}, Final: {biomasses[-1]:.4f}, Improvement: {improvement:.1f}%")
+
+    _time_sa_s = time.time() - _t_sa_start
+    log(f"  Simulated annealing (step 5) took {_time_sa_s:.1f}s")
 
     # Save df_new
     df_new_path = os.path.join(output_dir, "df_new.csv")
@@ -695,6 +727,12 @@ def run_pipeline_core(
 
     log("=== Pipeline core complete ===")
 
+    # ---- Compute kcat coverage metrics from processed_data ----
+    _n_unique_proteins   = int(processed_data['Single_gene'].nunique()) if 'Single_gene' in processed_data.columns else 0
+    _substrate_col       = next((c for c in ('substrate', 'Substrate', 'substrate_name') if c in processed_data.columns), None)
+    _n_unique_substrates = int(processed_data[_substrate_col].nunique()) if _substrate_col else 0
+    _time_total_s        = time.time() - _t_pipeline_start
+
     return PipelineResults(
         model=model,
         processed_df=processed_data,
@@ -708,7 +746,24 @@ def run_pipeline_core(
         run_id=run_id,
         output_dir=output_dir,
         optimal_ngam=optimal_ngam,
-        optimal_gam=optimal_gam
+        optimal_gam=optimal_gam,
+        # Timing
+        time_data_prep_s=round(_time_data_prep_s, 1),
+        time_optimization_s=round(_time_optimization_s, 1),
+        time_sa_s=round(_time_sa_s, 1),
+        time_total_pipeline_s=round(_time_total_s, 1),
+        # Model structure
+        n_reactions=len(model.reactions),
+        n_genes=len(model.genes),
+        n_metabolites=len(model.metabolites),
+        # kcat / CPI-Pred coverage
+        n_rxn_gene_pairs=len(processed_data),
+        n_unique_proteins=_n_unique_proteins,
+        n_unique_substrates=_n_unique_substrates,
+        cobra_biomass=round(float(cobra_biomass), 6),
+        initial_ec_biomass=round(float(solution_value), 6),
+        final_ec_biomass=round(float(biomasses[-1]), 6) if biomasses else 0.0,
+        sa_iterations=len(biomasses),
     )
 
 
@@ -876,6 +931,183 @@ def main():
 
     config_path = sys.argv[1]
     FORCE_REGENERATE = '--force' in sys.argv or '-f' in sys.argv
+
+    # --replot <results_dir>: regenerate figures from an existing results folder
+    if '--replot' in sys.argv:
+        replot_idx = sys.argv.index('--replot')
+        if replot_idx + 1 >= len(sys.argv):
+            print("Error: --replot requires a path to an existing results directory")
+            sys.exit(1)
+
+        results_dir = os.path.abspath(sys.argv[replot_idx + 1])
+        if not os.path.isdir(results_dir):
+            print(f"Error: results directory not found: {results_dir}")
+            sys.exit(1)
+
+        # Load config to get model name / subsystem map
+        config = load_config(config_path)
+        model_name = config['model_name']
+        results_subdir = config.get('results_subdir', None)
+
+        print("\n" + "="*70)
+        print(f"=== REPLOT MODE: {model_name} ===")
+        print("="*70)
+        print(f"Results directory: {results_dir}")
+
+        # Load df_new
+        df_new_path = os.path.join(results_dir, "df_new.csv")
+        final_info_path = os.path.join(results_dir, "final_model_info.csv")
+        df_fba_path = os.path.join(results_dir, "df_FBA.csv")
+
+        if os.path.exists(final_info_path):
+            df_new = pd.read_csv(final_info_path)
+            print(f"Loaded final_model_info.csv: {len(df_new)} rows")
+        elif os.path.exists(df_new_path):
+            df_new = pd.read_csv(df_new_path)
+            print(f"Loaded df_new.csv: {len(df_new)} rows")
+        else:
+            print("Error: neither df_new.csv nor final_model_info.csv found in results dir")
+            sys.exit(1)
+
+        # Load initial (processed) kcat data
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+        processed_data_path = os.path.join(
+            project_root, "data", "processed", model_name, f"{model_name}_processed_data.csv"
+        )
+        if os.path.exists(processed_data_path):
+            processed_data = pd.read_csv(processed_data_path)
+            if 'kcat_mean' in processed_data.columns and 'kcat' not in processed_data.columns:
+                processed_data['kcat'] = processed_data['kcat_mean']
+            print(f"Loaded processed data: {len(processed_data)} rows")
+        else:
+            processed_data = df_new.copy()
+            print("Warning: processed data not found, using df_new as initial data")
+
+        # Load model for subsystem map
+        raw_data_dir = os.path.join(project_root, "data", "raw")
+        if results_subdir == "BiGG_models":
+            model_path = os.path.join(raw_data_dir, "BiGG_models", f"{model_name}.xml")
+        else:
+            model_path = os.path.join(raw_data_dir, f"{model_name}.xml")
+
+        # Plot 1: kcat initial vs tuned
+        print("\nGenerating: kcat_comparison_initial_vs_tuned.png")
+        kcat_plot_path = os.path.join(results_dir, "kcat_comparison_initial_vs_tuned.png")
+        try:
+            plot_kcat_annealing_comparison(
+                initial_df=processed_data,
+                tuned_df=df_new,
+                output_path=kcat_plot_path,
+                model_name=model_name,
+                show=False
+            )
+            print(f"  Saved: {kcat_plot_path}")
+        except Exception as e:
+            print(f"  Warning: {e}")
+
+        # Plot 2: per-subsystem kcat comparison (needs model XML)
+        print("Generating: kcat_comparison_by_subsystem.png")
+        sub_plot_path = os.path.join(results_dir, "kcat_comparison_by_subsystem.png")
+        if os.path.exists(model_path):
+            try:
+                replot_model = cobra.io.read_sbml_model(model_path)
+                sub_map = {r.id: (r.subsystem if r.subsystem else 'Unknown')
+                           for r in replot_model.reactions}
+                df_new_sub = df_new.copy()
+                df_new_sub['subsystem'] = df_new_sub['Reactions'].map(sub_map).fillna('Unknown')
+                processed_sub = processed_data.copy()
+                processed_sub['subsystem'] = processed_sub['Reactions'].map(sub_map).fillna('Unknown')
+                plot_kcat_annealing_comparison_by_subsystem(
+                    initial_df=processed_sub,
+                    tuned_df=df_new_sub,
+                    subsystem_col='subsystem',
+                    output_path=sub_plot_path,
+                    model_name=model_name,
+                    max_subsystems=12,
+                    ncols=4,
+                    show=False,
+                )
+                print(f"  Saved: {sub_plot_path}")
+            except Exception as e:
+                print(f"  Warning: {e}")
+        else:
+            print(f"  Skipped (model XML not found at {model_path})")
+
+        # Plot 3: flux distribution
+        print("Generating: flux_distribution.png")
+        if os.path.exists(df_fba_path):
+            try:
+                from kinGEMs.plots import plot_flux_distribution
+                df_FBA = pd.read_csv(df_fba_path)
+                fba_plot_path = os.path.join(results_dir, "flux_distribution.png")
+                plot_flux_distribution(df_FBA=df_FBA, output_path=fba_plot_path, show=False)
+                print(f"  Saved: {fba_plot_path}")
+            except Exception as e:
+                print(f"  Warning: {e}")
+        else:
+            print("  Skipped (df_FBA.csv not found)")
+
+        # Plot 4: maintenance sweep
+        print("Generating: maintenance_sweep_plot.png")
+        maint_path = os.path.join(results_dir, "maintenance_sweep_results.csv")
+        if os.path.exists(maint_path):
+            try:
+                import matplotlib.pyplot as plt
+                from kinGEMs.plots import set_plotting_style, FONT_SIZES, DEFAULT_DPI
+                set_plotting_style()
+
+                maint_df = pd.read_csv(maint_path)
+                gam_values = sorted(maint_df['gam'].unique())
+                fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+                # Left: Biomass vs NGAM per GAM
+                for gam_val in gam_values:
+                    subset = maint_df[maint_df['gam'] == gam_val]
+                    axes[0].plot(subset['ngam'], subset['biomass'],
+                                 marker='o', label=f'GAM={gam_val:.1f}')
+                axes[0].set_xlabel('NGAM (mmol/gDW/h)', fontsize=FONT_SIZES['axis_label'], fontweight='bold')
+                axes[0].set_ylabel('Biomass (1/h)', fontsize=FONT_SIZES['axis_label'], fontweight='bold')
+                axes[0].set_title('Biomass vs NGAM', fontsize=FONT_SIZES['subtitle'], fontweight='bold')
+                axes[0].legend(loc='upper center', bbox_to_anchor=(0.5, -0.25),
+                               ncol=3, frameon=True, fontsize=FONT_SIZES['legend'])
+                axes[0].grid(True, alpha=0.3)
+
+                # Right: heatmap if multiple GAM values
+                if len(gam_values) > 1:
+                    pivot_data = maint_df.pivot(index='gam', columns='ngam', values='biomass')
+                    im = axes[1].imshow(pivot_data, aspect='auto', cmap='viridis', origin='lower')
+                    axes[1].set_xlabel('NGAM (mmol/gDW/h)', fontsize=FONT_SIZES['axis_label'], fontweight='bold')
+                    axes[1].set_ylabel('GAM (mmol ATP/gDW)', fontsize=FONT_SIZES['axis_label'], fontweight='bold')
+                    axes[1].set_title('Biomass Heatmap', fontsize=FONT_SIZES['subtitle'], fontweight='bold')
+                    axes[1].set_xticks(range(len(pivot_data.columns)))
+                    axes[1].set_xticklabels([f'{x:.1f}' for x in pivot_data.columns],
+                                            fontsize=FONT_SIZES['tick_label'])
+                    axes[1].set_yticks(range(len(pivot_data.index)))
+                    axes[1].set_yticklabels([f'{y:.1f}' for y in pivot_data.index],
+                                            fontsize=FONT_SIZES['tick_label'])
+                    cbar = plt.colorbar(im, ax=axes[1])
+                    cbar.set_label('Biomass (1/h)', fontsize=FONT_SIZES['axis_label'], fontweight='bold')
+                else:
+                    axes[1].bar(maint_df['ngam'], maint_df['biomass'], edgecolor='black', linewidth=2)
+                    axes[1].set_xlabel('NGAM (mmol/gDW/h)', fontsize=FONT_SIZES['axis_label'], fontweight='bold')
+                    axes[1].set_ylabel('Biomass (1/h)', fontsize=FONT_SIZES['axis_label'], fontweight='bold')
+                    axes[1].set_title('Biomass Distribution', fontsize=FONT_SIZES['subtitle'], fontweight='bold')
+                    axes[1].grid(True, alpha=0.3, axis='y')
+
+                plt.tight_layout()
+                maint_plot_path = os.path.join(results_dir, "maintenance_sweep_plot.png")
+                plt.savefig(maint_plot_path, dpi=DEFAULT_DPI, bbox_inches='tight')
+                plt.close()
+                print(f"  Saved: {maint_plot_path}")
+            except Exception as e:
+                print(f"  Warning: {e}")
+        else:
+            print("  Skipped (maintenance_sweep_results.csv not found)")
+
+        print("\n" + "="*70)
+        print("=== Replot Complete ===")
+        print("="*70)
+        return
 
     # Load configuration
     print(f"Loading configuration from: {config_path}")
@@ -1048,33 +1280,70 @@ def main():
 
     # Save model configuration summary
     # Read biomass values from saved simulated annealing results
-    sa_results_path = os.path.join(tuning_results_dir, "simulated_annealing_results.csv")
-    initial_biomass = None
-    final_biomass = None
-    improvement_percent = None
-    iterations_count = None
-    if os.path.exists(sa_results_path):
-        sa_df = pd.read_csv(sa_results_path)
-        if len(sa_df) > 0:
-            initial_biomass = float(sa_df['biomass'].iloc[0])
-            final_biomass = float(sa_df['biomass'].iloc[-1])
-            improvement_percent = (final_biomass - initial_biomass) / initial_biomass * 100 if initial_biomass > 0 else 0
-            iterations_count = len(sa_df)
+    _ib = pipeline_results.initial_ec_biomass
+    _fb = pipeline_results.final_ec_biomass
+    _imp = (_fb - _ib) / _ib * 100 if _ib > 0 else 0.0
 
     config_summary = {
         'run_id': run_id,
         'model_name': model_name,
         'organism': organism,
         'enzyme_upper_bound': float(enzyme_upper_bound),
-        'initial_biomass': initial_biomass,
-        'final_biomass': final_biomass,
-        'improvement_percent': improvement_percent,
-        'iterations': iterations_count,
+        # SA performance
+        'initial_biomass': _ib,
+        'final_biomass': _fb,
+        'improvement_percent': round(_imp, 4),
+        'iterations': pipeline_results.sa_iterations,
+        # Maintenance sweep
         'optimal_ngam': float(optimal_ngam) if optimal_ngam is not None else None,
         'optimal_gam': float(optimal_gam) if optimal_gam is not None else None,
         'ngam_rxn_id': ngam_rxn_id,
-        'biomass_reaction': biomass_reaction
+        'biomass_reaction': biomass_reaction,
+        # Model structure
+        'n_reactions': pipeline_results.n_reactions,
+        'n_genes': pipeline_results.n_genes,
+        'n_metabolites': pipeline_results.n_metabolites,
+        # kcat / CPI-Pred coverage
+        'n_rxn_gene_pairs': pipeline_results.n_rxn_gene_pairs,
+        'n_unique_proteins': pipeline_results.n_unique_proteins,
+        'n_unique_substrates': pipeline_results.n_unique_substrates,
+        'cpipred_coverage_pct': round(
+            pipeline_results.n_rxn_gene_pairs / max(pipeline_results.n_reactions, 1) * 100, 2
+        ),
+        # Biomass progression
+        'cobra_biomass': pipeline_results.cobra_biomass,
+        'initial_ec_biomass': pipeline_results.initial_ec_biomass,
+        # kcat statistics (computed from df_new if kcat_updated exists)
+        'median_kcat_initial_hr': None,
+        'median_kcat_tuned_hr': None,
+        'median_fold_change': None,
+        'n_kcat_increased': None,
+        'n_kcat_decreased': None,
+        # Per-step wall time
+        'time_data_prep_s': pipeline_results.time_data_prep_s,
+        'time_optimization_s': pipeline_results.time_optimization_s,
+        'time_sa_s': pipeline_results.time_sa_s,
+        'time_total_pipeline_s': pipeline_results.time_total_pipeline_s,
+        # SLURM metrics (patched in by the SLURM script after job completion)
+        'slurm_job_id': None,
+        'slurm_node': None,
+        'slurm_cpus': None,
+        'slurm_mem_requested_gb': None,
+        'slurm_mem_used_mb': None,
+        'slurm_walltime_s': None,
     }
+    # Compute kcat stats from df_new
+    df_new_local = pipeline_results.df_new
+    if 'kcat_mean' in df_new_local.columns and 'kcat_updated' in df_new_local.columns:
+        kc = df_new_local[['kcat_mean', 'kcat_updated']].dropna()
+        kc = kc[(kc['kcat_mean'] > 0) & (kc['kcat_updated'] > 0)]
+        if not kc.empty:
+            fc = kc['kcat_updated'] / kc['kcat_mean']
+            config_summary['median_kcat_initial_hr'] = round(float(kc['kcat_mean'].median() * 3600), 2)
+            config_summary['median_kcat_tuned_hr']   = round(float(kc['kcat_updated'].median() * 3600), 2)
+            config_summary['median_fold_change']      = round(float(fc.median()), 4)
+            config_summary['n_kcat_increased']        = int((fc > 1).sum())
+            config_summary['n_kcat_decreased']        = int((fc < 1).sum())
     config_summary_path = os.path.join(tuning_results_dir, "model_config_summary.json")
     with open(config_summary_path, 'w') as f:
         json.dump(config_summary, f, indent=2)
@@ -1087,17 +1356,14 @@ def main():
     print(f"Run ID: {run_id}")
     print(f"Model: {model_name} ({model_type})")
 
-    # Read biomass progression from saved files
-    sa_results_path = os.path.join(tuning_results_dir, "simulated_annealing_results.csv")
-    if os.path.exists(sa_results_path):
-        sa_df = pd.read_csv(sa_results_path)
-        initial_biomass = float(sa_df['biomass'].iloc[0])
-        final_biomass = float(sa_df['biomass'].iloc[-1])
-        annealing_improvement = (final_biomass - initial_biomass) / initial_biomass * 100 if initial_biomass > 0 else 0
-        print(f"Initial biomass (enzyme-constrained): {initial_biomass:.4f}")
-        print(f"Post-annealing biomass: {final_biomass:.4f}")
-        print(f"Annealing improvement: {annealing_improvement:.1f}%")
-        print(f"Annealing iterations: {len(sa_df)}")
+    # Print biomass progression from pipeline_results
+    _pr = pipeline_results
+    if _pr.initial_ec_biomass > 0:
+        _ann_imp = (_pr.final_ec_biomass - _pr.initial_ec_biomass) / _pr.initial_ec_biomass * 100
+        print(f"Initial biomass (enzyme-constrained): {_pr.initial_ec_biomass:.4f}")
+        print(f"Post-annealing biomass: {_pr.final_ec_biomass:.4f}")
+        print(f"Annealing improvement: {_ann_imp:.1f}%")
+        print(f"Annealing iterations: {_pr.sa_iterations}")
 
     if optimal_ngam is not None:
         print(f"\nOptimal maintenance parameters (applied to final model):")

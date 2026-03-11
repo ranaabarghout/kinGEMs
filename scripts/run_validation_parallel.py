@@ -91,6 +91,10 @@ def simulate_wild_type_growth(model_adj, name_carbon_model_matched_adj,
     # Set medium using safe bounds handling
     set_medium_safely(model_adj, medium_ex_inds, uptake_rate=-1000)
 
+    # IMPORTANT: Close all carbon sources initially to ensure only one is active at a time
+    for carbon_idx in carbon_ex_inds:
+        reset_carbon_source_safely(model_adj, carbon_idx)
+
     print(f"  Calculating wild-type growth for {n_carbons} carbon sources...")
 
     for e, carbon in enumerate(name_carbon_model_matched_adj):
@@ -163,6 +167,10 @@ def simulate_wild_type_growth_kingems(model_adj, name_carbon_model_matched_adj,
     # Set medium using safe bounds handling
     set_medium_safely(model_adj, medium_ex_inds, uptake_rate=-1000)
 
+    # IMPORTANT: Close all carbon sources initially to ensure only one is active at a time
+    for carbon_idx in carbon_ex_inds:
+        reset_carbon_source_safely(model_adj, carbon_idx)
+
     print(f"  Calculating kinGEMs wild-type growth for {n_carbons} carbon sources...")
     print("  (WITH enzyme constraints, NO gene knockouts)")
 
@@ -175,8 +183,26 @@ def simulate_wild_type_growth_kingems(model_adj, name_carbon_model_matched_adj,
             wild_type_growth[e] = wild_type_growth[e_found]
             continue
 
+        # IMPORTANT: Close ALL carbon sources before opening the one we want to test
+        for carbon_idx in carbon_ex_inds:
+            reset_carbon_source_safely(model_adj, carbon_idx)
+
         # Set carbon source using safe bounds handling
         set_carbon_source_safely(model_adj, carbon_ex_inds[e], uptake_rate=-10)
+        
+        # DIAGNOSTIC: Check carbon source bounds before optimization
+        if e == 0:  # Only print for first carbon to avoid spam
+            print(f"\n  [DEBUG] Carbon exchange bounds BEFORE optimization (carbon {e}):")
+            for idx, c_idx in enumerate(carbon_ex_inds[:min(4, len(carbon_ex_inds))]):
+                if c_idx != -1:
+                    ex = model_adj.exchanges[c_idx]
+                    print(f"    Carbon {idx} ({ex.id}): LB={ex.lower_bound:.2f}, UB={ex.upper_bound:.2f}")
+                    # Check reverse if exists
+                    try:
+                        rev = model_adj.reactions.get_by_id(ex.id + '_reverse')
+                        print(f"      → Reverse: LB={rev.lower_bound:.2f}, UB={rev.upper_bound:.2f}")
+                    except:
+                        pass
 
         # Optimize WITH enzyme constraints, but NO gene knockouts
         # No gene knockout needed - just optimize with enzyme constraints
@@ -209,8 +235,8 @@ def simulate_wild_type_growth_kingems(model_adj, name_carbon_model_matched_adj,
 
         wild_type_growth[e] = solution
 
-        # Reset carbon source using safe bounds handling
-        reset_carbon_source_safely(model_adj, carbon_ex_inds[e])
+        # Note: We'll reset all carbons at the start of the next iteration
+        # No need to reset here since we close all before each test
 
         if (e + 1) % 5 == 0:
             print(f"  kinGEMs wild-type progress: {e+1}/{n_carbons} carbon sources completed")
@@ -284,6 +310,12 @@ def main():
                             'When a gene is knocked out, its enzyme constraint is removed and protein pool is freed '
                             'for other reactions (may result in slight growth improvements).')
 
+    # Sampling option for faster testing
+    parser.add_argument('--sample-size', type=int, default=None,
+                       help='Sample a subset of gene-carbon combinations for faster testing. '
+                            'E.g., --sample-size 1000 will sample ~1000 datapoints. '
+                            'Default: use all data (no sampling).')
+
     args = parser.parse_args()
 
     # Load configuration
@@ -342,42 +374,26 @@ def main():
     print(f"  Reactions: {len(model.reactions)}")
 
     # Set solver
-    solver_name = config.get('solver', None)
+    solver_name = config.get('solver', 'glpk')  # Default to GLPK
 
-    # Verify Pyomo can find CPLEX if requested
-    if solver_name and solver_name.lower() == 'cplex':
+    # Force GLPK if gurobi causes license issues
+    print(f"  Setting solver to: {solver_name.upper()}")
+    try:
+        model.solver = solver_name
+        print(f"  ✓ Using solver: {solver_name.upper()}")
+    except Exception as e:
+        print(f"  ⚠️  Could not set solver to {solver_name}: {e}")
+        print(f"  Falling back to GLPK...")
         try:
-            from pyomo.opt import SolverFactory
-            cplex_solver = SolverFactory('cplex')
-            if cplex_solver.available():
-                print(f"  ✓ Pyomo found CPLEX solver: {cplex_solver.executable()}")
-            else:
-                print("  ⚠️  WARNING: CPLEX requested but not available to Pyomo!")
-                print("  Pyomo will fall back to GLPK (slower)")
-        except Exception as e:
-            print(f"  ⚠️  Could not verify CPLEX in Pyomo: {e}")
-
-    if solver_name:
-        try:
-            model.solver = solver_name
-            print(f"  Solver: {solver_name.upper()}")
-        except Exception as e:
-            print(f"  ⚠️  Could not set solver to {solver_name}: {e}")
+            model.solver = 'glpk'
+            solver_name = 'glpk'
+            print(f"  ✓ Using solver: GLPK")
+        except Exception as e2:
+            print(f"  ⚠️  Could not set GLPK: {e2}")
             print(f"  Using default solver: {model.solver.interface.__name__}")
-    else:
-        # Auto-detect best solver
-        for best_solver in ['cplex', 'gurobi', 'scip', 'glpk']:
-            try:
-                model.solver = best_solver
-                print(f"  Auto-detected solver: {best_solver.upper()}")
-                break
-            except Exception:
-                continue
 
     current_solver = model.solver.interface.__name__
-    if 'glpk' in current_solver.lower():
-        print("  ⚠️  WARNING: Using GLPK solver (slow)")
-        print("  ⚠️  Consider loading CPLEX: module load cplex")
+    print(f"  Confirmed solver: {current_solver}")
 
     # Auto-detect objective
     if objective_reaction is None:
@@ -393,6 +409,7 @@ def main():
     # === Step 2: Prepare Environment ===
     print("\n=== Step 2: Preparing validation environment ===")
     og_model = model.copy()
+    print("Initial growth rate: ", model.slim_optimize())
     model = prepare_model(model)
     name_medium_model, name_carbon_model, name_carbon_experiment = load_environment(ECOLI_VALIDATION_DIR)
     data_experiments, data_genes, data_fitness = load_data(ECOLI_VALIDATION_DIR)
@@ -425,6 +442,59 @@ def main():
 
     print(f"  Matched genes: {len(name_genes_matched_adj)}")
     print(f"  Carbon sources: {len(name_carbon_model_matched_adj)}")
+
+    # === Optional: Sample subset of data for faster testing ===
+    if args.sample_size:
+        print(f"\n=== Sampling subset of data ===")
+        n_genes_full = len(name_genes_matched_adj)
+        n_carbons_full = len(name_carbon_model_matched_adj)
+        total_combinations = n_genes_full * n_carbons_full
+
+        print(f"  Full dataset: {n_genes_full} genes × {n_carbons_full} carbons = {total_combinations:,} combinations")
+        print(f"  Target sample size: {args.sample_size:,} combinations")
+
+        # Calculate how many genes and carbons to sample
+        # Try to keep a balanced ratio
+        import math
+        ratio = n_genes_full / n_carbons_full
+        n_carbons_sample = int(math.sqrt(args.sample_size / ratio))
+        n_genes_sample = int(args.sample_size / n_carbons_sample)
+
+        # Find unique carbon sources (some may be duplicated in the list)
+        unique_carbons = []
+        unique_carbon_indices = []
+        seen_carbons = set()
+        for i, carbon in enumerate(name_carbon_model_matched_adj):
+            if carbon not in seen_carbons:
+                unique_carbons.append(carbon)
+                unique_carbon_indices.append(i)
+                seen_carbons.add(carbon)
+
+        n_unique_carbons = len(unique_carbons)
+        print(f"  Unique carbon sources: {n_unique_carbons} (from {n_carbons_full} total entries)")
+
+        # Ensure we don't exceed available unique data
+        n_carbons_sample = min(n_carbons_sample, n_unique_carbons)
+        n_genes_sample = min(n_genes_sample, n_genes_full)
+
+        # Random sampling with fixed seed for reproducibility
+        np.random.seed(42)
+        gene_indices = np.random.choice(n_genes_full, size=n_genes_sample, replace=False)
+
+        # Sample from UNIQUE carbon indices to avoid duplicates
+        sampled_unique_indices = np.random.choice(len(unique_carbon_indices), size=n_carbons_sample, replace=False)
+        carbon_indices = [unique_carbon_indices[i] for i in sampled_unique_indices]
+
+        # Sample the data
+        name_genes_matched_adj = [name_genes_matched_adj[i] for i in sorted(gene_indices)]
+        name_carbon_model_matched_adj = [name_carbon_model_matched_adj[i] for i in sorted(carbon_indices)]
+        medium_ex_inds = medium_ex_inds  # Keep all medium components
+        carbon_ex_inds = [carbon_ex_inds[i] for i in sorted(carbon_indices)]
+        data_fitness_matched_adj = data_fitness_matched_adj[np.ix_(gene_indices, carbon_indices)]
+
+        actual_size = len(name_genes_matched_adj) * len(name_carbon_model_matched_adj)
+        print(f"  Sampled: {len(name_genes_matched_adj)} genes × {len(name_carbon_model_matched_adj)} carbons = {actual_size:,} combinations")
+        print(f"  Reduction: {100 * (1 - actual_size/total_combinations):.1f}% fewer datapoints")
 
     # === Step 3: Run Simulation Based on Mode ===
     print(f"\n=== Step 3: Running {args.mode.upper()} simulation ===")

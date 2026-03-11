@@ -1,0 +1,82 @@
+Starting kinGEMs pipeline for iECB_1328
+Config: configs/BiGG_models/iECB_1328.json
+Starting run at: Tue Mar 10 09:24:45 PDT 2026
+
+Restricted license - for non-production use only - expires 2026-11-23
+Loading configuration from: configs/BiGG_models/iECB_1328.json
+
+======================================================================
+=== kinGEMs Pipeline for iECB_1328 ===
+======================================================================
+Run ID: iECB_1328_20260310_9147
+Model type: Standard
+Organism: E coli
+Results directory: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iECB_1328_20260310_9147
+======================================================================
+=== kinGEMs Pipeline for iECB_1328 ===
+Run ID: iECB_1328_20260310_9147
+Model type: Standard
+Organism: E coli
+Results directory: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iECB_1328_20260310_9147
+Solver: glpk
+Biomass reaction: BIOMASS_Ec_iJO1366_core_53p95M
+Baseline growth: 0.9825
+=== Step 1: Preparing model data ===
+  Found existing files, loading cached data
+Warning: Model has 8 validation errors
+  Model: 1329 genes, 3777 reactions
+=== Step 2: Merging substrate and sequence data ===
+  Merged data: 11584 rows
+=== Step 3: Processing CPI-Pred kcat values ===
+  Found predictions file: X06A_kinGEMs_iECB_1328_predictions.csv
+  Processed data: 11227 rows
+  Data preparation (steps 1-3) took 32.7s
+=== Step 4: Running optimization ===
+  COBRApy biomass: 0.9825
+  kinGEMs biomass: 0.0728
+  Optimization (step 4) took 3.0s
+=== Step 5: Running simulated annealing ===
+  [DEBUG] Iter 1: Optimization succeeded! biomass=7.367277e-02
+    - IMPROVEMENT: +1.235%
+  Iter 1/1000: biomass=0.073673, temp=100.0000  [DEBUG] Iter 2: Optimization succeeded! biomass=9.841707e-02
+    - IMPROVEMENT: +33.587%
+  Iter 2/1000: biomass=0.098417, temp=95.0000  [DEBUG] Iter 3: Optimization succeeded! biomass=1.029529e-01
+    - IMPROVEMENT: +4.609%
+  Iter 3/1000: biomass=0.102953, temp=90.2500  [DEBUG] Iter 4: Optimization succeeded! biomass=1.102204e-01
+    - IMPROVEMENT: +7.059%
+  Iter 4/1000: biomass=0.110220, temp=85.7375  [DEBUG] Iter 5: Optimization succeeded! biomass=1.130057e-01
+    - IMPROVEMENT: +2.527%
+  Iter 5/1000: biomass=0.113006, temp=81.4506  Iter 6/1000: biomass=0.106034, temp=77.3781  Iter 7/1000: biomass=0.120606, temp=73.5092  Iter 8/1000: biomass=0.137325, temp=69.8337  Iter 9/1000: biomass=0.156869, temp=66.3420  Iter 10/1000: biomass=0.229821, temp=63.0249  Iter 11/1000: biomass=0.315615, temp=59.8737  Iter 12/1000: biomass=0.319015, temp=56.8800  Iter 13/1000: biomass=0.390636, temp=54.0360  Iter 14/1000: biomass=0.376146, temp=51.3342  Iter 15/1000: biomass=0.400724, temp=48.7675  Iter 16/1000: biomass=0.412850, temp=46.3291  Iter 17/1000: biomass=0.313954, temp=44.0127  Iter 18/1000: biomass=0.739053, temp=41.8120  Iter 19/1000: biomass=0.755385, temp=39.7214  Iter 20/1000: biomass=0.769061, temp=37.7354  Iter 21/1000: biomass=0.820573, temp=35.8486  Iter 22/1000: biomass=0.843656, temp=34.0562  Iter 23/1000: biomass=0.853840, temp=32.3534  Iter 24/1000: biomass=0.869965, temp=30.7357  Iter 25/1000: biomass=0.871493, temp=29.1989  Iter 26/1000: biomass=0.875163, temp=27.7390  Iter 27/1000: biomass=0.876648, temp=26.3520  Iter 28/1000: biomass=0.877798, temp=25.0344  Iter 29/1000: biomass=0.879326, temp=23.7827  Iter 30/1000: biomass=0.882983, temp=22.5936  Iter 31/1000: biomass=0.883231, temp=21.4639  Iter 32/1000: biomass=0.883355, temp=20.3907  Iter 33/1000: biomass=0.883759, temp=19.3711  Iter 34/1000: biomass=0.884486, temp=18.4026  Iter 35/1000: biomass=0.885795, temp=17.4825  Iter 36/1000: biomass=0.887123, temp=16.6083  Iter 37/1000: biomass=0.887930, temp=15.7779  Iter 38/1000: biomass=0.891090, temp=14.9890  Iter 39/1000: biomass=0.891313, temp=14.2396  Iter 40/1000: biomass=0.891108, temp=13.5276  Iter 41/1000: biomass=0.892269, temp=12.8512  Iter 42/1000: biomass=0.893331, temp=12.2087  Iter 43/1000: biomass=0.894072, temp=11.5982  Iter 44/1000: biomass=0.894281, temp=11.0183  Iter 45/1000: biomass=0.895493, temp=10.4674  Iter 46/1000: biomass=0.895757, temp=9.9440  Iter 47/1000: biomass=0.898498, temp=9.4468  Iter 48/1000: biomass=0.899121, temp=8.9745  Iter 49/1000: biomass=0.898727, temp=8.5258  Iter 50/1000: biomass=0.898802, temp=8.0995  Iter 51/1000: biomass=0.899313, temp=7.6945  Iter 52/1000: biomass=0.900348, temp=7.3098  Iter 53/1000: biomass=0.900667, temp=6.9443  Iter 54/1000: biomass=0.900757, temp=6.5971  Iter 55/1000: biomass=0.900827, temp=6.2672  Iter 56/1000: biomass=0.901230, temp=5.9539  Iter 57/1000: biomass=0.901691, temp=5.6562  Iter 58/1000: biomass=0.901804, temp=5.3734  Iter 59/1000: biomass=0.901843, temp=5.1047  Iter 60/1000: biomass=0.902061, temp=4.8495  Iter 61/1000: biomass=0.904974, temp=4.6070  Iter 62/1000: biomass=0.905322, temp=4.3766  Iter 63/1000: biomass=0.905374, temp=4.1578  Iter 64/1000: biomass=0.905553, temp=3.9499  Iter 65/1000: biomass=0.905886, temp=3.7524  Iter 66/1000: biomass=0.905940, temp=3.5648  Iter 67/1000: biomass=0.906087, temp=3.3866  Iter 68/1000: biomass=0.906136, temp=3.2172  Iter 69/1000: biomass=0.906612, temp=3.0564  Iter 70/1000: biomass=0.906647, temp=2.9035  Iter 71/1000: biomass=0.906646, temp=2.7584  Iter 72/1000: biomass=0.906792, temp=2.6205  Iter 73/1000: biomass=0.907228, temp=2.4894  Iter 74/1000: biomass=0.907298, temp=2.3650  Iter 75/1000: biomass=0.907430, temp=2.2467  Iter 76/1000: biomass=0.907447, temp=2.1344  Iter 77/1000: biomass=0.907491, temp=2.0277  Iter 78/1000: biomass=0.907667, temp=1.9263  Iter 79/1000: biomass=0.907661, temp=1.8300  Iter 80/1000: biomass=0.907708, temp=1.7385  Iter 81/1000: biomass=0.907934, temp=1.6515  Iter 82/1000: biomass=0.907996, temp=1.5690  Iter 83/1000: biomass=0.908087, temp=1.4905  Iter 84/1000: biomass=0.908104, temp=1.4160  Iter 85/1000: biomass=0.908145, temp=1.3452  Iter 86/1000: biomass=0.908351, temp=1.2779  Iter 87/1000: biomass=0.908497, temp=1.2140  Iter 88/1000: biomass=0.908641, temp=1.1533  Iter 89/1000: biomass=0.908653, temp=1.0957  Iter 90/1000: biomass=0.908664, temp=1.0409  Iter 91/1000: biomass=0.909749, temp=0.9888  Iter 92/1000: biomass=0.909906, temp=0.9394  Iter 93/1000: biomass=0.909951, temp=0.8924  Iter 94/1000: biomass=0.910063, temp=0.8478  Iter 95/1000: biomass=0.910153, temp=0.8054  Iter 96/1000: biomass=0.910163, temp=0.7651  Iter 97/1000: biomass=0.910217, temp=0.7269  Iter 98/1000: biomass=0.910400, temp=0.6905  Iter 99/1000: biomass=0.910472, temp=0.6560  Iter 100/1000: biomass=0.910472, temp=0.6232  Iter 101/1000: biomass=0.910478, temp=0.5921  Iter 102/1000: biomass=0.910526, temp=0.5625  Iter 103/1000: biomass=0.910762, temp=0.5343  Iter 104/1000: biomass=0.910772, temp=0.5076  Iter 105/1000: biomass=0.911016, temp=0.4822  Iter 106/1000: biomass=0.911039, temp=0.4581  Iter 107/1000: biomass=0.911119, temp=0.4352  Iter 108/1000: biomass=0.911125, temp=0.4135  Iter 109/1000: biomass=0.911180, temp=0.3928  Iter 110/1000: biomass=0.911181, temp=0.3731  Iter 111/1000: biomass=0.911228, temp=0.3545  Iter 112/1000: biomass=0.911304, temp=0.3368  Iter 113/1000: biomass=0.911337, temp=0.3199  Iter 114/1000: biomass=0.911347, temp=0.3039  Iter 115/1000: biomass=0.911404, temp=0.2887  Iter 116/1000: biomass=0.911434, temp=0.2743  Iter 117/1000: biomass=0.911455, temp=0.2606  Iter 118/1000: biomass=0.911461, temp=0.2475  Iter 119/1000: biomass=0.911505, temp=0.2352  Iter 120/1000: biomass=0.911568, temp=0.2234  Iter 121/1000: biomass=0.911588, temp=0.2122  Iter 122/1000: biomass=0.911635, temp=0.2016  Iter 123/1000: biomass=0.911646, temp=0.1915  Iter 124/1000: biomass=0.911656, temp=0.1820  Iter 125/1000: biomass=0.911721, temp=0.1729  Iter 126/1000: biomass=0.911733, temp=0.1642  Iter 127/1000: biomass=0.911739, temp=0.1560  Iter 128/1000: biomass=0.911790, temp=0.1482  Iter 129/1000: biomass=0.911921, temp=0.1408  Iter 130/1000: biomass=0.911926, temp=0.1338  Iter 131/1000: biomass=0.911926, temp=0.1271  Iter 132/1000: biomass=0.911939, temp=0.1207  Iter 133/1000: biomass=0.911973, temp=0.1147  Iter 134/1000: biomass=0.911992, temp=0.1090  Iter 135/1000: biomass=0.912011, temp=0.1035  Iter 136/1000: biomass=0.912048, temp=0.0983  Iter 137/1000: biomass=0.912049, temp=0.0934  Iter 138/1000: biomass=0.912084, temp=0.0887  Iter 139/1000: biomass=0.912084, temp=0.0843  Iter 140/1000: biomass=0.912093, temp=0.0801  Iter 141/1000: biomass=0.912143, temp=0.0761
+  Early stop: No change for 50 iterations
+
+  Annealing complete! Initial: 0.0728, Final: 0.9121, Improvement: 1153.4%
+  Simulated annealing (step 5) took 1164.2s
+  Saved tuned dataframe: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iECB_1328_20260310_9147/df_new.csv
+  Generating kcat comparison plot...
+  Saved kcat comparison plot to: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iECB_1328_20260310_9147/kcat_comparison_initial_vs_tuned.png
+  Saved kcat comparison plot: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iECB_1328_20260310_9147/kcat_comparison_initial_vs_tuned.png
+  Generating per-subsystem kcat comparison plot...
+  Saved kcat subsystem comparison plot to: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iECB_1328_20260310_9147/kcat_comparison_by_subsystem.png
+  Saved per-subsystem kcat comparison plot: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iECB_1328_20260310_9147/kcat_comparison_by_subsystem.png
+=== Pipeline core complete ===
+
+=== Step 7: Saving final model ===
+  Final GEM saved to: /project/6000502/ranaab/kinGEMs_v2/models/BiGG_models/iECB_1328_20260310_9147.xml
+  Configuration summary saved to: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iECB_1328_20260310_9147/model_config_summary.json
+
+======================================================================
+=== Pipeline Complete ===
+======================================================================
+Run ID: iECB_1328_20260310_9147
+Model: iECB_1328 (Standard)
+Initial biomass (enzyme-constrained): 0.0728
+Post-annealing biomass: 0.9121
+Annealing improvement: 1153.4%
+Annealing iterations: 142
+
+Results directory: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iECB_1328_20260310_9147
+Final model: /project/6000502/ranaab/kinGEMs_v2/models/BiGG_models/iECB_1328_20260310_9147.xml
+======================================================================
+
+Completed at: Tue Mar 10 09:52:21 PDT 2026
+  Patched SLURM metrics into results/tuning_results/BiGG_models/iECB_1328_20260310_9147/model_config_summary.json

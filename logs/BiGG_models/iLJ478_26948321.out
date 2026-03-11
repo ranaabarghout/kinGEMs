@@ -1,0 +1,79 @@
+Starting kinGEMs pipeline for iLJ478
+Config: configs/BiGG_models/iLJ478.json
+Starting run at: Tue Mar 10 09:42:02 PDT 2026
+
+Restricted license - for non-production use only - expires 2026-11-23
+Loading configuration from: configs/BiGG_models/iLJ478.json
+
+======================================================================
+=== kinGEMs Pipeline for iLJ478 ===
+======================================================================
+Run ID: iLJ478_20260310_9764
+Model type: Standard
+Organism: Thermotoga
+Results directory: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iLJ478_20260310_9764
+======================================================================
+=== kinGEMs Pipeline for iLJ478 ===
+Run ID: iLJ478_20260310_9764
+Model type: Standard
+Organism: Thermotoga
+Results directory: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iLJ478_20260310_9764
+Solver: glpk
+Biomass reaction: BIOMASS_Ecoli_TM
+Baseline growth: 0.2284
+=== Step 1: Preparing model data ===
+  Found existing files, loading cached data
+Warning: Model has 8 validation errors
+  Model: 482 genes, 918 reactions
+=== Step 2: Merging substrate and sequence data ===
+  Merged data: 3094 rows
+=== Step 3: Processing CPI-Pred kcat values ===
+  Found predictions file: X06A_kinGEMs_iLJ478_predictions.csv
+  Processed data: 3072 rows
+  Data preparation (steps 1-3) took 5.9s
+=== Step 4: Running optimization ===
+  COBRApy biomass: 0.2284
+  kinGEMs biomass: 0.1316
+  Optimization (step 4) took 0.4s
+=== Step 5: Running simulated annealing ===
+  [DEBUG] Iter 1: Optimization succeeded! biomass=1.778145e-01
+    - IMPROVEMENT: +35.104%
+  Iter 1/1000: biomass=0.177815, temp=100.0000  [DEBUG] Iter 2: Optimization succeeded! biomass=1.889499e-01
+    - IMPROVEMENT: +6.262%
+  Iter 2/1000: biomass=0.188950, temp=95.0000  [DEBUG] Iter 3: Optimization succeeded! biomass=1.892083e-01
+    - IMPROVEMENT: +0.137%
+  Iter 3/1000: biomass=0.189208, temp=90.2500  [DEBUG] Iter 4: Optimization succeeded! biomass=6.542472e-02
+  Iter 4/1000: biomass=0.065425, temp=85.7375  [DEBUG] Iter 5: Optimization succeeded! biomass=2.207095e-01
+    - IMPROVEMENT: +237.349%
+  Iter 5/1000: biomass=0.220710, temp=81.4506  Iter 6/1000: biomass=0.216050, temp=77.3781  Iter 7/1000: biomass=0.210060, temp=73.5092  Iter 8/1000: biomass=0.227571, temp=69.8337  Iter 9/1000: biomass=0.227718, temp=66.3420  Iter 10/1000: biomass=0.228026, temp=63.0249  Iter 11/1000: biomass=0.228053, temp=59.8737  Iter 12/1000: biomass=0.215683, temp=56.8800  Iter 13/1000: biomass=0.160787, temp=54.0360  Iter 14/1000: biomass=0.162259, temp=51.3342  Iter 15/1000: biomass=0.164709, temp=48.7675  Iter 16/1000: biomass=0.175449, temp=46.3291  Iter 17/1000: biomass=0.175670, temp=44.0127  Iter 18/1000: biomass=0.178360, temp=41.8120  Iter 19/1000: biomass=0.190700, temp=39.7214  Iter 20/1000: biomass=0.190851, temp=37.7354  Iter 21/1000: biomass=0.191677, temp=35.8486  Iter 22/1000: biomass=0.228407, temp=34.0562
+  Annealing complete! Initial: 0.1316, Final: 0.2284, Improvement: 73.5%
+  Simulated annealing (step 5) took 12.6s
+  Saved tuned dataframe: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iLJ478_20260310_9764/df_new.csv
+  Generating kcat comparison plot...
+  Saved kcat comparison plot to: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iLJ478_20260310_9764/kcat_comparison_initial_vs_tuned.png
+  Saved kcat comparison plot: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iLJ478_20260310_9764/kcat_comparison_initial_vs_tuned.png
+  Generating per-subsystem kcat comparison plot...
+  Saved kcat subsystem comparison plot to: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iLJ478_20260310_9764/kcat_comparison_by_subsystem.png
+  Saved per-subsystem kcat comparison plot: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iLJ478_20260310_9764/kcat_comparison_by_subsystem.png
+=== Pipeline core complete ===
+
+=== Step 7: Saving final model ===
+  Final GEM saved to: /project/6000502/ranaab/kinGEMs_v2/models/BiGG_models/iLJ478_20260310_9764.xml
+  Configuration summary saved to: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iLJ478_20260310_9764/model_config_summary.json
+
+======================================================================
+=== Pipeline Complete ===
+======================================================================
+Run ID: iLJ478_20260310_9764
+Model: iLJ478 (Standard)
+Initial biomass (enzyme-constrained): 0.1316
+Post-annealing biomass: 0.2284
+Annealing improvement: 73.5%
+Annealing iterations: 23
+
+Results directory: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iLJ478_20260310_9764
+Final model: /project/6000502/ranaab/kinGEMs_v2/models/BiGG_models/iLJ478_20260310_9764.xml
+======================================================================
+
+Completed at: Tue Mar 10 09:44:26 PDT 2026
+  Patched SLURM metrics into results/tuning_results/BiGG_models/iLJ478_20260310_9764/model_config_summary.json

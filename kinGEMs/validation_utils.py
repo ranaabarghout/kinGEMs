@@ -317,7 +317,8 @@ def set_medium_safely(model, medium_ex_inds, uptake_rate=-1000):
 
 def reset_carbon_source_safely(model, carbon_ex_idx):
     """
-    Reset carbon source to default bounds while preserving irreversible structure.
+    Reset carbon source to CLOSED (no uptake) while preserving irreversible structure.
+    This is used in validation to ensure only one carbon source is active at a time.
     Handles both models with and without _reverse exchanges.
 
     Parameters
@@ -338,19 +339,21 @@ def reset_carbon_source_safely(model, carbon_ex_idx):
         directionality = _get_exchange_directionality(model, ex_rxn.id)
 
         if directionality == 'uptake_only':
-            # Uptake: forward (0, 0), reverse (0, 1000)
+            # Uptake: CLOSE the carbon source (block all uptake)
+            # forward (0, 0), reverse (0, 0) <- Changed from 1000 to 0
             ex_rxn.lower_bound = 0
             ex_rxn.upper_bound = 0
             try:
                 reverse_ex = model.reactions.get_by_id(ex_rxn.id + '_reverse')
                 reverse_ex.lower_bound = 0
-                reverse_ex.upper_bound = 1000
+                reverse_ex.upper_bound = 0  # CLOSED - no uptake allowed
             except KeyError:
                 pass
         elif directionality == 'export_only':
-            # Export: forward (0, 1000), reverse (0, 0)
+            # Export: CLOSE the export (validation typically doesn't need this)
+            # forward (0, 0), reverse (0, 0)
             ex_rxn.lower_bound = 0
-            ex_rxn.upper_bound = 1000
+            ex_rxn.upper_bound = 0
             try:
                 reverse_ex = model.reactions.get_by_id(ex_rxn.id + '_reverse')
                 reverse_ex.lower_bound = 0
@@ -358,29 +361,20 @@ def reset_carbon_source_safely(model, carbon_ex_idx):
             except KeyError:
                 pass
         else:  # bidirectional
-            # Bidirectional: forward (0, 1000), reverse (0, 1000)
+            # Bidirectional: CLOSE both directions
+            # forward (0, 0), reverse (0, 0)
             ex_rxn.lower_bound = 0
-            ex_rxn.upper_bound = 1000
+            ex_rxn.upper_bound = 0
             try:
                 reverse_ex = model.reactions.get_by_id(ex_rxn.id + '_reverse')
                 reverse_ex.lower_bound = 0
-                reverse_ex.upper_bound = 1000
+                reverse_ex.upper_bound = 0
             except KeyError:
                 pass
     else:
-        # Original logic for bidirectional bounds
-        if ex_rxn.lower_bound < 0 and ex_rxn.upper_bound <= 0:
-            # This was uptake-only, keep it that way
-            ex_rxn.lower_bound = -1000
-            ex_rxn.upper_bound = 0
-        elif ex_rxn.lower_bound >= 0 and ex_rxn.upper_bound > 0:
-            # This was export-only, keep it that way
-            ex_rxn.lower_bound = 0
-            ex_rxn.upper_bound = 1000
-        else:
-            # This was bidirectional, keep it that way
-            ex_rxn.lower_bound = -1000
-            ex_rxn.upper_bound = 1000
+        # Original logic for bidirectional bounds - CLOSE the exchange
+        ex_rxn.lower_bound = 0
+        ex_rxn.upper_bound = 0
 
 
 def load_environment(base_directory):

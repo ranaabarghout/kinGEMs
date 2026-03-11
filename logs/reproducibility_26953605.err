@@ -1,0 +1,8 @@
+2026-03-10 09:52:34.387 | INFO     | kinGEMs.config:<module>:12 - PROJ_ROOT path is: /project/6000502/ranaab/kinGEMs_v2
+Traceback (most recent call last):
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_tuning_reproducibility.py", line 558, in <module>
+    main()
+  File "/project/6000502/ranaab/kinGEMs_v2/scripts/run_tuning_reproducibility.py", line 528, in main
+    run_idx = run['run_index']
+              ~~~^^^^^^^^^^^^^
+KeyError: 'run_index'

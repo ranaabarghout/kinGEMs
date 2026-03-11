@@ -4,7 +4,7 @@
   "biomass_reaction": "BIOMASS_KT_TEMP",
   "enzyme_upper_bound": 0.25,
   "solver": "glpk",
-  "enable_fva": true,
+  "enable_fva": false,
   "enable_biolog_validation": false,
   "enable_maintenance_sweep": false,
   "edit_ngam": false,

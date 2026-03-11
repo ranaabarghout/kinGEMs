@@ -1,0 +1,76 @@
+Starting kinGEMs pipeline for iJN678
+Config: configs/BiGG_models/iJN678.json
+Starting run at: Tue Mar 10 09:38:33 PDT 2026
+
+Restricted license - for non-production use only - expires 2026-11-23
+Loading configuration from: configs/BiGG_models/iJN678.json
+
+======================================================================
+=== kinGEMs Pipeline for iJN678 ===
+======================================================================
+Run ID: iJN678_20260310_2821
+Model type: Standard
+Organism: Synechocystis
+Results directory: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iJN678_20260310_2821
+======================================================================
+=== kinGEMs Pipeline for iJN678 ===
+Run ID: iJN678_20260310_2821
+Model type: Standard
+Organism: Synechocystis
+Results directory: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iJN678_20260310_2821
+Solver: glpk
+Biomass reaction: BIOMASS_Ec_SynHetero
+Baseline growth: 0.0631
+=== Step 1: Preparing model data ===
+  Found existing files, loading cached data
+Warning: Model has 8 validation errors
+  Model: 622 genes, 1122 reactions
+=== Step 2: Merging substrate and sequence data ===
+  Merged data: 4321 rows
+=== Step 3: Processing CPI-Pred kcat values ===
+  Found predictions file: X06A_kinGEMs_iJN678_predictions.csv
+  Processed data: 4053 rows
+  Data preparation (steps 1-3) took 8.8s
+=== Step 4: Running optimization ===
+  COBRApy biomass: 0.0631
+  kinGEMs biomass: 0.0625
+  Optimization (step 4) took 0.8s
+=== Step 5: Running simulated annealing ===
+  [DEBUG] Iter 1: Optimization succeeded! biomass=6.279522e-02
+    - IMPROVEMENT: +0.483%
+  Iter 1/1000: biomass=0.062795, temp=100.0000  [DEBUG] Iter 2: Optimization succeeded! biomass=6.307617e-02
+    - IMPROVEMENT: +0.447%
+  Iter 2/1000: biomass=0.063076, temp=95.0000  [DEBUG] Iter 3: Optimization succeeded! biomass=6.314984e-02
+    - IMPROVEMENT: +0.117%
+  Iter 3/1000: biomass=0.063150, temp=90.2500
+  Annealing complete! Initial: 0.0625, Final: 0.0631, Improvement: 1.1%
+  Simulated annealing (step 5) took 3.3s
+  Saved tuned dataframe: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iJN678_20260310_2821/df_new.csv
+  Generating kcat comparison plot...
+  Saved kcat comparison plot to: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iJN678_20260310_2821/kcat_comparison_initial_vs_tuned.png
+  Saved kcat comparison plot: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iJN678_20260310_2821/kcat_comparison_initial_vs_tuned.png
+  Generating per-subsystem kcat comparison plot...
+  Saved kcat subsystem comparison plot to: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iJN678_20260310_2821/kcat_comparison_by_subsystem.png
+  Saved per-subsystem kcat comparison plot: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iJN678_20260310_2821/kcat_comparison_by_subsystem.png
+=== Pipeline core complete ===
+
+=== Step 7: Saving final model ===
+  Final GEM saved to: /project/6000502/ranaab/kinGEMs_v2/models/BiGG_models/iJN678_20260310_2821.xml
+  Configuration summary saved to: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iJN678_20260310_2821/model_config_summary.json
+
+======================================================================
+=== Pipeline Complete ===
+======================================================================
+Run ID: iJN678_20260310_2821
+Model: iJN678 (Standard)
+Initial biomass (enzyme-constrained): 0.0625
+Post-annealing biomass: 0.0631
+Annealing improvement: 1.0%
+Annealing iterations: 4
+
+Results directory: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/iJN678_20260310_2821
+Final model: /project/6000502/ranaab/kinGEMs_v2/models/BiGG_models/iJN678_20260310_2821.xml
+======================================================================
+
+Completed at: Tue Mar 10 09:38:53 PDT 2026
+  Patched SLURM metrics into results/tuning_results/BiGG_models/iJN678_20260310_2821/model_config_summary.json

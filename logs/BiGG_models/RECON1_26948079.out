@@ -1,0 +1,142 @@
+Starting kinGEMs pipeline for RECON1
+Config: configs/BiGG_models/RECON1.json
+Starting run at: Tue Mar 10 09:17:53 PDT 2026
+
+Restricted license - for non-production use only - expires 2026-11-23
+Loading configuration from: configs/BiGG_models/RECON1.json
+
+======================================================================
+=== kinGEMs Pipeline for RECON1 ===
+======================================================================
+Run ID: RECON1_20260310_5171
+Model type: Standard
+Organism: Human
+Results directory: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/RECON1_20260310_5171
+======================================================================
+=== kinGEMs Pipeline for RECON1 ===
+Run ID: RECON1_20260310_5171
+Model type: Standard
+Organism: Human
+Results directory: /project/6000502/ranaab/kinGEMs_v2/results/tuning_results/BiGG_models/RECON1_20260310_5171
+Solver: glpk
+Biomass reaction: S6T14g
+Baseline growth: 0.0000
+=== Step 1: Preparing model data ===
+  Found existing files, loading cached data
+Warning: Model has 8 validation errors
+  Model: 1905 genes, 5296 reactions
+=== Step 2: Merging substrate and sequence data ===
+  Merged data: 40389 rows
+=== Step 3: Processing CPI-Pred kcat values ===
+
+  ⚠️  No predictions file found for 'RECON1'
+  Available prediction files:
+    - X06A_kinGEMs_iECD_1391_predictions.csv
+    - X06A_kinGEMs_iAF692_predictions.csv
+    - X06A_kinGEMs_iUTI89_1310_predictions.csv
+    - X06A_kinGEMs_iECIAI1_1343_predictions.csv
+    - X06A_kinGEMs_iECSP_1301_predictions.csv
+    - X06A_kinGEMs_iYS854_predictions.csv
+    - X06A_kinGEMs_iHN637_predictions.csv
+    - X06A_kinGEMs_iJR904_predictions.csv
+    - X06A_kinGEMs_iNJ661_predictions.csv
+    - X06A_kinGEMs_iSDY_1059_predictions.csv
+    - X06A_kinGEMs_iECSE_1348_predictions.csv
+    - X06A_kinGEMs_iSSON_1240_predictions.csv
+    - X06A_kinGEMs_Hpylori_HP250BFiii_predictions.csv
+    - X06A_kinGEMs_iLB1027_lipid_predictions.csv
+    - X06A_kinGEMs_iECABU_c1320_predictions.csv
+    - X06A_kinGEMs_iML1515_predictions.csv
+    - X06A_kinGEMs_iECB_1328_predictions.csv
+    - X06A_kinGEMs_iECO26_1355_predictions.csv
+    - X06A_kinGEMs_iJN678_predictions.csv
+    - X06A_kinGEMs_iAF1260_predictions.csv
+    - X06A_kinGEMs_iECUMN_1333_predictions.csv
+    - X06A_kinGEMs_iAM_Pf480_predictions.csv
+    - X06A_kinGEMs_iB21_1397_predictions.csv
+    - X06A_kinGEMs_iIS312_Amastigote_predictions.csv
+    - X06A_kinGEMs_iEcolC_1368_predictions.csv
+    - X06A_kinGEMs_ecoli_iML1515_predictions.csv
+    - X06A_kinGEMs_iECOK1_1307_predictions.csv
+    - X06A_kinGEMs_iEcSMS35_1347_predictions.csv
+    - X06A_kinGEMs_iWFL_1372_predictions.csv
+    - X06A_kinGEMs_iE2348C_1286_predictions.csv
+    - X06A_kinGEMs_iEC1344_C_predictions.csv
+    - X06A_kinGEMs_ic_1306_predictions.csv
+    - X06A_kinGEMs_iEcHS_1320_predictions.csv
+    - X06A_kinGEMs_iUMN146_1321_predictions.csv
+    - X06A_kinGEMs_iSFxv_1172_predictions.csv
+    - X06A_kinGEMs_iEK1008_predictions.csv
+    - X06A_kinGEMs_iUMNK88_1353_predictions.csv
+    - X06A_kinGEMs_iCHOv1_predictions.csv
+    - X06A_kinGEMs_iJN746_predictions.csv
+    - X06A_kinGEMs_Abaumannii_2008_predictions.csv
+    - X06A_kinGEMs_382_genome_cpd03198_predictions.csv
+    - X06A_kinGEMs_Abaumannii_1595_predictions.csv
+    - X06A_kinGEMs_iECO111_1330_predictions.csv
+    - X06A_kinGEMs_iNRG857_1313_predictions.csv
+    - X06A_kinGEMs_iEcDH1_1363_predictions.csv
+    - X06A_kinGEMs_iECDH1ME8569_1439_predictions.csv
+    - X06A_kinGEMs_iETEC_1333_predictions.csv
+    - X06A_kinGEMs_iSB619_predictions.csv
+    - X06A_kinGEMs_iECW_1372_predictions.csv
+    - X06A_kinGEMs_iECH74115_1262_predictions.csv
+    - X06A_kinGEMs_iY75_1357_predictions.csv
+    - X06A_kinGEMs_iAB_RBC_283_predictions.csv
+    - X06A_kinGEMs_e_coli_core_predictions.csv
+    - X06A_kinGEMs_iYO844_predictions.csv
+    - X06A_kinGEMs_iIS312_Trypomastigote_predictions.csv
+    - X06A_kinGEMs_iECS88_1305_predictions.csv
+    - X06A_kinGEMs_iEKO11_1354_predictions.csv
+    - X06A_kinGEMs_iMM904_predictions.csv
+    - X06A_kinGEMs_iND750_predictions.csv
+    - X06A_kinGEMs_iEC55989_1330_predictions.csv
+    - X06A_kinGEMs_iECBD_1354_predictions.csv
+    - X06A_kinGEMs_iLF82_1304_predictions.csv
+    - X06A_kinGEMs_Hpylori_UM034_predictions.csv
+    - X06A_kinGEMs_iIS312_predictions.csv
+    - X06A_kinGEMs_iSbBS512_1146_predictions.csv
+    - X06A_kinGEMs_iYL1228_predictions.csv
+    - X06A_kinGEMs_iECP_1309_predictions.csv
+    - X06A_kinGEMs_iAF1260b_predictions.csv
+    - X06A_kinGEMs_iECDH10B_1368_predictions.csv
+    - X06A_kinGEMs_iIS312_Epimastigote_predictions.csv
+    - X06A_kinGEMs_iJN1463_predictions.csv
+    - X06A_kinGEMs_iAM_Pk459_predictions.csv
+    - X06A_kinGEMs_iECs_1301_predictions.csv
+    - X06A_kinGEMs_iCN718_predictions.csv
+    - X06A_kinGEMs_iECNA114_1301_predictions.csv
+    - X06A_kinGEMs_iSBO_1134_predictions.csv
+    - X06A_kinGEMs_iAPECO1_1312_predictions.csv
+    - X06A_kinGEMs_iG2583_1286_predictions.csv
+    - X06A_kinGEMs_Salmonella_predictions.csv
+    - X06A_kinGEMs_iIT341_predictions.csv
+    - X06A_kinGEMs_iAM_Pb448_predictions.csv
+    - X06A_kinGEMs_iYS1720_predictions.csv
+    - X06A_kinGEMs_iAM_Pc455_predictions.csv
+    - X06A_kinGEMs_382_genome_predictions.csv
+    - X06A_kinGEMs_iEC1364_W_predictions.csv
+    - X06A_kinGEMs_iECO103_1326_predictions.csv
+    - X06A_kinGEMs_iEcE24377_1341_predictions.csv
+    - X06A_kinGEMs_iECIAI39_1322_predictions.csv
+    - X06A_kinGEMs_iEC1356_Bl21DE3_predictions.csv
+    - X06A_kinGEMs_iAM_Pv461_predictions.csv
+    - X06A_kinGEMs_iCN900_predictions.csv
+    - X06A_kinGEMs_iEC1372_W3110_predictions.csv
+    - X06A_kinGEMs_iSFV_1184_predictions.csv
+    - X06A_kinGEMs_iSF_1195_predictions.csv
+    - X06A_kinGEMs_iJO1366_predictions.csv
+    - X06A_kinGEMs_STM_v1_0_predictions.csv
+    - X06A_kinGEMs_iLJ478_predictions.csv
+    - X06A_kinGEMs_iS_1188_predictions.csv
+    - X06A_kinGEMs_iBWG_1329_predictions.csv
+    - X06A_kinGEMs_iECED1_1282_predictions.csv
+    - X06A_kinGEMs_ecoli_core_predictions.csv
+    - X06A_kinGEMs_iJB785_predictions.csv
+    - X06A_kinGEMs_iECSF_1327_predictions.csv
+    - X06A_kinGEMs_iEC042_1314_predictions.csv
+    - X06A_kinGEMs_iEC1349_Crooks_predictions.csv
+
+  Please ensure CPI-Pred predictions exist for this model.
+
+Completed at: Tue Mar 10 09:19:21 PDT 2026

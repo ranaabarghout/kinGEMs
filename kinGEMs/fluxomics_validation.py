@@ -373,6 +373,48 @@ def calculate_per_reaction_distances(
     return np.abs(fva_mean - mfa_mean).tolist()
 
 
+def calculate_average_interval_widths(comparison_df: pd.DataFrame) -> tuple[float, float, float, float]:
+    """
+    Calculate average interval widths and standard deviations for FVA and MFA results.
+
+    For each reaction i, the width of the interval is:
+        w_FVA,i = FVA_ub,i - FVA_lb,i
+        w_MFA,i = MFA_ub,i - MFA_lb,i
+
+    The average interval widths are:
+        W_FVA = (1/N) * sum(w_FVA,i)
+        W_MFA = (1/N) * sum(w_MFA,i)
+
+    Smaller FVA interval widths indicate higher precision (narrower feasible flux range).
+    Comparison to W_MFA indicates how closely the model's uncertainty matches experimental uncertainty.
+
+    Parameters:
+        comparison_df : pd.DataFrame
+            DataFrame with columns: 'fva_lb', 'fva_ub', 'mfa_lb', 'mfa_ub'
+
+    Returns:
+        tuple[float, float, float, float]: (W_FVA, std_FVA, W_MFA, std_MFA)
+            Average interval widths and their standard deviations for FVA and MFA
+    """
+    # Drop rows with missing values
+    df = comparison_df.dropna(subset=['mfa_lb', 'mfa_ub', 'fva_lb', 'fva_ub']).copy()
+
+    if len(df) == 0:
+        return np.nan, np.nan, np.nan, np.nan
+
+    # Calculate interval widths for each reaction
+    df['w_fva'] = df['fva_ub'] - df['fva_lb']
+    df['w_mfa'] = df['mfa_ub'] - df['mfa_lb']
+
+    # Calculate average widths and standard deviations
+    w_fva_avg = df['w_fva'].mean()
+    w_fva_std = df['w_fva'].std()
+    w_mfa_avg = df['w_mfa'].mean()
+    w_mfa_std = df['w_mfa'].std()
+
+    return float(w_fva_avg), float(w_fva_std), float(w_mfa_avg), float(w_mfa_std)
+
+
 # Plotting functions have been moved to kinGEMs/plots.py
 # Import them from there:
 #   from kinGEMs.plots import (

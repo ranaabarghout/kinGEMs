@@ -693,6 +693,8 @@ def sweep_maintenance_parameters(
         # Create visualization
         try:
             import matplotlib.pyplot as plt
+            from kinGEMs.plots import set_plotting_style, FONT_SIZES, DEFAULT_DPI
+            set_plotting_style()
 
             fig, axes = plt.subplots(1, 2, figsize=(12, 5))
 
@@ -701,34 +703,38 @@ def sweep_maintenance_parameters(
                 subset = results_df[results_df['gam'] == gam_val]
                 axes[0].plot(subset['ngam'], subset['biomass'],
                            marker='o', label=f'GAM={gam_val:.1f}')
-            axes[0].set_xlabel('NGAM (mmol/gDW/h)')
-            axes[0].set_ylabel('Biomass (1/h)')
-            axes[0].set_title('Biomass vs NGAM')
-            axes[0].legend(loc='upper center', bbox_to_anchor=(0.5, -0.25), ncol=3, frameon=True)
+            axes[0].set_xlabel('NGAM (mmol/gDW/h)', fontsize=FONT_SIZES['axis_label'], fontweight='bold')
+            axes[0].set_ylabel('Biomass (1/h)', fontsize=FONT_SIZES['axis_label'], fontweight='bold')
+            axes[0].set_title('Biomass vs NGAM', fontsize=FONT_SIZES['subtitle'], fontweight='bold')
+            axes[0].legend(loc='upper center', bbox_to_anchor=(0.5, -0.25), ncol=3, frameon=True,
+                           fontsize=FONT_SIZES['legend'])
             axes[0].grid(True, alpha=0.3)
 
             # Plot 2: Heatmap if multiple GAM values tested
             if len(gam_range) > 1:
                 pivot_data = results_df.pivot(index='gam', columns='ngam', values='biomass')
                 im = axes[1].imshow(pivot_data, aspect='auto', cmap='viridis', origin='lower')
-                axes[1].set_xlabel('NGAM (mmol/gDW/h)')
-                axes[1].set_ylabel('GAM (mmol ATP/gDW)')
-                axes[1].set_title('Biomass Heatmap')
+                axes[1].set_xlabel('NGAM (mmol/gDW/h)', fontsize=FONT_SIZES['axis_label'], fontweight='bold')
+                axes[1].set_ylabel('GAM (mmol ATP/gDW)', fontsize=FONT_SIZES['axis_label'], fontweight='bold')
+                axes[1].set_title('Biomass Heatmap', fontsize=FONT_SIZES['subtitle'], fontweight='bold')
                 axes[1].set_xticks(range(len(pivot_data.columns)))
-                axes[1].set_xticklabels([f'{x:.1f}' for x in pivot_data.columns])
+                axes[1].set_xticklabels([f'{x:.1f}' for x in pivot_data.columns],
+                                        fontsize=FONT_SIZES['tick_label'])
                 axes[1].set_yticks(range(len(pivot_data.index)))
-                axes[1].set_yticklabels([f'{y:.1f}' for y in pivot_data.index])
-                plt.colorbar(im, ax=axes[1], label='Biomass (1/h)')
+                axes[1].set_yticklabels([f'{y:.1f}' for y in pivot_data.index],
+                                        fontsize=FONT_SIZES['tick_label'])
+                cbar = plt.colorbar(im, ax=axes[1], label='Biomass (1/h)')
+                cbar.set_label('Biomass (1/h)', fontsize=FONT_SIZES['axis_label'], fontweight='bold')
             else:
-                axes[1].bar(results_df['ngam'], results_df['biomass'])
-                axes[1].set_xlabel('NGAM (mmol/gDW/h)')
-                axes[1].set_ylabel('Biomass (1/h)')
-                axes[1].set_title('Biomass Distribution')
+                axes[1].bar(results_df['ngam'], results_df['biomass'], edgecolor='black', linewidth=2)
+                axes[1].set_xlabel('NGAM (mmol/gDW/h)', fontsize=FONT_SIZES['axis_label'], fontweight='bold')
+                axes[1].set_ylabel('Biomass (1/h)', fontsize=FONT_SIZES['axis_label'], fontweight='bold')
+                axes[1].set_title('Biomass Distribution', fontsize=FONT_SIZES['subtitle'], fontweight='bold')
                 axes[1].grid(True, alpha=0.3, axis='y')
 
             plt.tight_layout()
             plot_path = os.path.join(output_dir, "maintenance_sweep_plot.png")
-            plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+            plt.savefig(plot_path, dpi=DEFAULT_DPI, bbox_inches='tight')
             plt.close()
             print(f"  Saved plot to: {plot_path}")
         except Exception as e:
