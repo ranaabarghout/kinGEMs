@@ -104,6 +104,7 @@ from kinGEMs.fluxomics_validation import (
     calculate_mean_to_mean_distance,
     calculate_per_reaction_distances,
     calculate_average_interval_widths,
+    calculate_statistical_significance,
 )
 from kinGEMs.plots import (
     plot_fva_mfa_comparison,
@@ -268,6 +269,36 @@ def run_fluxomics_analysis(
     # Save metrics summary
     metrics_path = os.path.join(analysis_dir, "metrics_summary.csv")
     save_metrics_summary(metrics_summary, metrics_path, logger)
+
+    # ------------------------------------------------------------------ #
+    # Statistical significance tests (baseline = first model, rest compared)
+    # ------------------------------------------------------------------ #
+    if len(fva_specs) >= 2:
+        logger.info("=== Statistical Significance Tests ===")
+        # Always use Baseline GEM as the reference; fall back to first spec if not present
+        baseline_label = next(
+            (s.label for s in fva_specs if "baseline" in s.label.lower()),
+            fva_specs[0].label
+        )
+        baseline_df = comparison_dfs[baseline_label]
+        all_sig_results = []
+        for spec in fva_specs:
+            if spec.label == baseline_label:
+                continue
+            sig_df = calculate_statistical_significance(
+                baseline_df=baseline_df,
+                model_df=comparison_dfs[spec.label],
+                baseline_label=baseline_label,
+                model_label=spec.label,
+            )
+            all_sig_results.append(sig_df)
+        if all_sig_results:
+            combined_sig = pd.concat(all_sig_results, ignore_index=True)
+            sig_path = os.path.join(analysis_dir, "statistical_significance.csv")
+            combined_sig.to_csv(sig_path, index=False)
+            logger.info("Saved statistical significance results: %s", sig_path)
+    else:
+        logger.info("Only one model — skipping statistical significance tests (need ≥ 2 models to compare).")
 
     # Step 6: Generate plots
     logger.info("=== Generating Plots ===")
