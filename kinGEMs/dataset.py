@@ -1092,39 +1092,92 @@ def process_merged_data_with_folds(merged_df, fold_csv_paths, output_path=None):
 
 def assign_kcats_to_model(model, df_new):
     """
-    Assign kcat values from df_new to the corresponding reactions in the model.
-    Each reaction will receive a `.kcats` attribute that maps genes to kcat values.
+    Assign tuned kcat values from df_new to the corresponding reactions in the model.
+
+    Uses ``kcat_updated`` (post-annealing) when available, falling back to
+    ``kcat_mean`` (initial CPI-Pred prediction) for rows that were not tuned.
+
+    Values are stored in two places so they survive an SBML round-trip:
+    - ``reaction.annotation['kcat_tuned']``  — tuned value (s⁻¹)
+    - ``reaction.annotation['kcat_initial']`` — original CPI-Pred value (s⁻¹)
+    - ``reaction.annotation['kcat_gene_map']`` — JSON string mapping gene → tuned kcat
+
+    The legacy ``reaction.kcats`` attribute (dict) is also set for backward
+    compatibility with any code that reads it directly.
 
     Parameters
     ----------
     model : cobra.Model
-        The COBRA model to annotate
+        The COBRA model to annotate (modified in-place).
     df_new : pandas.DataFrame
-        DataFrame containing columns: ['Reactions', 'Single_gene', 'kcat_mean']
+        DataFrame containing columns: ['Reactions', 'Single_gene', 'kcat_updated']
+        and optionally 'kcat_mean'.
 
     Returns
     -------
     cobra.Model
-        The same model object with .kcats added to reactions
+        The same model object with kcat annotations added to reactions.
     """
+    import json
     from collections import defaultdict
 
-    kcats_by_reaction = defaultdict(dict)
+    # Build per-reaction dicts: {rxn_id: {gene_id: (kcat_tuned, kcat_initial)}}
+    tuned_by_reaction   = defaultdict(dict)   # gene -> tuned kcat
+    initial_by_reaction = defaultdict(dict)   # gene -> initial kcat
+
+    has_updated = 'kcat_updated' in df_new.columns
+    has_mean    = 'kcat_mean'    in df_new.columns
 
     for _, row in df_new.iterrows():
-        rxn_id = row['Reactions']
+        rxn_id  = row['Reactions']
         gene_id = row['Single_gene']
-        kcat = row['kcat_mean']
-        if pd.notna(kcat):
-            kcats_by_reaction[rxn_id][gene_id] = kcat
 
-    for rxn_id, gene_kcats in kcats_by_reaction.items():
+        # Tuned value: prefer kcat_updated, fall back to kcat_mean
+        kcat_tuned = None
+        if has_updated and pd.notna(row['kcat_updated']):
+            kcat_tuned = float(row['kcat_updated'])
+        elif has_mean and pd.notna(row['kcat_mean']):
+            kcat_tuned = float(row['kcat_mean'])
+
+        kcat_initial = float(row['kcat_mean']) if has_mean and pd.notna(row.get('kcat_mean')) else None
+
+        if kcat_tuned is not None:
+            tuned_by_reaction[rxn_id][gene_id]   = kcat_tuned
+        if kcat_initial is not None:
+            initial_by_reaction[rxn_id][gene_id] = kcat_initial
+
+    n_annotated = 0
+    for rxn_id, gene_kcats in tuned_by_reaction.items():
         try:
             reaction = model.reactions.get_by_id(rxn_id)
-            reaction.kcats = gene_kcats  # Attach as a custom attribute
         except KeyError:
             print(f"Warning: Reaction {rxn_id} not found in model.")
+            continue
 
+        # Ensure annotation dict exists and values are strings (SBML requirement)
+        if not isinstance(reaction.annotation, dict):
+            reaction.annotation = {}
+
+        # Representative kcat for this reaction (median across genes)
+        kcat_values = list(gene_kcats.values())
+        rep_kcat_tuned = float(np.median(kcat_values))
+
+        initial_values = list(initial_by_reaction.get(rxn_id, {}).values())
+        rep_kcat_initial = float(np.median(initial_values)) if initial_values else None
+
+        reaction.annotation['kcat_tuned']    = str(rep_kcat_tuned)
+        if rep_kcat_initial is not None:
+            reaction.annotation['kcat_initial'] = str(rep_kcat_initial)
+        reaction.annotation['kcat_gene_map'] = json.dumps(
+            {g: str(v) for g, v in gene_kcats.items()}
+        )
+
+        # Legacy attribute for backward compatibility
+        reaction.kcats = gene_kcats
+        n_annotated += 1
+
+    print(f"  Annotated {n_annotated} reactions with tuned kcat values "
+          f"({'kcat_updated' if has_updated else 'kcat_mean'} used as tuned source).")
     return model
 
 def format_kcats_like_gpr(reaction):

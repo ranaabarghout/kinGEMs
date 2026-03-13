@@ -1386,10 +1386,10 @@ def main():
             best_row = maint_df.loc[maint_df['distance_to_goal'].idxmin()]
             optimal_biomass = float(best_row['biomass'])
             print(f"  Final biomass with optimal maintenance: {optimal_biomass:.4f}")
-            if os.path.exists(sa_results_path):
-                total_improvement = (optimal_biomass - initial_biomass) / initial_biomass * 100 if initial_biomass > 0 else 0
+            _initial_biomass = pipeline_results.initial_ec_biomass
+            if _initial_biomass > 0:
+                total_improvement = (optimal_biomass - _initial_biomass) / _initial_biomass * 100
                 print(f"  Total improvement (annealing + maintenance): {total_improvement:.1f}%")
-
     print(f"\nResults directory: {tuning_results_dir}")
     print(f"Final model: {model_output_path}")
     print("="*70)
