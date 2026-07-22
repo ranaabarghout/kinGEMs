@@ -27,7 +27,7 @@ CONFIG="configs/BiGG_models/iIS312_Epimastigote.json"
 echo "Starting run at: $(date)"
 echo ""
 
-python scripts/run_pipeline.py configs/BiGG_models/iIS312_Epimastigote.json
+python scripts/run_pipeline.py configs/BiGG_models/iIS312_Epimastigote.json --force
 EXIT_CODE=$?
 
 echo ""

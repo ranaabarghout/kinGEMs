@@ -2,8 +2,8 @@
 # GLOBALS                                                                       #
 #################################################################################
 
-PROJECT_NAME = kinGEMs_v2
-PYTHON_VERSION = 3.9
+PROJECT_NAME = kinGEMs
+PYTHON_VERSION = 3.11
 PYTHON_INTERPRETER = python
 
 #################################################################################
@@ -16,7 +16,7 @@ PYTHON_INTERPRETER = python
 requirements:
 	$(PYTHON_INTERPRETER) -m pip install -U pip
 	$(PYTHON_INTERPRETER) -m pip install -r requirements.txt
-	
+
 
 
 
@@ -38,18 +38,6 @@ lint:
 format:
 	ruff check --fix
 	ruff format
-
-
-
-
-
-## Set up Python interpreter environment
-.PHONY: create_environment
-create_environment:
-	pipenv --python $(PYTHON_VERSION)
-	@echo ">>> New pipenv created. Activate with:\npipenv shell"
-	
-
 
 
 #################################################################################

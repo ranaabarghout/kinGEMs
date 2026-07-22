@@ -27,7 +27,7 @@ CONFIG="configs/BiGG_models/iLB1027_lipid.json"
 echo "Starting run at: $(date)"
 echo ""
 
-python scripts/run_pipeline.py configs/BiGG_models/iLB1027_lipid.json
+python scripts/run_pipeline.py configs/BiGG_models/iLB1027_lipid.json --force
 EXIT_CODE=$?
 
 echo ""

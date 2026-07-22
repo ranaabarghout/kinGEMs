@@ -27,7 +27,7 @@ CONFIG="configs/BiGG_models/Recon3D.json"
 echo "Starting run at: $(date)"
 echo ""
 
-python scripts/run_pipeline.py configs/BiGG_models/Recon3D.json
+python scripts/run_pipeline.py configs/BiGG_models/Recon3D.json --force
 EXIT_CODE=$?
 
 echo ""

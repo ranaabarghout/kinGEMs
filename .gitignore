@@ -200,3 +200,7 @@ results/alternative_solutions/
 
 # Script Archive
 scripts/scripts_archive/
+
+# Logs & Jobs
+logs/
+slurm_jobs/

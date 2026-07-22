@@ -27,7 +27,7 @@ CONFIG="configs/BiGG_models/iAM_Pf480.json"
 echo "Starting run at: $(date)"
 echo ""
 
-python scripts/run_pipeline.py configs/BiGG_models/iAM_Pf480.json
+python scripts/run_pipeline.py configs/BiGG_models/iAM_Pf480.json --force
 EXIT_CODE=$?
 
 echo ""
