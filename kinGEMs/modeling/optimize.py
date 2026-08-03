@@ -156,9 +156,19 @@ def run_optimization(
         for rxn_id, flux_value in medium.items():
             try:
                 rxn = mod.reactions.get_by_id(rxn_id)
-                rxn.lower_bound = flux_value
                 if medium_upper_bound:
-                    rxn.upper_bound = flux_value
+                    # Set both bounds atomically (rxn.bounds tuple setter) rather than
+                    # lower_bound then upper_bound sequentially: setting lower_bound
+                    # alone first raises cobra's lb<=ub ValueError whenever flux_value
+                    # exceeds the reaction's *current* (pre-medium) upper_bound -- e.g.
+                    # opening a channel that defaults closed (ub=0), such as an
+                    # alternate carbon source's uptake reaction after
+                    # convert_to_irreversible. lb==ub==flux_value is always a valid
+                    # state on its own, so setting it atomically sidesteps the
+                    # intermediate invalid state entirely.
+                    rxn.bounds = (flux_value, flux_value)
+                else:
+                    rxn.lower_bound = flux_value
                 if verbose:
                     if medium_upper_bound:
                         print(f"  Fixed {rxn_id}: lower={flux_value}, upper={flux_value}")

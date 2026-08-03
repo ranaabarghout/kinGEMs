@@ -127,7 +127,12 @@ def setup_pipeline(config: dict, project_root: str, force: bool = False):
     raw_data_dir      = os.path.join(data_dir, 'raw')
     interim_dir       = os.path.join(data_dir, 'interim', model_name)
     processed_dir     = os.path.join(data_dir, 'processed', model_name)
-    cpipred_dir       = os.path.join(data_dir, 'interim', 'CPI-Pred predictions')
+    cpipred_dir       = config.get(
+        'cpipred_predictions_dir',
+        os.path.join(data_dir, 'interim', 'CPI-Pred predictions')
+    )
+    if not os.path.isabs(cpipred_dir):
+        cpipred_dir = os.path.abspath(os.path.join(project_root, cpipred_dir))
 
     os.makedirs(interim_dir, exist_ok=True)
     os.makedirs(processed_dir, exist_ok=True)
@@ -180,7 +185,13 @@ def setup_pipeline(config: dict, project_root: str, force: bool = False):
     if not force and os.path.exists(processed_out):
         processed_data = pd.read_csv(processed_out)
     else:
-        predictions_path = find_predictions_file(model_name, cpipred_dir)
+        predictions_path = config.get('cpipred_predictions_file')
+        if predictions_path:
+            if not os.path.isabs(predictions_path):
+                predictions_path = os.path.abspath(os.path.join(project_root, predictions_path))
+        else:
+            predictions_path = find_predictions_file(model_name, cpipred_dir)
+
         processed_data = process_kcat_predictions(
             merged_df=merged_data,
             predictions_csv_path=predictions_path,
