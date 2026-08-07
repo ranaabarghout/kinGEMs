@@ -202,7 +202,42 @@ def get_substrate_metabolites(reaction):
     substrates = [met.id for met in reaction.reactants]
     return substrates
 
-def map_metabolites(substrate_df, external_db_dir=None, max_retries=3, retry_delay=2):
+def extract_metabolite_annotations(model):
+    """
+    Extract cross-reference annotations from model metabolites.
+
+    Parses the annotation dict that cobra populates from the SBML <annotation>
+    block, returning a mapping from metabolite ID to its database identifiers.
+
+    Parameters
+    ----------
+    model : cobra.Model
+        A loaded COBRA model
+
+    Returns
+    -------
+    dict
+        Mapping of metabolite ID -> dict of database identifiers, e.g.
+        {'s_1276': {'bigg.metabolite': 'o2', 'kegg.compound': 'C00007', ...}}
+    """
+    annotations = {}
+    for met in model.metabolites:
+        met_annot = getattr(met, 'annotation', None)
+        if not met_annot:
+            continue
+        parsed = {}
+        for db_key, value in met_annot.items():
+            if isinstance(value, list):
+                parsed[db_key] = value[0] if len(value) == 1 else value
+            else:
+                parsed[db_key] = value
+        if parsed:
+            annotations[met.id] = parsed
+    return annotations
+
+
+def map_metabolites(substrate_df, external_db_dir=None, max_retries=3, retry_delay=2,
+                    model=None):
     """
     Map metabolites to SMILES structures using external databases.
 
@@ -216,6 +251,11 @@ def map_metabolites(substrate_df, external_db_dir=None, max_retries=3, retry_del
         Maximum number of retries for web service requests. Default is 3.
     retry_delay : int, optional
         Delay between retries in seconds. Default is 2.
+    model : cobra.Model, optional
+        The loaded COBRA model. When provided, SBML annotations (BiGG, KEGG,
+        MetaNetX, SEED identifiers) embedded in the model XML are used as a
+        fallback to resolve metabolites whose opaque IDs (e.g. s_0013) do not
+        directly match any database.
 
     Returns
     -------
@@ -245,8 +285,14 @@ def map_metabolites(substrate_df, external_db_dir=None, max_retries=3, retry_del
     CHEBI_comps = pd.read_csv(CHEBI_COMPOUNDS, sep='\t')  # noqa: F841
     CHEBIInChI_comps = pd.read_csv(CHEBI_INCHI, sep='\t')
     MetaNetX_comps = pd.read_csv(METANETX_COMPOUNDS, sep='\t')
-    MetaNetX_refcomps = pd.read_csv(METANETX_XREF, sep='\t')  # noqa: F841
+    MetaNetX_refcomps = pd.read_csv(METANETX_XREF, sep='\t')
     SEED_comps = pd.read_csv(SEED_COMPOUNDS, sep='\t')
+
+    # Extract metabolite annotations from model if provided
+    met_annotations = {}
+    if model is not None:
+        met_annotations = extract_metabolite_annotations(model)
+        logger.info(f"Extracted annotations for {len(met_annotations)} metabolites from model")
 
     # Initialize new columns
     df = substrate_df.copy()
@@ -341,29 +387,113 @@ def map_metabolites(substrate_df, external_db_dir=None, max_retries=3, retry_del
         else:
             logger.info("No BiGG match found, checking other databases...")
 
-            # Check MetaNetX directly
-            metanetx_hit = MetaNetX_comps[MetaNetX_comps['ID'].str.contains(
-                fr'\b{re.escape(substrate)}\b', regex=True, case=False)]
-            if not metanetx_hit.empty:
-                name = metanetx_hit['name'].values[0]
-                smiles = metanetx_hit['SMILES'].values[0] if 'SMILES' in metanetx_hit.columns else np.nan
-                if pd.notna(smiles):
-                    smiles_mapping[substrate] = smiles
-                    db_name_mapping[substrate] = name
-                    logger.info(f"MetaNetX match: {name}")
-                    continue
+            # --- Try using model annotations (BiGG, MetaNetX, KEGG, SEED) ---
+            annot = met_annotations.get(substrate, {})
+            if annot:
+                logger.info(f"Using SBML annotations for {substrate}: {list(annot.keys())}")
 
-            # Check SEED
-            seed_hit = SEED_comps[SEED_comps['id'].str.contains(
-                fr'\b{re.escape(substrate)}\b', regex=True, case=False)]
-            if not seed_hit.empty:
-                name = seed_hit['name'].values[0]
-                smiles = seed_hit['smiles'].values[0] if 'smiles' in seed_hit.columns else np.nan
-                if pd.notna(smiles):
-                    smiles_mapping[substrate] = smiles
-                    db_name_mapping[substrate] = name
-                    logger.info(f"SEED match: {name}")
-                    continue
+                # Try BiGG annotation first
+                bigg_annot = annot.get('bigg.metabolite')
+                if bigg_annot:
+                    bigg_id = bigg_annot if isinstance(bigg_annot, str) else bigg_annot[0]
+                    bigg_hit_annot = BiGG_comps_unique.loc[
+                        BiGG_comps_unique['bigg_id'].str.contains(
+                            fr'\b{re.escape(bigg_id)}\b', regex=True, case=False) |
+                        BiGG_comps_unique['universal_bigg_id'].str.contains(
+                            fr'\b{re.escape(bigg_id)}\b', regex=True, case=False)
+                    ].head(1)
+                    if not bigg_hit_annot.empty:
+                        name = bigg_hit_annot['name'].values[0]
+                        bigg_name_mapping[substrate] = name
+                        logger.info(f"BiGG annotation match: {name} (via {bigg_id})")
+                        if not bigg_hit_annot['MetaNetX'].isna().all():
+                            mnx_hit = MetaNetX_comps[MetaNetX_comps['ID'] == bigg_hit_annot['MetaNetX'].values[0]]
+                            if not mnx_hit.empty:
+                                smiles = mnx_hit['SMILES'].values[0]
+                                if pd.notna(smiles):
+                                    smiles_mapping[substrate] = smiles
+                                    db_name_mapping[substrate] = mnx_hit['name'].values[0]
+                                    logger.info(f"SMILES via BiGG annotation -> MetaNetX: {smiles}")
+                                    continue
+                        if not bigg_hit_annot['SEED'].isna().all():
+                            s_hit = SEED_comps[SEED_comps['id'] == bigg_hit_annot['SEED'].values[0]]
+                            if not s_hit.empty:
+                                smiles = s_hit['smiles'].values[0] if 'smiles' in s_hit.columns else np.nan
+                                if pd.notna(smiles):
+                                    smiles_mapping[substrate] = smiles
+                                    db_name_mapping[substrate] = s_hit['name'].values[0]
+                                    logger.info(f"SMILES via BiGG annotation -> SEED: {smiles}")
+                                    continue
+
+                # Try MetaNetX annotation
+                mnx_annot = annot.get('metanetx.chemical')
+                if mnx_annot and substrate not in smiles_mapping:
+                    mnx_id = mnx_annot if isinstance(mnx_annot, str) else mnx_annot[0]
+                    mnx_hit = MetaNetX_comps[MetaNetX_comps['ID'] == mnx_id]
+                    if not mnx_hit.empty:
+                        smiles = mnx_hit['SMILES'].values[0]
+                        if pd.notna(smiles):
+                            smiles_mapping[substrate] = smiles
+                            db_name_mapping[substrate] = mnx_hit['name'].values[0]
+                            logger.info(f"SMILES via MetaNetX annotation ({mnx_id}): {smiles}")
+                            continue
+
+                # Try SEED annotation
+                seed_annot = annot.get('seed.compound')
+                if seed_annot and substrate not in smiles_mapping:
+                    seed_id = seed_annot if isinstance(seed_annot, str) else seed_annot[0]
+                    s_hit = SEED_comps[SEED_comps['id'] == seed_id]
+                    if not s_hit.empty:
+                        smiles = s_hit['smiles'].values[0] if 'smiles' in s_hit.columns else np.nan
+                        if pd.notna(smiles):
+                            smiles_mapping[substrate] = smiles
+                            db_name_mapping[substrate] = s_hit['name'].values[0]
+                            logger.info(f"SMILES via SEED annotation ({seed_id}): {smiles}")
+                            continue
+
+                # Try KEGG annotation via MetaNetX cross-refs
+                kegg_annot = annot.get('kegg.compound')
+                if kegg_annot and substrate not in smiles_mapping:
+                    kegg_id = kegg_annot if isinstance(kegg_annot, str) else kegg_annot[0]
+                    mnx_xref_hit = MetaNetX_refcomps[
+                        MetaNetX_refcomps['source'].str.contains(kegg_id, na=False)
+                    ]
+                    if not mnx_xref_hit.empty:
+                        mnx_id = mnx_xref_hit['ID'].values[0]
+                        mnx_hit = MetaNetX_comps[MetaNetX_comps['ID'] == mnx_id]
+                        if not mnx_hit.empty:
+                            smiles = mnx_hit['SMILES'].values[0]
+                            if pd.notna(smiles):
+                                smiles_mapping[substrate] = smiles
+                                db_name_mapping[substrate] = mnx_hit['name'].values[0]
+                                logger.info(f"SMILES via KEGG annotation ({kegg_id}) -> MetaNetX: {smiles}")
+                                continue
+
+            # Fall back to direct ID search if annotations didn't resolve
+            if substrate not in smiles_mapping:
+                # Check MetaNetX directly
+                metanetx_hit = MetaNetX_comps[MetaNetX_comps['ID'].str.contains(
+                    fr'\b{re.escape(substrate)}\b', regex=True, case=False)]
+                if not metanetx_hit.empty:
+                    name = metanetx_hit['name'].values[0]
+                    smiles = metanetx_hit['SMILES'].values[0] if 'SMILES' in metanetx_hit.columns else np.nan
+                    if pd.notna(smiles):
+                        smiles_mapping[substrate] = smiles
+                        db_name_mapping[substrate] = name
+                        logger.info(f"MetaNetX match: {name}")
+                        continue
+
+                # Check SEED
+                seed_hit = SEED_comps[SEED_comps['id'].str.contains(
+                    fr'\b{re.escape(substrate)}\b', regex=True, case=False)]
+                if not seed_hit.empty:
+                    name = seed_hit['name'].values[0]
+                    smiles = seed_hit['smiles'].values[0] if 'smiles' in seed_hit.columns else np.nan
+                    if pd.notna(smiles):
+                        smiles_mapping[substrate] = smiles
+                        db_name_mapping[substrate] = name
+                        logger.info(f"SEED match: {name}")
+                        continue
 
     # If SMILES is still missing, try to get from web services
     missing_substrates = [sub for sub in df['Substrate partner'].unique() if sub not in smiles_mapping]
@@ -395,8 +525,15 @@ def map_metabolites(substrate_df, external_db_dir=None, max_retries=3, retry_del
         logger.info('-----------------------------')
         logger.info(f'Mapping substrate: {substrate}')
 
-        # Try searches with both original and cleaned names
+        # Try searches with both original and cleaned names, plus model name if available
         names_to_try = [cleaned_substrate, substrate]
+        if model is not None:
+            try:
+                met_obj = model.metabolites.get_by_id(substrate)
+                if met_obj.name:
+                    names_to_try.insert(0, met_obj.name)
+            except KeyError:
+                pass
 
         for name in names_to_try:
             if pd.notna(name):
@@ -867,7 +1004,7 @@ def prepare_model_data(model_path, substrates_output=None, sequences_output=None
     print(f"Extracted {len(substrate_df)} substrate-reaction-direction pairs")
 
     # Map metabolites to SMILES
-    substrate_df_with_smiles = map_metabolites(substrate_df, metadata_dir)
+    substrate_df_with_smiles = map_metabolites(substrate_df, metadata_dir, model=model)
     print(f"Mapped metabolites to SMILES ({substrate_df_with_smiles['SMILES'].notna().sum()} found)")
 
     # Retrieve protein sequences
