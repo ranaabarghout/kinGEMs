@@ -1,0 +1,57 @@
+{
+  "model_name": "rhto",
+  "organism": "R toruloides",
+  "biomass_reaction": "r_2111",
+  "enzyme_upper_bound": 0.636, 
+  "solver": "glpk",
+  "enable_fva": false,
+  "enable_biolog_validation": false,
+  "enable_maintenance_sweep": false,
+  "ngam_rxn_id": "r_4046",
+
+  "fva": {
+    "parallel": true,
+    "workers": 4,
+    "chunk_size": 50,
+    "method": "dask",
+    "opt_ratio": 0.9,
+    "_comment_opt_ratio": "Fraction of optimal biomass to constrain during FVA (0.9 = 90% of optimal)",
+    "_comment_method": "Options: 'dask' (distributed, scalable) or 'multiprocessing' (simpler, single-machine)",
+    "_comment_workers": "Set to null for auto-detection (uses all CPU cores)",
+    "_comment_chunk_size": "Number of reactions per task. null = auto-calculate. Larger = less overhead but less load balancing"
+  },
+  "medium": {
+    "r_1714_reverse": 2.489,
+    "r_1808": 0.049,
+    "r_1672": 7.3,
+    "r_1992_reverse": 5.6,
+    "r_2091_reverse": 1000
+  },
+  "medium_upper_bound": true,
+
+  "simulated_annealing": {
+    "temperature": 100,
+    "cooling_rate": 0.95,
+    "min_temperature": 0.001,
+    "max_iterations": 1000,
+    "max_unchanged_iterations": 50,
+    "change_threshold": 0.001,
+    "biomass_goal": 0.75,
+    "n_top_enzymes": 500,
+    "verbose": false,
+    "_comment_aggressive": "AGGRESSIVE SETTINGS - larger perturbations and longer search",
+    "_comment_temperature": "High starting temp (100) for large initial exploration",
+    "_comment_cooling_rate": "Moderate cooling (0.95) for thorough exploration",
+    "_comment_change_threshold": "Standard threshold (0.1%) for meaningful improvements",
+    "_comment_biomass_goal": "Target experimental growth rate from Crown et al. (2015) - 0.75 1/hr for E. coli on glucose M9",
+    "_comment_n_top_enzymes": "Tune top 500 enzymes for sufficient optimization flexibility"
+  },
+
+  "maintenance_sweep": {
+    "ngam_range": [0, 1, 2, 3, 4, 5, 6, 7, 10, 15, 20],
+    "gam_range": [40, 45, 50, 55, 60, 70, 75.55, 80, 100],
+    "verbose": false,
+    "_comment_ngam_range": "NGAM values to test (ATPM lower bound in mmol/gDW/h). Range to find optimal match to experimental 0.75 growth rate",
+    "_comment_gam_range": "GAM values to test (ATP in biomass, mmol/gDW). 75.55 is the original iML1515 value"
+  }
+}
