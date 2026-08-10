@@ -2,12 +2,14 @@
   "model_name": "rhto",
   "organism": "R toruloides",
   "biomass_reaction": "r_2111",
-  "enzyme_upper_bound": 0.636, 
+  "enzyme_upper_bound": 0.636,
   "solver": "glpk",
   "enable_fva": false,
   "enable_biolog_validation": false,
-  "enable_maintenance_sweep": false,
+  "enable_maintenance_sweep": true,
   "ngam_rxn_id": "r_4046",
+  "gam_reaction": "r_4041",
+  "_comment_gam_reaction": "Reaction carrying the GAM ATP cost. In rhto/yeast-GEM this is the biomass pseudoreaction r_4041, not the growth objective r_2111.",
 
   "fva": {
     "parallel": true,
@@ -21,13 +23,15 @@
     "_comment_chunk_size": "Number of reactions per task. null = auto-calculate. Larger = less overhead but less load balancing"
   },
   "medium": {
-    "r_1714_reverse": 2.489,
-    "r_1808": 0.049,
-    "r_1672": 7.3,
-    "r_1992_reverse": 5.6,
-    "r_2091_reverse": 1000
+    "r_1714": [-2.489, 0],
+    "r_1992": [-5.6, 0],
+    "r_1672": [0, 1000],
+    "r_1808": [0, 1000],
+    "r_2091": [-1000, 0],
+    "r_1654": [0, 0]
   },
-  "medium_upper_bound": true,
+  "_comment_medium": "Per-reaction [lb, ub] (exchange sign: uptake negative, secretion positive). r_1714=glucose max uptake; r_1992=O2 max uptake; r_1672/r_1808=free CO2/glycerol secretion; r_2091=urea unlimited uptake; r_1654=block ammonium so N comes from urea.",
+  "medium_upper_bound": false,
 
   "simulated_annealing": {
     "temperature": 100,
@@ -36,8 +40,8 @@
     "max_iterations": 1000,
     "max_unchanged_iterations": 50,
     "change_threshold": 0.001,
-    "biomass_goal": 0.75,
-    "n_top_enzymes": 500,
+    "biomass_goal": 0.191,
+    "n_top_enzymes": 100,
     "verbose": false,
     "_comment_aggressive": "AGGRESSIVE SETTINGS - larger perturbations and longer search",
     "_comment_temperature": "High starting temp (100) for large initial exploration",
@@ -48,8 +52,8 @@
   },
 
   "maintenance_sweep": {
-    "ngam_range": [0, 1, 2, 3, 4, 5, 6, 7, 10, 15, 20],
-    "gam_range": [40, 45, 50, 55, 60, 70, 75.55, 80, 100],
+    "ngam_range": [0, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.5, 2, 2.5, 3, 3.5, 3.65],
+    "gam_range": [124.4, 125.5, 126.6, 127.7, 128.8, 129.9, 131, 132.1, 133.2, 134.3, 135.4, 136.5, 137.6, 138.7, 139.8, 140.9],
     "verbose": false,
     "_comment_ngam_range": "NGAM values to test (ATPM lower bound in mmol/gDW/h). Range to find optimal match to experimental 0.75 growth rate",
     "_comment_gam_range": "GAM values to test (ATP in biomass, mmol/gDW). 75.55 is the original iML1515 value"

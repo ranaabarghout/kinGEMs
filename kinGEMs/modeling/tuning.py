@@ -32,6 +32,135 @@ except ImportError:
     pass
 
 
+# Metabolite ID candidates for the growth-associated maintenance (GAM) ATP
+# hydrolysis block across common namespaces:
+#   BiGG (atp_c ...), ModelSEED (cpd00002_c0 ...), yeast/rhto-GEM (s_0434 ...)
+ATP_MET_IDS = ['atp_c', 'ATP_c', 'cpd00002_c0', 's_0434']
+MAINTENANCE_MET_IDS = {
+    'h2o': ['h2o_c', 'H2O_c', 'cpd00001_c0', 's_0803'],
+    'adp': ['adp_c', 'ADP_c', 'cpd00008_c0', 's_0394'],
+    'pi':  ['pi_c', 'Pi_c', 'cpd00009_c0', 's_1322'],
+    'h':   ['h_c', 'H_c', 'cpd00067_c0', 's_0794'],
+}
+
+
+def find_gam_components(model, biomass_reaction, gam_reaction_id=None, verbose=False):
+    """
+    Locate the reaction that carries the growth-associated maintenance (GAM) ATP
+    cost, plus the ATP metabolite and the associated maintenance metabolites
+    (H2O, ADP, Pi, H+).
+
+    Some GEMs (e.g. yeast-GEM / rhto-GEM) split growth into a 'growth' reaction
+    (the objective, e.g. r_2111) that contains no ATP, and a separate 'biomass
+    pseudoreaction' (e.g. r_4041) that actually carries the GAM ATP hydrolysis.
+    This helper finds the reaction that truly contains the ATP maintenance block
+    so GAM scaling targets the right one.
+
+    Parameters
+    ----------
+    model : cobra.Model
+    biomass_reaction : str
+        The objective/growth reaction id (checked first if no explicit GAM id).
+    gam_reaction_id : str, optional
+        Explicit id of the reaction carrying GAM (e.g. 'r_4041'). If provided it
+        takes precedence.
+    verbose : bool, optional
+
+    Returns
+    -------
+    (gam_rxn, atp_met, maintenance_mets, original_gam)
+        gam_rxn : cobra.Reaction or None
+        atp_met : cobra.Metabolite or None
+        maintenance_mets : dict {type: cobra.Metabolite}
+        original_gam : float or None  (absolute ATP coefficient)
+    """
+    def _atp_in(rxn):
+        for met in rxn.metabolites:
+            if met.id in ATP_MET_IDS:
+                return met
+        return None
+
+    candidate_rxn_ids = []
+    if gam_reaction_id:
+        candidate_rxn_ids.append(gam_reaction_id)
+    if biomass_reaction:
+        candidate_rxn_ids.append(biomass_reaction)
+
+    gam_rxn = None
+    atp_met = None
+    for rid in candidate_rxn_ids:
+        try:
+            rxn = model.reactions.get_by_id(rid)
+        except KeyError:
+            continue
+        met = _atp_in(rxn)
+        if met is not None:
+            gam_rxn, atp_met = rxn, met
+            break
+
+    # Fallback: scan for a biomass-like reaction containing the ATP hydrolysis block
+    if gam_rxn is None:
+        for rxn in model.reactions:
+            met = _atp_in(rxn)
+            if met is None:
+                continue
+            met_ids = {m.id for m in rxn.metabolites}
+            has_adp = any(i in met_ids for i in MAINTENANCE_MET_IDS['adp'])
+            has_pi = any(i in met_ids for i in MAINTENANCE_MET_IDS['pi'])
+            looks_biomass = ('biomass' in rxn.id.lower()) or ('biomass' in (rxn.name or '').lower())
+            if has_adp and has_pi and looks_biomass:
+                gam_rxn, atp_met = rxn, met
+                break
+
+    if gam_rxn is None or atp_met is None:
+        if verbose:
+            print("  [GAM] Could not locate a reaction containing the ATP maintenance block")
+        return None, None, {}, None
+
+    original_gam = abs(gam_rxn.metabolites[atp_met])
+
+    maintenance_mets = {}
+    for met_type, ids in MAINTENANCE_MET_IDS.items():
+        for met in gam_rxn.metabolites:
+            if met.id in ids:
+                maintenance_mets[met_type] = met
+                break
+
+    if verbose:
+        print(f"  [GAM] Reaction: {gam_rxn.id} | ATP met: {atp_met.id} | GAM: {original_gam:.4f}")
+
+    return gam_rxn, atp_met, maintenance_mets, original_gam
+
+
+def apply_gam_scaling(model, target_gam, biomass_reaction, gam_reaction_id=None, verbose=False):
+    """
+    Scale the GAM ATP hydrolysis block of `model` (in place) to `target_gam`
+    (mmol ATP/gDW). The whole block (ATP, H2O, ADP, Pi, H+) is scaled together so
+    the reaction stays mass/charge balanced.
+
+    Returns
+    -------
+    (success, original_gam)
+        success : bool
+        original_gam : float or None
+    """
+    gam_rxn, atp_met, maintenance_mets, original_gam = find_gam_components(
+        model, biomass_reaction, gam_reaction_id, verbose=verbose
+    )
+    if gam_rxn is None or not original_gam:
+        return False, original_gam
+
+    scale = target_gam / original_gam
+    current = gam_rxn.metabolites.copy()
+    for met in [atp_met] + list(maintenance_mets.values()):
+        old_coef = current.get(met)
+        if old_coef is None:
+            continue
+        gam_rxn.add_metabolites({met: old_coef * (scale - 1.0)}, combine=True)
+
+    if verbose:
+        print(f"  [GAM] Scaled {gam_rxn.id} ATP from {original_gam:.2f} to {target_gam:.2f}")
+    return True, original_gam
 
 
 def simulated_annealing(
@@ -479,6 +608,7 @@ def sweep_maintenance_parameters(
     medium=None,
     medium_upper_bound=False,
     biomass_goal=None,
+    gam_reaction_id=None,
     verbose=False
 ):
     """
@@ -530,51 +660,15 @@ def sweep_maintenance_parameters(
     if ngam_range is None:
         ngam_range = [0, 1, 2, 3.15, 5, 7, 10, 15, 20]  # 3.15 is typical E. coli value
 
-    # Get original GAM value from biomass reaction
-    biomass_rxn = model.reactions.get_by_id(biomass_reaction)
-    original_gam = None
-    atp_met_ids = ['atp_c', 'ATP_c', 'cpd00002_c0']  # Common ATP IDs
-    atp_met = None
-
-    for met_id in atp_met_ids:
-        try:
-            met = model.metabolites.get_by_id(met_id)
-            if met in biomass_rxn.metabolites:
-                original_gam = abs(biomass_rxn.metabolites[met])
-                atp_met = met
-                if verbose:
-                    print(f"  Found GAM coefficient: {original_gam:.2f} mmol ATP/gDW")
-                    print(f"  ATP metabolite ID: {met_id}")
-                break
-        except KeyError:
-            continue
-
+    # Locate the reaction that actually carries the GAM ATP cost. In yeast-GEM /
+    # rhto-GEM this is the biomass pseudoreaction (e.g. r_4041), NOT the growth
+    # objective (e.g. r_2111) which contains no ATP.
+    gam_rxn, atp_met, maintenance_mets, original_gam = find_gam_components(
+        model, biomass_reaction, gam_reaction_id, verbose=verbose
+    )
+    gam_rxn_id_resolved = gam_rxn.id if gam_rxn is not None else gam_reaction_id
     if original_gam is None and verbose:
-        print("  Warning: Could not find ATP in biomass reaction - GAM adjustment disabled")
-
-    # Identify related metabolites in ATP maintenance block
-    # GAM reaction: ATP + H2O -> ADP + Pi + H
-    maintenance_mets = {}
-    if atp_met is not None:
-        # Try to find the related metabolites
-        met_mappings = {
-            'h2o': ['h2o_c', 'H2O_c', 'cpd00001_c0'],
-            'adp': ['adp_c', 'ADP_c', 'cpd00008_c0'],
-            'pi': ['pi_c', 'Pi_c', 'cpd00009_c0'],
-            'h': ['h_c', 'H_c', 'cpd00067_c0']
-        }
-
-        for met_type, possible_ids in met_mappings.items():
-            for met_id in possible_ids:
-                try:
-                    met = model.metabolites.get_by_id(met_id)
-                    if met in biomass_rxn.metabolites:
-                        maintenance_mets[met_type] = met
-                        if verbose:
-                            print(f"    Found {met_type}: {met_id}")
-                        break
-                except KeyError:
-                    continue
+        print("  Warning: Could not find ATP maintenance block - GAM adjustment disabled")
 
     # If no GAM range specified, use original value
     if gam_range is None:
@@ -607,45 +701,15 @@ def sweep_maintenance_parameters(
             test_ngam_rxn = test_model.reactions.get_by_id(ngam_rxn_id)
             test_ngam_rxn.lower_bound = ngam_val
 
-            # Set GAM if specified
-            if gam_val is not None and original_gam is not None and atp_met is not None:
-                test_biomass = test_model.reactions.get_by_id(biomass_reaction)
-
-                # Scale the entire ATP maintenance block proportionally
-                # GAM reaction: ATP + H2O -> ADP + Pi + H
-                scale = gam_val / original_gam
-
-                # Get current coefficients
-                current_mets = test_biomass.metabolites.copy()
-
-                # Find ATP metabolite in the test model
-                test_atp_met = None
-                for met_id in atp_met_ids:
-                    try:
-                        test_atp_met = test_model.metabolites.get_by_id(met_id)
-                        if test_atp_met in current_mets:
-                            break
-                    except KeyError:
-                        continue
-
-                if test_atp_met is not None:
-                    # Scale ATP and related maintenance metabolites
-                    mets_to_scale = [test_atp_met]
-
-                    # Add related metabolites if they exist
-                    for met_type, met in maintenance_mets.items():
-                        try:
-                            test_met = test_model.metabolites.get_by_id(met.id)
-                            if test_met in current_mets:
-                                mets_to_scale.append(test_met)
-                        except KeyError:
-                            continue
-
-                    # Scale all metabolites in the ATP maintenance block
-                    for met in mets_to_scale:
-                        old_coef = current_mets[met]
-                        # Add the difference: new_coef - old_coef = old_coef * (scale - 1)
-                        test_biomass.add_metabolites({met: old_coef * (scale - 1.0)}, combine=True)
+            # Set GAM if specified (scales the GAM-bearing reaction, e.g. r_4041)
+            if gam_val is not None and original_gam:
+                apply_gam_scaling(
+                    test_model,
+                    target_gam=gam_val,
+                    biomass_reaction=biomass_reaction,
+                    gam_reaction_id=gam_rxn_id_resolved,
+                    verbose=False
+                )
 
             # Run optimization
             try:

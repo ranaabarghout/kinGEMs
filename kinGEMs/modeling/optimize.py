@@ -89,6 +89,53 @@ def _parse_gpr_to_dnf(tokens):
     return unique
 
 
+def apply_medium_to_model(model, medium, medium_upper_bound=False, verbose=False):
+    """
+    Apply medium constraints to a COBRA model, supporting per-reaction bounds.
+
+    Each medium entry maps an exchange reaction id to one of:
+      - scalar ``v``: sets ``lower_bound = v`` (and ``upper_bound = v`` if
+        ``medium_upper_bound`` is True). Backward-compatible with the original
+        single-value behaviour.
+      - ``[lb, ub]`` (list/tuple): sets both bounds explicitly.
+      - ``{"lb": lb, "ub": ub}`` (dict): sets whichever bounds are provided
+        (missing bound is left unchanged).
+
+    Explicit ``[lb, ub]`` pairs let you, per reaction:
+      - FIX a measured net exchange:        ``[-2.489, -2.489]``
+      - cap an uptake but allow less:       ``[-2.489, 0]``
+      - allow free secretion (output):      ``[0, 1000]``
+      - block a reaction:                   ``[0, 0]``
+    instead of relying on the single global ``medium_upper_bound`` flag (which
+    forced *every* entry to be either one-sided or fully fixed — the latter turning
+    a "-1000 = unlimited" sentinel into a forced uptake of exactly 1000).
+    """
+    if not medium:
+        return
+    for rxn_id, spec in medium.items():
+        try:
+            rxn = model.reactions.get_by_id(rxn_id)
+        except KeyError:
+            print(f"  Warning: medium reaction '{rxn_id}' not found in model")
+            continue
+
+        if isinstance(spec, (list, tuple)) and len(spec) == 2:
+            lb, ub = float(spec[0]), float(spec[1])
+        elif isinstance(spec, dict):
+            lb = float(spec['lb']) if spec.get('lb') is not None else rxn.lower_bound
+            ub = float(spec['ub']) if spec.get('ub') is not None else rxn.upper_bound
+        else:
+            v = float(spec)
+            lb = v
+            ub = v if medium_upper_bound else max(v, rxn.upper_bound)
+
+        if lb > ub:
+            lb, ub = ub, lb  # guard against inverted bounds
+        rxn.bounds = (lb, ub)
+        if verbose:
+            print(f"  Set {rxn_id}: bounds=({lb}, {ub})")
+
+
 def run_optimization(
     model,
     kcat_dict,
@@ -151,21 +198,9 @@ def run_optimization(
     else:
         mod = model
 
-    # 1a) Apply medium conditions if provided
+    # 1a) Apply medium conditions if provided (supports scalar or [lb, ub] per reaction)
     if medium is not None:
-        for rxn_id, flux_value in medium.items():
-            try:
-                rxn = mod.reactions.get_by_id(rxn_id)
-                rxn.lower_bound = flux_value
-                if medium_upper_bound:
-                    rxn.upper_bound = flux_value
-                if verbose:
-                    if medium_upper_bound:
-                        print(f"  Fixed {rxn_id}: lower={flux_value}, upper={flux_value}")
-                    else:
-                        print(f"  Set {rxn_id}: lower={flux_value}, upper={rxn.upper_bound}")
-            except KeyError:
-                print(f"  Warning: Reaction provided '{rxn_id}' was not found in model")
+        apply_medium_to_model(mod, medium, medium_upper_bound=medium_upper_bound, verbose=verbose)
 
     # Optionally edit NGAM (ATPM) lower bound and re-optimize
     ngam_growth_rate = None
