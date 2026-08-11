@@ -5104,3 +5104,394 @@ def plot_scalability_dashboard(
     else:
         plt.close(fig)
     return fig
+
+#------------------------------------------------------------------------------
+# Plotting functions for R toruloides case study
+#------------------------------------------------------------------------------
+
+def _load_flux_map(csv_path: str) -> dict[str, float]:
+    """Load Index -> Value flux map from a df_FBA-style CSV."""
+    df = pd.read_csv(csv_path)
+    if "Variable" in df.columns:
+        df = df[df["Variable"].isin(["flux", "reaction"])]
+    return dict(zip(df["Index"].astype(str), df["Value"].astype(float)))
+
+
+def _net_flux(flux_map: dict[str, float], reaction_id: str) -> float:
+    """Net flux for a reaction, supporting signed or forward/_reverse split CSVs."""
+    if reaction_id is None:
+        return 0.0
+    fwd = float(flux_map.get(reaction_id, 0.0))
+    rev = float(flux_map.get(f"{reaction_id}_reverse", 0.0))
+    return fwd - rev
+
+
+def _cytosolic_nadph_consumption(
+    flux_map: dict[str, float],
+    model,
+    nadph_metabolite_id: str = "s_1212",
+) -> float:
+    """Total cytosolic NADPH consumption (mmol/gDW/h) from fluxes × stoichiometry."""
+    nadph = model.metabolites.get_by_id(nadph_metabolite_id)
+    total = 0.0
+    for rxn in nadph.reactions:
+        coeff = rxn.metabolites[nadph]
+        net = _net_flux(flux_map, rxn.id)
+        nadph_rate = coeff * net  # negative ⇒ consumption
+        if nadph_rate < 0:
+            total += -nadph_rate
+    return total
+
+
+def _reaction_nadph_rate(
+    flux_map: dict[str, float],
+    reaction_id: str,
+    model,
+    nadph_metabolite_id: str = "s_1212",
+) -> float:
+    """NADPH consumed (positive) or produced (negative) by one reaction."""
+    if reaction_id not in model.reactions:
+        return 0.0
+    nadph = model.metabolites.get_by_id(nadph_metabolite_id)
+    rxn = model.reactions.get_by_id(reaction_id)
+    if nadph not in rxn.metabolites:
+        return 0.0
+    return -rxn.metabolites[nadph] * _net_flux(flux_map, reaction_id)
+
+
+def plot_r_toruloides_case_study(
+    gexp_path: str,
+    glim_path: str,
+    aexp_path: str,
+    alim_path: str,
+    xexp_path: str,
+    xlim_path: str,
+    panel_a_reactions: dict[str, str],
+    panel_b_reactions: dict[str, str],
+    gexp_subs_uptake: float,
+    glim_subs_uptake: float,
+    aexp_subs_uptake: float,
+    alim_subs_uptake: float,
+    xexp_subs_uptake: float,
+    xlim_subs_uptake: float,
+    model_path: str | None = None,
+    output_path: str | None = None,
+    figsize: tuple[float, float] = (14, 5.5),
+    nadph_metabolite_id: str = "s_1212",
+    show: bool = False,
+):
+    """
+    Two-panel case-study figure for *R. toruloides* (glucose / acetate / xylose).
+
+    Panel A — NADPH allocation trade-off on glucose (exp vs N-limited):
+        % of total cytosolic NADPH consumption through GDH1 vs FAS1-2.
+        ACC absolute flux is shown on a secondary axis when present in
+        ``panel_a_reactions``.
+
+    Panel B — substrate-normalized pathway fluxes (%) across carbon sources
+        and growth phases (keys like ``Glucose_XPK``, ``Acetate_ICL``, …).
+
+    Parameters
+    ----------
+    gexp_path, glim_path, aexp_path, alim_path, xexp_path, xlim_path : str
+        Paths to df_FBA CSVs (columns Index, Value; Variable == flux).
+    panel_a_reactions : dict
+        Display name → reaction id. FAS* keys are summed for FAS1-2 NADPH.
+    panel_b_reactions : dict
+        ``{CarbonSource}_{ShortName}`` → reaction id.
+    *_subs_uptake : float
+        Condition-specific substrate uptake rates (mmol/gDW/h).
+    model_path : str, optional
+        SBML model used for cytosolic NADPH stoichiometry (Panel A).
+        Required for % of *total* NADPH; without it, percentages are
+        relative to GDH1 + FAS only.
+    output_path : str, optional
+        Path to save the figure.
+    figsize : tuple, optional
+        Figure size (width, height) in inches.
+    nadph_metabolite_id : str, optional
+        Cytosolic NADPH metabolite id (default ``s_1212`` in rhto-GEM).
+    show : bool, optional
+        Whether to display the figure interactively.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+    """
+    set_plotting_style("ticks")
+
+    flux_paths = {
+        ("glucose", "exp"): gexp_path,
+        ("glucose", "nlim"): glim_path,
+        ("acetate", "exp"): aexp_path,
+        ("acetate", "nlim"): alim_path,
+        ("xylose", "exp"): xexp_path,
+        ("xylose", "nlim"): xlim_path,
+    }
+    uptakes = {
+        ("glucose", "exp"): gexp_subs_uptake,
+        ("glucose", "nlim"): glim_subs_uptake,
+        ("acetate", "exp"): aexp_subs_uptake,
+        ("acetate", "nlim"): alim_subs_uptake,
+        ("xylose", "exp"): xexp_subs_uptake,
+        ("xylose", "nlim"): xlim_subs_uptake,
+    }
+    flux_maps = {key: _load_flux_map(path) for key, path in flux_paths.items()}
+
+    model = None
+    if model_path:
+        import cobra
+
+        model = cobra.io.read_sbml_model(model_path)
+
+    # --- Panel A data (glucose only) -----------------------------------------
+    phase_labels = ["Exponential", "N-limited"]
+    phase_keys = ["exp", "nlim"]
+
+    gdh_key = next(
+        (k for k in panel_a_reactions if k.upper().startswith("GDH")), None
+    )
+    fas_keys = [k for k in panel_a_reactions if k.upper().startswith("FAS")]
+    acc_key = next(
+        (k for k in panel_a_reactions if k.upper().startswith("ACC")), None
+    )
+
+    gdh_pct, fas_pct, acc_flux = [], [], []
+    for phase in phase_keys:
+        fmap = flux_maps[("glucose", phase)]
+        if model is not None:
+            total_nadph = _cytosolic_nadph_consumption(
+                fmap, model, nadph_metabolite_id
+            )
+        else:
+            total_nadph = 0.0
+
+        gdh_nadph = 0.0
+        if gdh_key is not None:
+            rid = panel_a_reactions[gdh_key]
+            if model is not None:
+                gdh_nadph = max(
+                    _reaction_nadph_rate(
+                        fmap, rid, model, nadph_metabolite_id
+                    ),
+                    0.0,
+                )
+            else:
+                gdh_nadph = abs(_net_flux(fmap, rid))
+
+        fas_nadph = 0.0
+        for fk in fas_keys:
+            rid = panel_a_reactions[fk]
+            if model is not None:
+                fas_nadph += max(
+                    _reaction_nadph_rate(
+                        fmap, rid, model, nadph_metabolite_id
+                    ),
+                    0.0,
+                )
+            else:
+                # Fallback without model: assume C16=14, C18=16 NADPH / flux
+                stoich = 14.0
+                if "stear" in fk.lower() or "18" in fk:
+                    stoich = 16.0
+                fas_nadph += stoich * max(_net_flux(fmap, rid), 0.0)
+
+        if model is None:
+            total_nadph = gdh_nadph + fas_nadph
+
+        denom = total_nadph if total_nadph > 0 else np.nan
+        gdh_pct.append(100.0 * gdh_nadph / denom if denom == denom else 0.0)
+        fas_pct.append(100.0 * fas_nadph / denom if denom == denom else 0.0)
+
+        if acc_key is not None:
+            acc_flux.append(abs(_net_flux(fmap, panel_a_reactions[acc_key])))
+        else:
+            acc_flux.append(np.nan)
+
+    # --- Panel B data --------------------------------------------------------
+    b_groups: dict[str, list[tuple[str, str]]] = {}
+    for label, rid in panel_b_reactions.items():
+        if "_" in label:
+            source, short = label.split("_", 1)
+        else:
+            source, short = "Other", label
+        b_groups.setdefault(source, []).append((short, rid))
+
+    source_order = [
+        s for s in ("Glucose", "Acetate", "Xylose") if s in b_groups
+    ] + [s for s in b_groups if s not in ("Glucose", "Acetate", "Xylose")]
+
+    b_xticklabels: list[str] = []
+    b_exp: list[float] = []
+    b_nlim: list[float] = []
+    for source in source_order:
+        src_key = source.lower()
+        for short, rid in b_groups[source]:
+            b_xticklabels.append(short)
+            for phase, bucket in (("exp", b_exp), ("nlim", b_nlim)):
+                uptake = uptakes[(src_key, phase)]
+                net = abs(_net_flux(flux_maps[(src_key, phase)], rid))
+                bucket.append(100.0 * net / uptake if uptake else 0.0)
+
+    # --- Figure ----------------------------------------------------------------
+    fig, (ax_a, ax_b) = plt.subplots(
+        1, 2, figsize=figsize, gridspec_kw={"width_ratios": [1.0, 1.55]}
+    )
+    phase_colors = {"Exponential": "#2c7bb6", "N-limited": "#d7191c"}
+
+    x = np.arange(len(phase_labels))
+    width = 0.35
+    bars_gdh = ax_a.bar(
+        x - width / 2,
+        gdh_pct,
+        width,
+        label="GDH1",
+        color="#2c7bb6",
+        edgecolor="black",
+        linewidth=0.6,
+    )
+    bars_fas = ax_a.bar(
+        x + width / 2,
+        fas_pct,
+        width,
+        label="FAS1-2",
+        color="#fdae61",
+        edgecolor="black",
+        linewidth=0.6,
+    )
+    ax_a.set_xticks(x)
+    ax_a.set_xticklabels(phase_labels)
+    ax_a.set_ylabel(
+        "% of NADPH consumption",
+        fontsize=FONT_SIZES["axis_label"],
+        fontweight="bold",
+    )
+    ax_a.set_xlabel("Growth phase (glucose)", fontsize=FONT_SIZES["axis_label"])
+    ax_a.set_title(
+        "A) NADPH allocation trade-off",
+        fontsize=FONT_SIZES["subtitle"],
+        fontweight="bold",
+        loc="left",
+    )
+    ax_a.set_ylim(0, max(max(gdh_pct + fas_pct, default=0) * 1.25, 10))
+    ax_a.legend(frameon=False, fontsize=FONT_SIZES["legend"])
+    ax_a.grid(True, axis="y", alpha=0.3)
+    ax_a.spines["top"].set_visible(False)
+    ax_a.spines["right"].set_visible(False)
+
+    for bars in (bars_gdh, bars_fas):
+        for bar in bars:
+            h = bar.get_height()
+            if h > 0:
+                ax_a.annotate(
+                    f"{h:.0f}%",
+                    xy=(bar.get_x() + bar.get_width() / 2, h),
+                    xytext=(0, 3),
+                    textcoords="offset points",
+                    ha="center",
+                    va="bottom",
+                    fontsize=FONT_SIZES["annotation"] - 1,
+                )
+
+    if acc_key is not None and np.isfinite(acc_flux).any():
+        ax_a2 = ax_a.twinx()
+        ax_a2.plot(
+            x,
+            acc_flux,
+            color="#1a1a1a",
+            marker="D",
+            markersize=7,
+            linewidth=1.5,
+            label="ACC flux",
+        )
+        ax_a2.set_ylabel(
+            "ACC flux (mmol/gDW/h)",
+            fontsize=FONT_SIZES["axis_label"],
+        )
+        ax_a2.spines["top"].set_visible(False)
+        h1, l1 = ax_a.get_legend_handles_labels()
+        h2, l2 = ax_a2.get_legend_handles_labels()
+        ax_a.legend(
+            h1 + h2, l1 + l2, frameon=False, fontsize=FONT_SIZES["legend"]
+        )
+
+    n_b = len(b_xticklabels)
+    x_b = np.arange(n_b)
+    width_b = 0.38
+    ax_b.bar(
+        x_b - width_b / 2,
+        b_exp,
+        width_b,
+        label="Exponential",
+        color=phase_colors["Exponential"],
+        edgecolor="black",
+        linewidth=0.5,
+    )
+    ax_b.bar(
+        x_b + width_b / 2,
+        b_nlim,
+        width_b,
+        label="N-limited",
+        color=phase_colors["N-limited"],
+        edgecolor="black",
+        linewidth=0.5,
+    )
+    ax_b.set_xticks(x_b)
+    ax_b.set_xticklabels(b_xticklabels, rotation=45, ha="right")
+    ax_b.set_ylabel(
+        "Flux / substrate uptake (%)",
+        fontsize=FONT_SIZES["axis_label"],
+        fontweight="bold",
+    )
+    ax_b.set_title(
+        "B  Carbon partitioning & pathway redirection",
+        fontsize=FONT_SIZES["subtitle"],
+        fontweight="bold",
+        loc="left",
+    )
+    ax_b.legend(frameon=False, fontsize=FONT_SIZES["legend"])
+    ax_b.grid(True, axis="y", alpha=0.3)
+    ax_b.spines["top"].set_visible(False)
+    ax_b.spines["right"].set_visible(False)
+
+    # Carbon-source group labels and separators
+    idx = 0
+    boundaries = []
+    for source in source_order:
+        n = len(b_groups[source])
+        mid = idx + 0.5 * (n - 1)
+        ax_b.text(
+            mid,
+            -0.22,
+            source,
+            transform=ax_b.get_xaxis_transform(),
+            ha="center",
+            va="top",
+            fontsize=FONT_SIZES["annotation"],
+            fontweight="bold",
+            color="#333333",
+            clip_on=False,
+        )
+        idx += n
+        if idx < n_b:
+            boundaries.append(idx - 0.5)
+    for b in boundaries:
+        ax_b.axvline(b, color="#bbbbbb", linewidth=1.0, linestyle="--", zorder=0)
+
+    fig.suptitle(
+        r"R. toruloides metabolic trade-offs across carbon sources",
+        fontsize=FONT_SIZES["title"],
+        fontweight="bold",
+        y=1.02,
+    )
+    fig.tight_layout()
+
+    if output_path:
+        _safe_ensure_dir_for_file(output_path)
+        plt.savefig(output_path, dpi=DEFAULT_DPI, bbox_inches="tight")
+        print(f"  Saved: {output_path}")
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
+    return fig
