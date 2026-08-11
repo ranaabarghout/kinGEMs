@@ -5444,7 +5444,7 @@ def plot_r_toruloides_case_study(
         fontweight="bold",
     )
     ax_b.set_title(
-        "B  Carbon partitioning & pathway redirection",
+        "B)  Carbon partitioning & pathway redirection",
         fontsize=FONT_SIZES["subtitle"],
         fontweight="bold",
         loc="left",

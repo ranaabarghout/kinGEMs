@@ -2,8 +2,8 @@
   "model_name": "rhto",
   "organism": "R toruloides",
   "biomass_reaction": "r_2111",
-  "enzyme_upper_bound": 0.159,
-  "_comment_enzyme_upper_bound": "Enzyme pool (g enzyme/gDW) = Ptot * f = 0.636 * 0.25 = 0.056 g/gDW.",
+  "enzyme_upper_bound": 0.108,
+  "_comment_enzyme_upper_bound": "Enzyme pool (g enzyme/gDW) = Ptot * f = 0.217 * 0.5 = 0.108 g/gDW.",
   "solver": "glpk",
   "enable_fva": false,
   "enable_biolog_validation": false,
@@ -24,12 +24,12 @@
     "_comment_chunk_size": "Number of reactions per task. null = auto-calculate. Larger = less overhead but less load balancing"
   },
   "medium": {
-    "r_1714": [-2.489, 0],
-    "r_1992": [-5.6, 0],
-    "r_1672": [0, 7.3],
-    "r_1808": [0, 0.049],
-    "r_2091": [-1000, 0],
-    "r_1654": [0, 0]
+    "r_1634": [-1.9706, 0],
+    "r_1992": [-2.265, 0],
+    "r_1672": [0, 2.229],
+    "r_1687": [-0.043, 0],
+    "r_2091": [0, 0],
+    "r_1654": [-1000, 0]
   },
   "_comment_medium": "Per-reaction [lb, ub] (exchange sign: uptake negative, secretion positive). r_1714=glucose max uptake; r_1992=O2 max uptake; r_1672/r_1808=free CO2/glycerol secretion; r_2091=urea unlimited uptake; r_1654=block ammonium so N comes from urea.",
   "medium_upper_bound": false,
@@ -41,7 +41,7 @@
     "max_iterations": 1000,
     "max_unchanged_iterations": 50,
     "change_threshold": 0.001,
-    "biomass_goal": 0.191,
+    "biomass_goal": 0.012,
     "n_top_enzymes": 100,
     "verbose": false,
     "_comment_aggressive": "AGGRESSIVE SETTINGS - larger perturbations and longer search",

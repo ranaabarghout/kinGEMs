@@ -5,15 +5,15 @@ import os
 from kinGEMs.plots import plot_r_toruloides_case_study
 
 # Glucose experiments
-GEXP_RUN_ID = "rhto_20260810_4397"
+GEXP_RUN_ID = "rhto_20260811_8099"
 GLIM_RUN_ID = "rhto_20260811_1405"
 
-# Acetate experiments, TO RUN, PLACEHOLDER FOR NOW
-AEXP_RUN_ID = "rhto_20260810_4397"
-ALIM_RUN_ID = "rhto_20260811_1405"
+# Acetate experiments
+AEXP_RUN_ID = "rhto_20260811_7747"
+ALIM_RUN_ID = "rhto_20260811_5353"
 
 # Xylose experiments, TO RUN, PLACEHOLDER FOR NOW
-XEXP_RUN_ID = "rhto_20260810_4397"
+XEXP_RUN_ID = "rhto_20260811_8099"
 XLIM_RUN_ID = "rhto_20260811_1405"
 
 # Project root
