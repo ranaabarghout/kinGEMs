@@ -67,7 +67,12 @@ from kinGEMs.plots import (
     plot_kcat_annealing_comparison_by_subsystem,
 )
 from kinGEMs.modeling.optimize import apply_medium_to_model, run_optimization_with_dataframe
-from kinGEMs.modeling.tuning import apply_gam_scaling, simulated_annealing, sweep_maintenance_parameters
+from kinGEMs.modeling.tuning import (
+    apply_biomass_composition,
+    apply_gam_scaling,
+    simulated_annealing,
+    sweep_maintenance_parameters,
+)
 
 # Suppress warnings and configure logging
 warnings.filterwarnings('ignore')
@@ -453,6 +458,23 @@ def run_pipeline_core(
     if medium is not None:
         log("  Applying medium conditions")
         apply_medium_to_model(model, medium, medium_upper_bound=medium_upper_bound, verbose=False)
+
+    # Apply condition-specific biomass composition (rescales pseudo-metabolite
+    # stoichiometry of the biomass pseudoreaction, rhto-GEM).
+    biomass_composition = config.get('biomass_composition')
+    if biomass_composition:
+        gam_rxn_id = config.get('gam_reaction') or biomass_reaction
+        multipliers = biomass_composition.get('multipliers', {})
+        if multipliers:
+            log(f"  Applying biomass composition on {gam_rxn_id}")
+            changes = apply_biomass_composition(
+                model,
+                biomass_pseudoreaction=gam_rxn_id,
+                multipliers=multipliers,
+                verbose=False,
+            )
+            for met_id, (old, new) in changes.items():
+                log(f"    {met_id}: {old:.4g} -> {new:.4g}")
 
     cobra_solution = model.optimize()
     cobra_biomass = cobra_solution.objective_value

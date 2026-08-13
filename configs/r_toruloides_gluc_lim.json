@@ -34,6 +34,15 @@
   "_comment_medium": "Per-reaction [lb, ub] (exchange sign: uptake negative, secretion positive). r_1714=glucose max uptake; r_1992=O2 max uptake; r_1672/r_1808=free CO2/glycerol secretion; r_2091=urea unlimited uptake; r_1654=block ammonium so N comes from urea.",
   "medium_upper_bound": false,
 
+  "biomass_composition": {
+    "_comment": "Rekena Nlim composition on glucose: protein 0.23, lipid 0.48, carbohydrate 0.20 g/gDW. Multipliers = Nlim target / exp default (0.23/0.64, 0.48/0.05, 0.20/0.20). Forces the model to reroute NADPH and carbon into FAS during lipid accumulation.",
+    "multipliers": {
+      "protein": 0.359,
+      "lipid": 9.6,
+      "carbohydrate": 1.0
+    }
+  },
+
   "simulated_annealing": {
     "temperature": 100,
     "cooling_rate": 0.95,

@@ -182,6 +182,10 @@ cython_debug/
 # Ruff stuff:
 .ruff_cache/
 
+# IDE
+.vscode/
+.cursor/
+
 # PyPI configuration file
 .pypirc
 kinGEMs/dataset2.py

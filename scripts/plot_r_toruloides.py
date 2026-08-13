@@ -5,8 +5,8 @@ import os
 from kinGEMs.plots import plot_r_toruloides_case_study
 
 # Glucose experiments
-GEXP_RUN_ID = "rhto_20260811_8099"
-GLIM_RUN_ID = "rhto_20260811_1405"
+GEXP_RUN_ID = "rhto_20260813_5945"
+GLIM_RUN_ID = "rhto_20260813_7974"
 
 # Acetate experiments
 AEXP_RUN_ID = "rhto_20260811_7747"

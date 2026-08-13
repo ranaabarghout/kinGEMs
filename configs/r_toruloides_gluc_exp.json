@@ -3,7 +3,7 @@
   "organism": "R toruloides",
   "biomass_reaction": "r_2111",
   "enzyme_upper_bound": 0.159,
-  "_comment_enzyme_upper_bound": "Enzyme pool (g enzyme/gDW) = Ptot * f = 0.636 * 0.25 = 0.056 g/gDW.",
+  "_comment_enzyme_upper_bound": "Enzyme pool (g enzyme/gDW) = Ptot * f * sigma",
   "solver": "glpk",
   "enable_fva": false,
   "enable_biolog_validation": false,
@@ -33,6 +33,15 @@
   },
   "_comment_medium": "Per-reaction [lb, ub] (exchange sign: uptake negative, secretion positive). r_1714=glucose max uptake; r_1992=O2 max uptake; r_1672/r_1808=free CO2/glycerol secretion; r_2091=urea unlimited uptake; r_1654=block ammonium so N comes from urea.",
   "medium_upper_bound": false,
+
+  "biomass_composition": {
+    "_comment": "Rekena exp composition on glucose (~0.64 protein, ~0.05 lipid, ~0.20 carbohydrate g/gDW). Coefficients of s_3717/s_1096/s_3718 in r_4041 default to 1.0, so multipliers equal the target mass fractions in g/gDW.",
+    "multipliers": {
+      "protein": 0.64,
+      "lipid": 0.05,
+      "carbohydrate": 0.20
+    }
+  },
 
   "simulated_annealing": {
     "temperature": 100,

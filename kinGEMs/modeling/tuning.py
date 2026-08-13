@@ -163,6 +163,95 @@ def apply_gam_scaling(model, target_gam, biomass_reaction, gam_reaction_id=None,
     return True, original_gam
 
 
+# Alias map from macromolecule names to SBML metabolite ids used
+# by rhto-GEM biomass pseudoreaction.
+BIOMASS_PSEUDO_METS = {
+    "protein":      ["s_3717"],
+    "lipid":        ["s_1096"],
+    "carbohydrate": ["s_3718"],
+    "rna":          ["s_3719"],
+    "dna":          ["s_3720"],
+}
+
+
+def apply_biomass_composition(model, biomass_pseudoreaction, multipliers, verbose=False):
+    """
+    Rescale pseudo-metabolite stoichiometry of the biomass pseudoreaction in place.
+
+    ``multipliers`` maps a macromolecule name (case-insensitive; see
+    ``BIOMASS_PSEUDO_METS``) or a raw metabolite id already present in the
+    reaction to a positive float. The current stoichiometric coefficient of
+    each targeted pseudo-metabolite is multiplied by that factor via
+    ``rxn.add_metabolites({met: new_coef}, combine=False)``.
+
+    Parameters
+    ----------
+    model : cobra.Model
+    biomass_pseudoreaction : str
+        Reaction id (e.g. ``r_4041`` in rhto-GEM) that consumes the protein /
+        lipid / carbohydrate / RNA / DNA pseudo-metabolites.
+    multipliers : dict[str, float]
+        Keys are macromolecule names (``"protein"``, ``"lipid"``, ...) or raw
+        metabolite ids. Values are positive scaling factors.
+    verbose : bool, optional
+        If True, print each change.
+
+    Returns
+    -------
+    dict[str, tuple[float, float]]
+        ``{met_id: (old_coefficient, new_coefficient)}`` for every metabolite
+        that was rescaled.
+    """
+    if not multipliers:
+        return {}
+
+    if biomass_pseudoreaction not in model.reactions:
+        raise KeyError(
+            f"Biomass pseudoreaction '{biomass_pseudoreaction}' not found in model"
+        )
+    rxn = model.reactions.get_by_id(biomass_pseudoreaction)
+    rxn_met_ids = {m.id for m in rxn.metabolites}
+
+    changes: dict[str, tuple[float, float]] = {}
+    for key, mult in multipliers.items():
+        try:
+            mult_f = float(mult)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                f"biomass_composition multiplier for '{key}' is not a number: {mult!r}"
+            ) from exc
+        if mult_f <= 0:
+            raise ValueError(
+                f"biomass_composition multiplier for '{key}' must be > 0, got {mult_f}"
+            )
+
+        key_lower = key.lower()
+        if key_lower in BIOMASS_PSEUDO_METS:
+            candidate_ids = BIOMASS_PSEUDO_METS[key_lower]
+        else:
+            candidate_ids = [key]
+
+        met_id = next((mid for mid in candidate_ids if mid in rxn_met_ids), None)
+        if met_id is None:
+            raise KeyError(
+                f"None of the candidate metabolite ids {candidate_ids} for "
+                f"'{key}' are present in reaction {biomass_pseudoreaction}"
+            )
+
+        met = model.metabolites.get_by_id(met_id)
+        old_coef = rxn.metabolites[met]
+        new_coef = old_coef * mult_f
+        rxn.add_metabolites({met: new_coef}, combine=False)
+        changes[met_id] = (float(old_coef), float(new_coef))
+        if verbose:
+            print(
+                f"  [biomass] {biomass_pseudoreaction}: {key} ({met_id}) "
+                f"{old_coef:.6g} -> {new_coef:.6g}  (x{mult_f:.4g})"
+            )
+
+    return changes
+
+
 def simulated_annealing(
     model,
     processed_data,
