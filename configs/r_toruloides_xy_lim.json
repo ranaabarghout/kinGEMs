@@ -45,9 +45,9 @@
   "biomass_composition": {
     "_comment": "Rekena (2023) experimental biomass composition on acetate exponential growth",
     "multipliers": {
-      "protein": 0.44,
-      "lipid": 0.2,
-      "carbohydrate": 0.3
+      "protein": 0.2,
+      "lipid": 0.28,
+      "carbohydrate": 0.46
     }
   },
 

@@ -21,7 +21,7 @@ ALIM_RUN_ID = "rhto_20260813_2575"
 
 # Xylose experiments
 XEXP_RUN_ID = "rhto_20260813_5682"
-XLIM_RUN_ID = "rhto_20260813_7369"
+XLIM_RUN_ID = "rhto_20260813_3923"
 
 #-------Experiments using sigma and f factors------
 
