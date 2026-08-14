@@ -70,6 +70,7 @@ from kinGEMs.modeling.optimize import apply_medium_to_model, run_optimization_wi
 from kinGEMs.modeling.tuning import (
     apply_biomass_composition,
     apply_gam_scaling,
+    apply_model_edits,
     simulated_annealing,
     sweep_maintenance_parameters,
 )
@@ -453,6 +454,22 @@ def run_pipeline_core(
     # === Step 4: Optimization ===
     log("=== Step 4: Running optimization ===")
     log(f"  Enzyme pool (enzyme_upper_bound): {enzyme_upper_bound:.5f} g/gDW")
+
+    # Optional network edits (e.g. Rekena xylose D-arabinitol pathway) must run
+    # before medium so new exchanges exist to receive bounds.
+    model_edits = config.get('model_edits')
+    if model_edits:
+        log("  Applying model edits")
+        edit_result = apply_model_edits(model, model_edits, verbose=False)
+        for met_id in edit_result["added_metabolites"]:
+            log(f"    + metabolite {met_id}")
+        for rxn_id in edit_result["added_reactions"]:
+            log(f"    + reaction {rxn_id}")
+        for rxn_id in edit_result["knocked_out"]:
+            log(f"    knocked out {rxn_id}")
+        for skipped_id in edit_result["skipped"]:
+            log(f"    already present {skipped_id}")
+        model = convert_to_irreversible(model)
 
     # Apply medium constraints (supports scalar or per-reaction [lb, ub] pairs)
     if medium is not None:

@@ -1,0 +1,79 @@
+{
+  "model_name": "rhto",
+  "organism": "R toruloides",
+  "biomass_reaction": "r_2111",
+  "enzyme_upper_bound": 0.4385,
+  "_comment_enzyme_upper_bound": "Enzyme pool (g enzyme/gDW) = Ptot * f * sigma",
+  "solver": "glpk",
+  "enable_fva": false,
+  "enable_biolog_validation": false,
+  "enable_maintenance_sweep": true,
+  "ngam_rxn_id": "r_4046",
+  "gam_reaction": "r_4041",
+  "_comment_gam_reaction": "Reaction carrying the GAM ATP cost. In rhto/yeast-GEM this is the biomass pseudoreaction r_4041, not the growth objective r_2111.",
+
+  "fva": {
+    "parallel": true,
+    "workers": 4,
+    "chunk_size": 50,
+    "method": "dask",
+    "opt_ratio": 0.9,
+    "_comment_opt_ratio": "Fraction of optimal biomass to constrain during FVA (0.9 = 90% of optimal)",
+    "_comment_method": "Options: 'dask' (distributed, scalable) or 'multiprocessing' (simpler, single-machine)",
+    "_comment_workers": "Set to null for auto-detection (uses all CPU cores)",
+    "_comment_chunk_size": "Number of reactions per task. null = auto-calculate. Larger = less overhead but less load balanc`ing"
+  },
+  "medium": {
+    "r_1718": [-1.86, 0],
+    "r_1714": [0, 0],
+    "r_1992": [-2.678, 0],
+    "r_1672": [0, 2.845],
+    "r_2091": [0, 0],
+    "r_1654": [-1000, 0],
+    "r_2104": [0, 0.223],
+    "r_4340": [0, 0.367]
+  },
+  "_comment_medium": "Per-reaction [lb, ub] (exchange sign: uptake negative, secretion positive). r_1718=xylose max uptake; r_1714=block glucose; r_1992=O2 max uptake; r_1672=CO2 secretion; r_2104=xylitol secretion; r_4340=D-arabinitol secretion (added by model_edits); r_2091=block urea; r_1654=ammonium uptake.",
+  "medium_upper_bound": false,
+
+  "model_edits": {
+    "_comment": "Rekena (2023) edit_rhtoGEM.m: add D-arabinitol / D-ribulose xylose pathway (t_0883 DAD-4, t_0884 DAD-2, t_0885 RK, r_4339 transport, r_4340 exchange) and block unexpressed xylulokinase r_1094.",
+    "add_xylose_arabinitol_pathway": true,
+    "knock_out_reactions": ["r_1094"]
+  },
+
+  "biomass_composition": {
+    "_comment": "Rekena (2023) experimental biomass composition on acetate exponential growth",
+    "multipliers": {
+      "protein": 0.44,
+      "lipid": 0.2,
+      "carbohydrate": 0.3
+    }
+  },
+
+  "simulated_annealing": {
+    "temperature": 100,
+    "cooling_rate": 0.95,
+    "min_temperature": 0.001,
+    "max_iterations": 1000,
+    "max_unchanged_iterations": 50,
+    "change_threshold": 0.001,
+    "biomass_goal": 0.054,
+    "n_top_enzymes": 100,
+    "verbose": false,
+    "_comment_aggressive": "AGGRESSIVE SETTINGS - larger perturbations and longer search",
+    "_comment_temperature": "High starting temp (100) for large initial exploration",
+    "_comment_cooling_rate": "Moderate cooling (0.95) for thorough exploration",
+    "_comment_change_threshold": "Standard threshold (0.1%) for meaningful improvements",
+    "_comment_biomass_goal": "Target experimental growth rate from Crown et al. (2015) - 0.75 1/hr for E. coli on glucose M9",
+    "_comment_n_top_enzymes": "Tune top 500 enzymes for sufficient optimization flexibility"
+  },
+
+  "maintenance_sweep": {
+    "ngam_range": [0, 0.5, 1, 2, 3, 3.65],
+    "gam_range": [124.4, 130, 135, 140.9],
+    "verbose": false,
+    "_comment_ngam_range": "NGAM values to test (ATPM lower bound in mmol/gDW/h). Range to find optimal match to experimental 0.75 growth rate",
+    "_comment_gam_range": "GAM values to test (ATP in biomass, mmol/gDW). 75.55 is the original iML1515 value"
+  }
+}

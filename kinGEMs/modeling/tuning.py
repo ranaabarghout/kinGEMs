@@ -13,6 +13,7 @@ import warnings
 from Bio.Data.IUPACData import protein_letters
 from Bio.SeqUtils import molecular_weight
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
+from cobra import Metabolite, Reaction
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -161,6 +162,219 @@ def apply_gam_scaling(model, target_gam, biomass_reaction, gam_reaction_id=None,
     if verbose:
         print(f"  [GAM] Scaled {gam_rxn.id} ATP from {original_gam:.2f} to {target_gam:.2f}")
     return True, original_gam
+
+
+# Rekena et al. 2023 (PLoS Comput Biol) / edit_rhtoGEM.m alternative xylose
+# assimilation pathway. 
+_XYLOSE_ARABINITOL_METABOLITES = [
+    {
+        "id": "s_D-arabinitol_c",
+        "name": "D-arabinitol",
+        "compartment": "c",
+        "formula": "C5H12O5",
+        "charge": 0,
+    },
+    {
+        "id": "s_D-arabinitol_e",
+        "name": "D-arabinitol",
+        "compartment": "e",
+        "formula": "C5H12O5",
+        "charge": 0,
+    },
+    {
+        "id": "s_D-ribulose",
+        "name": "D-ribulose",
+        "compartment": "c",
+        "formula": "C5H10O5",
+        "charge": 0,
+    },
+]
+
+_XYLOSE_ARABINITOL_REACTIONS = [
+    {
+        "id": "t_0883",
+        "name": "D-arabinitol 4-dehydrogenase",
+        "metabolites": {
+            "s_0580": -1,
+            "s_1203": -1,
+            "s_0794": -1,
+            "s_D-arabinitol_c": 1,
+            "s_1198": 1,
+        },
+        "lower_bound": -1000,
+        "upper_bound": 1000,
+        "gene_reaction_rule": "RHTO_07844",
+    },
+    {
+        "id": "r_4339",
+        "name": "D-arabinitol transport",
+        "metabolites": {"s_D-arabinitol_c": -1, "s_D-arabinitol_e": 1},
+        "lower_bound": -1000,
+        "upper_bound": 1000,
+        "gene_reaction_rule": "",
+    },
+    {
+        "id": "r_4340",
+        "name": "D-arabinitol exchange",
+        "metabolites": {"s_D-arabinitol_e": -1},
+        "lower_bound": 0,
+        "upper_bound": 1000,
+        "gene_reaction_rule": "",
+    },
+    {
+        "id": "t_0884",
+        "name": "D-arabinitol 2-dehydrogenase/D-ribulose reductase",
+        "metabolites": {
+            "s_D-ribulose": -1,
+            "s_1212": -1,
+            "s_0794": -1,
+            "s_D-arabinitol_c": 1,
+            "s_1207": 1,
+        },
+        "lower_bound": -1000,
+        "upper_bound": 1000,
+        "gene_reaction_rule": "RHTO_00373",
+    },
+    {
+        "id": "t_0885",
+        "name": "D-ribulokinase",
+        "metabolites": {
+            "s_0434": -1,
+            "s_D-ribulose": -1,
+            "s_0394": 1,
+            "s_0577": 1,
+            "s_0794": 1,
+        },
+        "lower_bound": 0,
+        "upper_bound": 1000,
+        "gene_reaction_rule": "RHTO_00950",
+    },
+]
+
+
+def _iter_model_edit_metabolites(edits):
+    mets = []
+    if edits.get("add_xylose_arabinitol_pathway"):
+        mets.extend(_XYLOSE_ARABINITOL_METABOLITES)
+    mets.extend(edits.get("metabolites") or [])
+    return mets
+
+
+def _iter_model_edit_reactions(edits):
+    rxns = []
+    if edits.get("add_xylose_arabinitol_pathway"):
+        rxns.extend(_XYLOSE_ARABINITOL_REACTIONS)
+    rxns.extend(edits.get("reactions") or [])
+    return rxns
+
+
+def apply_model_edits(model, edits, verbose=False):
+    """
+    Add metabolites/reactions and knock out reactions specified in a config.
+
+    ``edits`` is the ``model_edits`` object from a pipeline JSON config:
+
+    - ``add_xylose_arabinitol_pathway`` (bool): insert Rekena's D-arabinitol /
+      D-ribulose xylose path (``t_0883``, ``t_0884``, ``t_0885``, transport
+      ``r_4339``, exchange ``r_4340``).
+    - ``metabolites`` / ``reactions``: extra entries with the same schema as
+      the preset (``id``, ``name``, ``compartment`` / ``metabolites`` dict,
+      optional ``lower_bound``, ``upper_bound``, ``gene_reaction_rule``).
+    - ``knock_out_reactions``: reaction ids to block (also blocks
+      ``{id}_reverse`` if present after irreversible conversion).
+
+    Existing metabolite/reaction ids are left unchanged (idempotent). Call this
+    *before* ``apply_medium_to_model`` so medium bounds on ``r_4340`` apply,
+    and re-run ``convert_to_irreversible`` afterwards so new reversible
+    reactions are split.
+
+    Returns
+    -------
+    dict
+        ``{"added_metabolites": [...], "added_reactions": [...],
+        "skipped": [...], "knocked_out": [...]}``
+    """
+    if not edits:
+        return {
+            "added_metabolites": [],
+            "added_reactions": [],
+            "skipped": [],
+            "knocked_out": [],
+        }
+
+    added_mets = []
+    added_rxns = []
+    skipped = []
+
+    new_mets = []
+    for spec in _iter_model_edit_metabolites(edits):
+        met_id = spec["id"]
+        if met_id in model.metabolites:
+            skipped.append(met_id)
+            continue
+        met = Metabolite(
+            met_id,
+            name=spec.get("name", met_id),
+            compartment=spec.get("compartment", "c"),
+            formula=spec.get("formula"),
+            charge=spec.get("charge", 0),
+        )
+        new_mets.append(met)
+        added_mets.append(met_id)
+    if new_mets:
+        model.add_metabolites(new_mets)
+
+    new_rxns = []
+    for spec in _iter_model_edit_reactions(edits):
+        rxn_id = spec["id"]
+        if rxn_id in model.reactions:
+            skipped.append(rxn_id)
+            continue
+        rxn = Reaction(rxn_id)
+        rxn.name = spec.get("name", rxn_id)
+        rxn.lower_bound = float(spec.get("lower_bound", 0))
+        rxn.upper_bound = float(spec.get("upper_bound", 1000))
+        gpr = spec.get("gene_reaction_rule") or ""
+        if gpr:
+            rxn.gene_reaction_rule = gpr
+        stoich = {}
+        for met_id, coef in (spec.get("metabolites") or {}).items():
+            if met_id not in model.metabolites:
+                raise KeyError(
+                    f"model_edits reaction '{rxn_id}' refers to unknown "
+                    f"metabolite '{met_id}'"
+                )
+            stoich[model.metabolites.get_by_id(met_id)] = float(coef)
+        rxn.add_metabolites(stoich)
+        new_rxns.append(rxn)
+        added_rxns.append(rxn_id)
+    if new_rxns:
+        model.add_reactions(new_rxns)
+
+    knocked_out = []
+    for rxn_id in edits.get("knock_out_reactions") or []:
+        for kid in (rxn_id, f"{rxn_id}_reverse"):
+            if kid not in model.reactions:
+                continue
+            model.reactions.get_by_id(kid).knock_out()
+            knocked_out.append(kid)
+
+    if verbose:
+        if added_mets:
+            print(f"  [model_edits] added metabolites: {', '.join(added_mets)}")
+        if added_rxns:
+            print(f"  [model_edits] added reactions: {', '.join(added_rxns)}")
+        if knocked_out:
+            print(f"  [model_edits] knocked out: {', '.join(knocked_out)}")
+        if skipped:
+            print(f"  [model_edits] already present: {', '.join(skipped)}")
+
+    return {
+        "added_metabolites": added_mets,
+        "added_reactions": added_rxns,
+        "skipped": skipped,
+        "knocked_out": knocked_out,
+    }
 
 
 # Alias map from macromolecule names to SBML metabolite ids used

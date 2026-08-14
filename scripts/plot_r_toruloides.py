@@ -4,17 +4,23 @@ import os
 
 from kinGEMs.plots import plot_r_toruloides_case_study
 
+
+#-------Baseline experiments using high enzyme upper bound (no sigma and f factors)------
+
 # Glucose experiments
 GEXP_RUN_ID = "rhto_20260813_5945"
 GLIM_RUN_ID = "rhto_20260813_7974"
 
 # Acetate experiments
-AEXP_RUN_ID = "rhto_20260811_7747"
-ALIM_RUN_ID = "rhto_20260811_5353"
+AEXP_RUN_ID = "rhto_20260813_8375"
+ALIM_RUN_ID = "rhto_20260813_8604"
 
-# Xylose experiments, TO RUN, PLACEHOLDER FOR NOW
-XEXP_RUN_ID = "rhto_20260811_8099"
-XLIM_RUN_ID = "rhto_20260811_1405"
+# Xylose experiments
+XEXP_RUN_ID = "rhto_20260813_5682"
+XLIM_RUN_ID = "rhto_20260813_7369"
+
+#-------Experiments using sigma and f factors------
+
 
 # Project root
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
