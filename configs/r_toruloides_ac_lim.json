@@ -2,8 +2,8 @@
   "model_name": "rhto",
   "organism": "R toruloides",
   "biomass_reaction": "r_2111",
-  "enzyme_upper_bound": 0.108,
-  "_comment_enzyme_upper_bound": "Enzyme pool (g enzyme/gDW) = Ptot * f = 0.217 * 0.5 = 0.108 g/gDW.",
+  "enzyme_upper_bound": 0.217,
+  "_comment_enzyme_upper_bound": "Enzyme pool (g enzyme/gDW) = Ptot * f * sigma",
   "solver": "glpk",
   "enable_fva": false,
   "enable_biolog_validation": false,
@@ -33,6 +33,15 @@
   },
   "_comment_medium": "Per-reaction [lb, ub] (exchange sign: uptake negative, secretion positive). r_1714=glucose max uptake; r_1992=O2 max uptake; r_1672/r_1808=free CO2/glycerol secretion; r_2091=urea unlimited uptake; r_1654=block ammonium so N comes from urea.",
   "medium_upper_bound": false,
+
+  "biomass_composition": {
+    "_comment": "Rekena (2023) experimental biomass composition on acetate exponential growth",
+    "multipliers": {
+      "protein": 0.22,
+      "lipid": 0.34,
+      "carbohydrate": 0.28
+    }
+  },
 
   "simulated_annealing": {
     "temperature": 100,

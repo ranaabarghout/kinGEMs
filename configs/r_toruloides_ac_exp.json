@@ -2,8 +2,8 @@
   "model_name": "rhto",
   "organism": "R toruloides",
   "biomass_reaction": "r_2111",
-  "enzyme_upper_bound": 0.0965,
-  "_comment_enzyme_upper_bound": "Enzyme pool (g enzyme/gDW) = Ptot * f = 0.386 * 0.25 = 0.0965 g/gDW.",
+  "enzyme_upper_bound": 0.386,
+  "_comment_enzyme_upper_bound": "Enzyme pool (g enzyme/gDW) = Ptot * f * sigma",
   "solver": "glpk",
   "enable_fva": false,
   "enable_biolog_validation": false,
@@ -21,7 +21,7 @@
     "_comment_opt_ratio": "Fraction of optimal biomass to constrain during FVA (0.9 = 90% of optimal)",
     "_comment_method": "Options: 'dask' (distributed, scalable) or 'multiprocessing' (simpler, single-machine)",
     "_comment_workers": "Set to null for auto-detection (uses all CPU cores)",
-    "_comment_chunk_size": "Number of reactions per task. null = auto-calculate. Larger = less overhead but less load balancing"
+    "_comment_chunk_size": "Number of reactions per task. null = auto-calculate. Larger = less overhead but less load balanc`ing"
   },
   "medium": {
     "r_1634": [-6.1, 0],
@@ -33,6 +33,15 @@
   },
   "_comment_medium": "Per-reaction [lb, ub] (exchange sign: uptake negative, secretion positive). r_1714=glucose max uptake; r_1992=O2 max uptake; r_1672/r_1808=free CO2/glycerol secretion; r_2091=urea unlimited uptake; r_1654=block ammonium so N comes from urea.",
   "medium_upper_bound": false,
+
+  "biomass_composition": {
+    "_comment": "Rekena (2023) experimental biomass composition on acetate exponential growth",
+    "multipliers": {
+      "protein": 0.39,
+      "lipid": 0.18,
+      "carbohydrate": 0.37
+    }
+  },
 
   "simulated_annealing": {
     "temperature": 100,

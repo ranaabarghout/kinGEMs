@@ -2,7 +2,7 @@
   "model_name": "rhto",
   "organism": "R toruloides",
   "biomass_reaction": "r_2111",
-  "enzyme_upper_bound": 0.159,
+  "enzyme_upper_bound": 0.636,
   "_comment_enzyme_upper_bound": "Enzyme pool (g enzyme/gDW) = Ptot * f * sigma",
   "solver": "glpk",
   "enable_fva": false,
