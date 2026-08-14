@@ -5117,12 +5117,20 @@ def _load_flux_map(csv_path: str) -> dict[str, float]:
     return dict(zip(df["Index"].astype(str), df["Value"].astype(float)))
 
 
+def _base_reaction_id(reaction_id: str) -> str:
+    """Strip kinGEMs irreversible ``_reverse`` suffix if present."""
+    if reaction_id.endswith("_reverse"):
+        return reaction_id[: -len("_reverse")]
+    return reaction_id
+
+
 def _net_flux(flux_map: dict[str, float], reaction_id: str) -> float:
     """Net flux for a reaction, supporting signed or forward/_reverse split CSVs."""
     if reaction_id is None:
         return 0.0
-    fwd = float(flux_map.get(reaction_id, 0.0))
-    rev = float(flux_map.get(f"{reaction_id}_reverse", 0.0))
+    base = _base_reaction_id(reaction_id)
+    fwd = float(flux_map.get(base, 0.0))
+    rev = float(flux_map.get(f"{base}_reverse", 0.0))
     return fwd - rev
 
 
@@ -5150,10 +5158,11 @@ def _reaction_nadph_rate(
     nadph_metabolite_id: str = "s_1212",
 ) -> float:
     """NADPH consumed (positive) or produced (negative) by one reaction."""
-    if reaction_id not in model.reactions:
+    base_id = _base_reaction_id(reaction_id)
+    if base_id not in model.reactions:
         return 0.0
     nadph = model.metabolites.get_by_id(nadph_metabolite_id)
-    rxn = model.reactions.get_by_id(reaction_id)
+    rxn = model.reactions.get_by_id(base_id)
     if nadph not in rxn.metabolites:
         return 0.0
     return -rxn.metabolites[nadph] * _net_flux(flux_map, reaction_id)
@@ -5175,6 +5184,7 @@ def plot_r_toruloides_case_study(
     xexp_subs_uptake: float,
     xlim_subs_uptake: float,
     model_path: str | None = None,
+    model=None,
     output_path: str | None = None,
     figsize: tuple[float, float] = (14, 5.5),
     nadph_metabolite_id: str = "s_1212",
@@ -5202,9 +5212,13 @@ def plot_r_toruloides_case_study(
     *_subs_uptake : float
         Condition-specific substrate uptake rates (mmol/gDW/h).
     model_path : str, optional
-        SBML model used for cytosolic NADPH stoichiometry (Panel A).
-        Required for % of *total* NADPH; without it, percentages are
-        relative to GDH1 + FAS only.
+        SBML used for NADPH plot (Panel A) when ``model``
+        is not passed. Required for % of *total* NADPH; without a model,
+        percentages are relative to GDH1 + FAS only.
+    model : cobra.Model, optional
+        Already-loaded (optionally edited) model. Takes precedence over
+        ``model_path``. Keep this reversible: irreversible ``_reverse``
+        copies would double-count NADPH.
     output_path : str, optional
         Path to save the figure.
     figsize : tuple, optional
@@ -5238,8 +5252,7 @@ def plot_r_toruloides_case_study(
     }
     flux_maps = {key: _load_flux_map(path) for key, path in flux_paths.items()}
 
-    model = None
-    if model_path:
+    if model is None and model_path:
         import cobra
 
         model = cobra.io.read_sbml_model(model_path)

@@ -1,19 +1,23 @@
 """Plot figures for the case study for R toruloides."""
 
+import json
 import os
 
+import cobra
+
+from kinGEMs.modeling.tuning import apply_model_edits
 from kinGEMs.plots import plot_r_toruloides_case_study
 
 
 #-------Baseline experiments using high enzyme upper bound (no sigma and f factors)------
 
 # Glucose experiments
-GEXP_RUN_ID = "rhto_20260813_5945"
-GLIM_RUN_ID = "rhto_20260813_7974"
+GEXP_RUN_ID = "rhto_20260813_3056"
+GLIM_RUN_ID = "rhto_20260813_8023"
 
 # Acetate experiments
-AEXP_RUN_ID = "rhto_20260813_8375"
-ALIM_RUN_ID = "rhto_20260813_8604"
+AEXP_RUN_ID = "rhto_20260813_2496"
+ALIM_RUN_ID = "rhto_20260813_2575"
 
 # Xylose experiments
 XEXP_RUN_ID = "rhto_20260813_5682"
@@ -30,8 +34,10 @@ OUTPUT_PATH = os.path.join(PROJECT_ROOT, "results/figures/r_toruloides_case_stud
 
 RESULTS_ROOT = os.path.join(PROJECT_ROOT, "results/tuning_results")
 
-# SBML used for cytosolic NADPH stoichiometry (Panel A)
+# Stock rhto-GEM (reversible). Xylose DAD/RK reactions are added from the
+# xylose config's model_edits. Do not convert to irreversible here.
 MODEL_PATH = os.path.join(PROJECT_ROOT, "data/raw/rhto.xml")
+XY_CONFIG_PATH = os.path.join(PROJECT_ROOT, "configs/r_toruloides_xy_exp.json")
 
 # Input arguments:
 # csv with fluxes and enzyme concentrations
@@ -52,18 +58,27 @@ panel_a_reactions = {
 }
 
 # Pathway markers for Panel B (flux / substrate uptake).
-# DAD4/DAD2 ≈ arabinitol 4-DH / L-xylulose reductase (RK not in base rhto-GEM).
 panel_b_reactions = {
-    "Glucose_XPK": "t_0081", # ACL = ATP-citrate lyase;
-    "Glucose_PTA": "t_0082", 
+    "Glucose_XPK": "t_0081",
+    "Glucose_PTA": "t_0082",
     "Glucose_ACL": "y200003",
     "Acetate_ICL": "r_0662",
     "Acetate_MLS": "r_0716",
-    "Acetate_ME": "t_0027", # ME = cytosolic NADP malic enzyme;
-    "Xylose_DAD4": "t_0881",
-    "Xylose_DAD2": "t_0882",
-    "Xylose_XK": "r_1094",
+    "Acetate_ME": "t_0027",  # cytosolic NADP malic enzyme
+    "Xylose_DAD4": "t_0883",  # D-arabinitol 4-DH (D-xylulose → D-arabinitol)
+    "Xylose_DAD2": "t_0884",  # DAD-2 / D-ribulose reductase (net: arabinitol → ribulose)
+    "Xylose_RK": "t_0885",    # D-ribulokinase (D-ribulose → Ru5P); XK r_1094 is knocked out
 }
+
+
+def load_edited_rhto_model(model_path, config_path):
+    """Load stock rhto-GEM and apply xylose-pathway edits from the config."""
+    with open(config_path) as fh:
+        edits = json.load(fh).get("model_edits")
+    model = cobra.io.read_sbml_model(model_path)
+    if edits:
+        apply_model_edits(model, edits, verbose=False)
+    return model
 
 GEXP_SUBS_UPTAKE = 2.489
 GLIM_SUBS_UPTAKE = 0.41
@@ -73,6 +88,7 @@ AEXP_SUBS_UPTAKE = 1.86
 ALIM_SUBS_UPTAKE = 0.43
 
 if __name__ == "__main__":
+    rhto_model = load_edited_rhto_model(MODEL_PATH, XY_CONFIG_PATH)
     plot_r_toruloides_case_study(
         gexp_path=GEXP_PATH,
         glim_path=GLIM_PATH,
@@ -88,7 +104,7 @@ if __name__ == "__main__":
         alim_subs_uptake=ALIM_SUBS_UPTAKE,
         xexp_subs_uptake=XEXP_SUBS_UPTAKE,
         xlim_subs_uptake=XLIM_SUBS_UPTAKE,
-        model_path=MODEL_PATH,
+        model=rhto_model,
         output_path=OUTPUT_PATH,
         show=False,
     )
