@@ -109,6 +109,12 @@ def apply_medium_to_model(model, medium, medium_upper_bound=False, verbose=False
     instead of relying on the single global ``medium_upper_bound`` flag (which
     forced *every* entry to be either one-sided or fully fixed — the latter turning
     a "-1000 = unlimited" sentinel into a forced uptake of exactly 1000).
+
+    If ``{rxn_id}_reverse`` exists (kinGEMs irreversible split), signed yeast-GEM
+    bounds are translated onto the pair instead of being written back onto the
+    forward copy: secretion on the forward reaction, uptake on ``_reverse``.
+    Blocking ``[0, 0]`` therefore zeros both copies and closes the glucose-leak
+    path through ``r_1714_reverse``.
     """
     if not medium:
         return
@@ -131,9 +137,29 @@ def apply_medium_to_model(model, medium, medium_upper_bound=False, verbose=False
 
         if lb > ub:
             lb, ub = ub, lb  # guard against inverted bounds
-        rxn.bounds = (lb, ub)
-        if verbose:
-            print(f"  Set {rxn_id}: bounds=({lb}, {ub})")
+
+        reverse_id = f"{rxn_id}_reverse"
+        if reverse_id in model.reactions:
+            # Signed convention: negative = uptake, positive = secretion.
+            # Do not re-apply signed bounds on an already-split forward copy.
+            secretion_lb = max(0.0, lb)
+            secretion_ub = max(0.0, ub)
+            uptake_lb = max(0.0, -ub)
+            uptake_ub = max(0.0, -lb)
+            if secretion_lb > secretion_ub:
+                secretion_lb, secretion_ub = secretion_ub, secretion_lb
+            if uptake_lb > uptake_ub:
+                uptake_lb, uptake_ub = uptake_ub, uptake_lb
+            rxn.bounds = (secretion_lb, secretion_ub)
+            rev = model.reactions.get_by_id(reverse_id)
+            rev.bounds = (uptake_lb, uptake_ub)
+            if verbose:
+                print(f"  Set {rxn_id}: bounds=({secretion_lb}, {secretion_ub})")
+                print(f"  Set {reverse_id}: bounds=({uptake_lb}, {uptake_ub})")
+        else:
+            rxn.bounds = (lb, ub)
+            if verbose:
+                print(f"  Set {rxn_id}: bounds=({lb}, {ub})")
 
 
 def run_optimization(
