@@ -38,8 +38,10 @@
     "_comment_chunk_size": "Number of reactions per task. null = auto-calculate. Larger = less overhead but less load balanc`ing"
   },
   "medium": {
-    "r_1718": [-1.86, 0],
+    "r_1718": [-1.86, -1.86],
     "r_1714": [0, 0],
+    "r_1634": [0, 0],
+    "r_1808": [0, 0],
     "r_1992": [-2.678, 0],
     "r_1672": [0, 2.845],
     "r_2091": [0, 0],
@@ -47,7 +49,7 @@
     "r_2104": [0, 0.223],
     "r_4340": [0, 0.367]
   },
-  "_comment_medium": "Per-reaction [lb, ub] (exchange sign: uptake negative, secretion positive). r_1718=xylose max uptake; r_1714=block glucose; r_1992=O2 max uptake; r_1672=CO2 secretion; r_2104=xylitol secretion; r_4340=D-arabinitol secretion (added by model_edits); r_2091=block urea; r_1654=ammonium uptake.",
+  "_comment_medium": "Signed [lb, ub]: negative=uptake, positive=secretion. r_1718=FIX xylose uptake at the measured rate (do not leave ub=0 or the solver can take zero xylose). r_1714/r_1634/r_1808=block glucose, acetate, glycerol (default r_1714 lb is -1, which becomes r_1714_reverse ub=1 after the irreversible split). r_1992=O2 cap; r_1672=CO2 secretion; r_2104=xylitol secretion; r_4340=D-arabinitol secretion; r_2091=block urea; r_1654=ammonium.",
   "medium_upper_bound": false,
 
   "model_edits": {

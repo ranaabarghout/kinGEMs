@@ -38,14 +38,17 @@
     "_comment_chunk_size": "Number of reactions per task. null = auto-calculate. Larger = less overhead but less load balancing"
   },
   "medium": {
-    "r_1634": [-1.9706, 0],
+    "r_1634": [-1.9706, -1.9706],
+    "r_1714": [0, 0],
+    "r_1718": [0, 0],
+    "r_1808": [0, 0],
     "r_1992": [-2.265, 0],
     "r_1672": [0, 2.229],
     "r_1687": [-0.043, 0],
     "r_2091": [0, 0],
     "r_1654": [-1000, 0]
   },
-  "_comment_medium": "Per-reaction [lb, ub] (exchange sign: uptake negative, secretion positive). r_1714=glucose max uptake; r_1992=O2 max uptake; r_1672/r_1808=free CO2/glycerol secretion; r_2091=urea unlimited uptake; r_1654=block ammonium so N comes from urea.",
+  "_comment_medium": "Signed [lb, ub]: negative=uptake, positive=secretion. r_1634=FIX acetate uptake at the measured rate. r_1714/r_1718/r_1808=block glucose, xylose, glycerol. r_1687=[-0.043, 0] as in Rekena (citrate exchange; after irreversible split this is uptake on r_1687_reverse). r_1992=O2 cap; r_1672=CO2 secretion; r_2091=block urea; r_1654=ammonium.",
   "medium_upper_bound": false,
 
   "biomass_composition": {

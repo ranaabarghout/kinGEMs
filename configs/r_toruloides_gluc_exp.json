@@ -38,14 +38,16 @@
     "_comment_chunk_size": "Number of reactions per task. null = auto-calculate. Larger = less overhead but less load balancing"
   },
   "medium": {
-    "r_1714": [-2.489, 0],
+    "r_1714": [-2.489, -2.489],
+    "r_1718": [0, 0],
+    "r_1634": [0, 0],
     "r_1992": [-5.6, 0],
     "r_1672": [0, 7.3],
     "r_1808": [0, 0.049],
     "r_2091": [-1000, 0],
     "r_1654": [0, 0]
   },
-  "_comment_medium": "Per-reaction [lb, ub] (exchange sign: uptake negative, secretion positive). r_1714=glucose max uptake; r_1992=O2 max uptake; r_1672/r_1808=free CO2/glycerol secretion; r_2091=urea unlimited uptake; r_1654=block ammonium so N comes from urea.",
+  "_comment_medium": "Signed [lb, ub]: negative=uptake, positive=secretion. r_1714=FIX glucose uptake at the measured rate. r_1718/r_1634=block xylose and acetate. r_1992=O2 cap; r_1672=CO2 secretion; r_1808=glycerol secretion; r_2091=urea; r_1654=block ammonium.",
   "medium_upper_bound": false,
 
   "biomass_composition": {
