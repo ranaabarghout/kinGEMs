@@ -2,8 +2,8 @@
   "model_name": "rhto",
   "organism": "R toruloides",
   "biomass_reaction": "r_2111",
-  "enzyme_upper_bound": 0.636,
-  "_comment_enzyme_upper_bound": "Enzyme pool (g enzyme/gDW) = Ptot * f * sigma",
+  "enzyme_upper_bound": 0.08,
+  "_comment_enzyme_upper_bound": "Enzyme pool (g enzyme/gDW) = Ptot * f * sigma = 0.08",
   "solver": "glpk",
   "enable_fva": false,
   "enable_biolog_validation": false,
@@ -11,6 +11,20 @@
   "ngam_rxn_id": "r_4046",
   "gam_reaction": "r_4041",
   "_comment_gam_reaction": "Reaction carrying the GAM ATP cost. In rhto/yeast-GEM this is the biomass pseudoreaction r_4041, not the growth objective r_2111.",
+
+  "kcat_value": "kcat_max",
+
+  "ngam": 3.65,
+  "gam": 130.0,
+  "apply_maintenance_before_ecfba": true,
+  "_comment_maintenance": "Apply experimental NGAM/GAM before enzyme-constrained FBA. Sweep is post-hoc sensitivity only.",
+
+  "pool_bootstrap": {
+    "hi_pool": 0.25,
+    "search_iterations": 8,
+    "stage1_chunk_iterations": 10,
+    "stage1_max_rounds": 15
+  },
 
   "fva": {
     "parallel": true,

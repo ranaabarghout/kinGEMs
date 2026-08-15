@@ -12,6 +12,21 @@
   "gam_reaction": "r_4041",
   "_comment_gam_reaction": "Reaction carrying the GAM ATP cost. In rhto/yeast-GEM this is the biomass pseudoreaction r_4041, not the growth objective r_2111.",
 
+  "kcat_value": "kcat_max",
+  "_comment_kcat_value": "Initial kcat column: kcat_mean | kcat_min | kcat_max (CPI-Pred fold stats).",
+
+  "ngam": 3.65,
+  "gam": 130.0,
+  "apply_maintenance_before_ecfba": true,
+  "_comment_maintenance": "Apply experimental NGAM/GAM before enzyme-constrained FBA. Sweep is post-hoc sensitivity only.",
+
+  "pool_bootstrap": {
+    "hi_pool": 0.25,
+    "search_iterations": 8,
+    "stage1_chunk_iterations": 10,
+    "stage1_max_rounds": 15
+  },
+
   "fva": {
     "parallel": true,
     "workers": 4,

@@ -20,7 +20,7 @@ import pandas as pd
 from ..config import ensure_dir_exists
 from ..dataset import annotate_model_with_kcat_and_gpr
 from ..plots import plot_annealing_progress
-from .optimize import run_optimization_with_dataframe
+from .optimize import resolve_kcat_column, run_optimization_with_dataframe
 
 warnings.filterwarnings('ignore')
 import logging
@@ -485,14 +485,17 @@ def simulated_annealing(
     medium=None,
     medium_upper_bound=False,
     edit_ngam=False,
-    ngam_rxn_id='ATPM'
+    ngam_rxn_id='ATPM',
+    kcat_col=None,
+    solver_name='glpk',
+    stop_at_goal=True,
 ):
     """
     Use simulated annealing to tune kcat values for improved biomass production.
 
-    This function preserves original kcat_mean values for proper neighbor calculation
-    and creates a kcat_updated column to track tuned values. The optimization function
-    automatically uses kcat_updated when available.
+    Origin kcats come from ``kcat_col`` (default ``kcat_mean``). Neighbor bounds
+    stay relative to that origin. Tuned values are written to ``kcat_updated``,
+    which the optimizer prefers when present.
 
     Parameters
     ----------
@@ -530,12 +533,24 @@ def simulated_annealing(
         Growth medium composition
     medium_upper_bound : bool or float, optional
         Upper bound for medium exchanges (default: False)
+    kcat_col : str, optional
+        Column used as the origin kcat (e.g. 'kcat_mean', 'kcat_max').
+        Neighbor bounds stay relative to this origin. Tuned values live in
+        'kcat_updated'. If None, uses kcat_mean when present.
+    solver_name : str, optional
+        Pyomo solver name (default: 'glpk')
+    stop_at_goal : bool, optional
+        If True (default), stop when biomass reaches ``objective_value``.
+        Set False during pool bootstrap so kcats keep increasing.
 
     Returns
     -------
     tuple
         (kcat_dict, top_targets, best_df, iterations, biomasses, df_FBA)
     """
+    origin_col = kcat_col if (kcat_col and kcat_col in processed_data.columns) else 'kcat_mean'
+    if origin_col not in processed_data.columns:
+        origin_col = resolve_kcat_column(processed_data, kcat_col=kcat_col)
 
     def acceptance_probability(old_biomass, new_biomass, temperature):
         # For MAXIMIZATION: always accept if new > old, probabilistically accept if new < old
@@ -588,7 +603,7 @@ def simulated_annealing(
         # Preserve original kcat_mean and kcat_std - only update kcat_updated column
         # Create kcat_updated column if it doesn't exist
         if 'kcat_updated' not in updated_df.columns:
-            updated_df['kcat_updated'] = updated_df['kcat_mean'].copy()
+            updated_df['kcat_updated'] = updated_df[origin_col].copy()
 
         # Get old value for debug output
         old_value = updated_df.loc[cond, 'kcat_updated'].iloc[0] if cond.sum() > 0 else None
@@ -640,7 +655,9 @@ def simulated_annealing(
         medium=medium,
         medium_upper_bound=medium_upper_bound,
         edit_ngam=edit_ngam,
-        ngam_rxn_id=ngam_rxn_id
+        ngam_rxn_id=ngam_rxn_id,
+        kcat_col=origin_col,
+        solver_name=solver_name,
     )
 
     # Check if initial optimization failed
@@ -657,13 +674,17 @@ def simulated_annealing(
     enzyme_df['enzyme_mass'] = enzyme_df['Value'] * enzyme_df['MW'] * 1e-3
 
     top_n = enzyme_df.nlargest(n_top_enzymes, 'enzyme_mass')
-    top_targets = (
-        top_n[['Index','enzyme_mass']]
-        .rename(columns={'Index':'Single_gene'})
+    keep_cols = ['Reactions', 'Single_gene', 'enzyme_mass', origin_col]
+    if 'kcat_std' in processed_data.columns:
+        keep_cols.append('kcat_std')
+    if 'kcat_updated' in processed_data.columns and 'kcat_updated' not in keep_cols:
+        keep_cols.append('kcat_updated')
+    merged = (
+        top_n[['Index', 'enzyme_mass']]
+        .rename(columns={'Index': 'Single_gene'})
         .merge(processed_data, on='Single_gene')
-        [['Reactions','Single_gene','enzyme_mass','kcat_mean','kcat_std']]
-        .reset_index(drop=True)
     )
+    top_targets = merged[[c for c in keep_cols if c in merged.columns]].reset_index(drop=True)
 
     # Check for duplicates BEFORE deduplication
     duplicates = top_targets.duplicated(subset=['Reactions', 'Single_gene'], keep=False)
@@ -676,28 +697,26 @@ def simulated_annealing(
         for idx, row in top_targets.head(5).iterrows():
             print(f"    {row['Reactions']:15s} {row['Single_gene']:10s} mass={row['enzyme_mass']:.4f}")
 
-    # print(f"\n[ANNEALING DEBUG] Top 5 target enzymes:")
-    # print(top_targets.head()[['Reactions', 'Single_gene', 'enzyme_mass', 'kcat_mean']])
-    # print(f"[ANNEALING DEBUG] Total targets: {len(top_targets)}")
-
-    # Verify these reactions/genes exist in processed_data
-    for idx, row in top_targets.head(3).iterrows():
-        rxn, gene = row['Reactions'], row['Single_gene']
-        matches = processed_data[(processed_data['Reactions']==rxn) & (processed_data['Single_gene']==gene)]
-        # print(f"[DEBUG] {rxn}_{gene}: found {len(matches)} matches in processed_data, kcat_mean={matches['kcat_mean'].iloc[0] if len(matches)>0 else 'NOT FOUND'}")
-
     largest_rxn_id  = top_targets['Reactions'].tolist()
     largest_gene_id = top_targets['Single_gene'].tolist()
-    # Keep original kcat_mean values for neighbor calculation (never changes)
-    original_kcats = top_targets['kcat_mean'].tolist()
-    # Track current tuned values (starts same as original, gets updated)
-    current_solution = top_targets['kcat_mean'].tolist()
-    stds             = top_targets['kcat_std'].fillna(0.1).tolist()
+    if not largest_rxn_id:
+        print("⚠️  ERROR: No enzyme targets found after ranking by mass.")
+        return {}, top_targets, processed_data, [0], [biomass if biomass else 0.0], df_FBA
+    # Origin kcats for neighbor bounds (never changes)
+    original_kcats = top_targets[origin_col].tolist()
+    # Current tuned values: resume from kcat_updated when continuing a bootstrap round
+    if 'kcat_updated' in top_targets.columns:
+        current_solution = top_targets['kcat_updated'].fillna(top_targets[origin_col]).tolist()
+    else:
+        current_solution = top_targets[origin_col].tolist()
+    if 'kcat_std' in top_targets.columns:
+        stds = top_targets['kcat_std'].fillna(0.1).tolist()
+    else:
+        stds = [0.1] * len(top_targets)
 
     df_new = processed_data.copy()
-    # Initialize kcat_updated column with original kcat_mean values
     if 'kcat_updated' not in df_new.columns:
-        df_new['kcat_updated'] = df_new['kcat_mean'].copy()
+        df_new['kcat_updated'] = df_new[origin_col].copy()
 
     current_biomass = biomass
     best_solution   = current_solution[:]
@@ -712,7 +731,7 @@ def simulated_annealing(
     # ANNEALING
     while (temperature > min_temperature
            and iteration < max_iterations
-           and current_biomass < objective_value):
+           and (not stop_at_goal or current_biomass < objective_value)):
         if verbose:
             print(f"\n--- Iteration {iteration} ---")
             print(f"Current biomass = {current_biomass:.6e}")
@@ -785,7 +804,9 @@ def simulated_annealing(
             medium=medium,
             medium_upper_bound=medium_upper_bound,
             edit_ngam=edit_ngam,
-            ngam_rxn_id=ngam_rxn_id
+            ngam_rxn_id=ngam_rxn_id,
+            kcat_col=origin_col,
+            solver_name=solver_name,
         )
 
         # Handle optimization failures
@@ -897,6 +918,290 @@ def simulated_annealing(
         )
 
     return kcat_dict, top_targets, best_df, iterations, biomasses, df_FBA
+
+
+def _try_ecfba_pool(
+    model,
+    processed_df,
+    biomass_reaction,
+    pool,
+    kcat_col=None,
+    medium=None,
+    medium_upper_bound=False,
+    solver_name='glpk',
+):
+    """Run one enzyme-constrained FBA; return (biomass, df_FBA, gene_seq, feasible)."""
+    result = run_optimization_with_dataframe(
+        model=model,
+        processed_df=processed_df,
+        objective_reaction=biomass_reaction,
+        enzyme_upper_bound=pool,
+        output_dir=None,
+        save_results=False,
+        verbose=False,
+        medium=medium,
+        medium_upper_bound=medium_upper_bound,
+        kcat_col=kcat_col,
+        solver_name=solver_name,
+    )
+    if not isinstance(result, tuple) or len(result) < 3:
+        return None, pd.DataFrame(), {}, False
+    biomass, df_FBA, gene_seq = result[0], result[1], result[2]
+    feasible = biomass is not None and biomass > 0
+    return biomass, df_FBA, gene_seq or {}, feasible
+
+
+def find_min_feasible_pool(
+    model,
+    processed_df,
+    biomass_reaction,
+    target_pool,
+    hi_pool=1.0,
+    kcat_col=None,
+    medium=None,
+    medium_upper_bound=False,
+    solver_name='glpk',
+    n_iter=8,
+    skip_target=False,
+    log=print,
+):
+    """Binary-search the smallest enzyme pool in [target_pool, hi] with biomass > 0.
+
+    Returns
+    -------
+    (seed_pool, biomass, df_FBA, gene_seq)
+        seed_pool is None if even hi_pool is infeasible.
+    """
+    if not skip_target:
+        sol, df_FBA, gene_seq, feasible = _try_ecfba_pool(
+            model, processed_df, biomass_reaction, target_pool,
+            kcat_col=kcat_col, medium=medium, medium_upper_bound=medium_upper_bound,
+            solver_name=solver_name,
+        )
+        if feasible:
+            log(f"    pool={target_pool:.5f} -> feasible {sol:.4f}")
+            return target_pool, sol, df_FBA, gene_seq
+        log(f"    pool={target_pool:.5f} -> infeasible")
+    else:
+        log(f"    pool={target_pool:.5f} -> infeasible (already tested)")
+    hi = max(float(hi_pool), float(target_pool))
+    expand_candidates = [0.25, 0.5, 1.0]
+    sol_hi, df_hi, gene_hi, ok_hi = _try_ecfba_pool(
+        model, processed_df, biomass_reaction, hi,
+        kcat_col=kcat_col, medium=medium, medium_upper_bound=medium_upper_bound,
+        solver_name=solver_name,
+    )
+    log(f"    pool={hi:.5f} -> {'feasible ' + f'{sol_hi:.4f}' if ok_hi else 'infeasible'}")
+    if not ok_hi:
+        for cand in expand_candidates:
+            if cand <= hi + 1e-12:
+                continue
+            hi = cand
+            sol_hi, df_hi, gene_hi, ok_hi = _try_ecfba_pool(
+                model, processed_df, biomass_reaction, hi,
+                kcat_col=kcat_col, medium=medium, medium_upper_bound=medium_upper_bound,
+                solver_name=solver_name,
+            )
+            log(f"    pool={hi:.5f} -> {'feasible ' + f'{sol_hi:.4f}' if ok_hi else 'infeasible'}")
+            if ok_hi:
+                break
+        if not ok_hi:
+            return None, None, pd.DataFrame(), {}
+
+    lo = float(target_pool)
+    best_pool, best_sol, best_df, best_gs = hi, sol_hi, df_hi, gene_hi
+    for _ in range(int(n_iter)):
+        mid = (lo + hi) / 2.0
+        sol, df, gs, ok = _try_ecfba_pool(
+            model, processed_df, biomass_reaction, mid,
+            kcat_col=kcat_col, medium=medium, medium_upper_bound=medium_upper_bound,
+            solver_name=solver_name,
+        )
+        log(f"    pool={mid:.5f} -> {'feasible ' + f'{sol:.4f}' if ok else 'infeasible'}")
+        if ok:
+            best_pool, best_sol, best_df, best_gs = mid, sol, df, gs
+            hi = mid
+        else:
+            lo = mid
+    return best_pool, best_sol, best_df, best_gs
+
+
+def anneal_with_pool_bootstrap(
+    model,
+    processed_data,
+    biomass_reaction,
+    objective_value,
+    gene_sequences_dict,
+    target_pool,
+    output_dir=None,
+    kcat_col=None,
+    medium=None,
+    medium_upper_bound=False,
+    solver_name='glpk',
+    n_top_enzymes=65,
+    temperature=1.0,
+    cooling_rate=0.95,
+    min_temperature=0.01,
+    max_iterations=100,
+    max_unchanged_iterations=5,
+    change_threshold=0.001,
+    verbose=False,
+    hi_pool=0.25,
+    search_iterations=8,
+    stage1_chunk_iterations=10,
+    stage1_max_rounds=15,
+    log=print,
+    initial_biomass=None,
+):
+    """Run SA at ``target_pool``, bootstrapping from a larger pool if needed.
+
+    When ecFBA at the experimental pool is infeasible:
+      1. binary-search a seed pool that yields biomass > 0
+      2. anneal at that seed (without stopping at biomass_goal) until a
+         re-solve at ``target_pool`` becomes feasible
+      3. continue SA at ``target_pool`` until ``objective_value``
+    """
+    empty = ({}, pd.DataFrame(), processed_data, [0], [0.0], pd.DataFrame())
+
+    if initial_biomass is not None:
+        sol = initial_biomass
+        feasible = sol is not None and sol > 0
+        gene_seq = gene_sequences_dict or {}
+        df_FBA = pd.DataFrame()
+    else:
+        sol, df_FBA, gene_seq, feasible = _try_ecfba_pool(
+            model, processed_data, biomass_reaction, target_pool,
+            kcat_col=kcat_col, medium=medium, medium_upper_bound=medium_upper_bound,
+            solver_name=solver_name,
+        )
+    gs = gene_sequences_dict or gene_seq
+    if not gs and 'Single_gene' in processed_data.columns and 'SEQ' in processed_data.columns:
+        gs = processed_data.dropna(subset=['SEQ']).groupby('Single_gene')['SEQ'].first().to_dict()
+
+    sa_kwargs = dict(
+        model=model,
+        biomass_reaction=biomass_reaction,
+        gene_sequences_dict=gs,
+        output_dir=output_dir,
+        n_top_enzymes=n_top_enzymes,
+        temperature=temperature,
+        cooling_rate=cooling_rate,
+        min_temperature=min_temperature,
+        change_threshold=change_threshold,
+        verbose=verbose,
+        medium=medium,
+        medium_upper_bound=medium_upper_bound,
+        kcat_col=kcat_col,
+        solver_name=solver_name,
+    )
+    sa_kwargs_stage1 = dict(sa_kwargs)
+    sa_kwargs_stage1['output_dir'] = None
+
+    if feasible:
+        log(f"  Target pool {target_pool:.5f} feasible (biomass={sol:.4f}); annealing in place")
+        return simulated_annealing(
+            processed_data=processed_data,
+            objective_value=objective_value,
+            enzyme_fraction=target_pool,
+            max_iterations=max_iterations,
+            max_unchanged_iterations=max_unchanged_iterations,
+            stop_at_goal=True,
+            **sa_kwargs,
+        )
+
+    log(f"  Target pool {target_pool:.5f} infeasible; searching for a seed pool...")
+    # Prefer a comfortably feasible pool (hi_pool) as the SA seed. The
+    # *minimum* feasible pool sits on a near-zero growth cliff and is a poor
+    # starting point for annealing. Still log the min-feasible diagnostic.
+    seed_pool, seed_sol, seed_df, seed_gs = None, None, pd.DataFrame(), {}
+    hi = max(float(hi_pool), float(target_pool))
+    sol_hi, df_hi, gs_hi, ok_hi = _try_ecfba_pool(
+        model, processed_data, biomass_reaction, hi,
+        kcat_col=kcat_col, medium=medium, medium_upper_bound=medium_upper_bound,
+        solver_name=solver_name,
+    )
+    if ok_hi:
+        seed_pool, seed_sol, seed_df, seed_gs = hi, sol_hi, df_hi, gs_hi
+        log(f"    pool={hi:.5f} -> feasible {sol_hi:.4f} (using as SA seed)")
+    else:
+        log(f"    pool={hi:.5f} -> infeasible; expanding search")
+        seed_pool, seed_sol, seed_df, seed_gs = find_min_feasible_pool(
+            model=model,
+            processed_df=processed_data,
+            biomass_reaction=biomass_reaction,
+            target_pool=target_pool,
+            hi_pool=hi,
+            kcat_col=kcat_col,
+            medium=medium,
+            medium_upper_bound=medium_upper_bound,
+            solver_name=solver_name,
+            n_iter=search_iterations,
+            skip_target=True,
+            log=log,
+        )
+    if seed_pool is None:
+        log("  ERROR: No feasible enzyme pool found (tried up to hi_pool). Cannot bootstrap SA.")
+        return empty
+
+    gs = gs or seed_gs
+    sa_kwargs['gene_sequences_dict'] = gs
+    log(f"  Seed pool: {seed_pool:.5f} (biomass={seed_sol:.4f})")
+
+    df_work = processed_data.copy()
+    all_iters = [0]
+    all_biomasses = [seed_sol]
+    kcat_dict, top_targets, df_FBA = {}, pd.DataFrame(), seed_df
+    iter_offset = 0
+    ok_t = False
+    sol_t = None
+
+    for rnd in range(int(stage1_max_rounds)):
+        log(f"  Bootstrap round {rnd + 1}/{stage1_max_rounds}: SA at seed pool {seed_pool:.5f}")
+        kcat_dict, top_targets, df_work, iters, biomasses, df_FBA = simulated_annealing(
+            processed_data=df_work,
+            objective_value=1e9,
+            enzyme_fraction=seed_pool,
+            max_iterations=int(stage1_chunk_iterations),
+            max_unchanged_iterations=int(stage1_chunk_iterations),
+            stop_at_goal=False,
+            **sa_kwargs_stage1,
+        )
+        shifted = [i + iter_offset for i in iters]
+        all_iters.extend(shifted[1:] if shifted else [])
+        all_biomasses.extend(biomasses[1:] if biomasses else [])
+        iter_offset += (iters[-1] if iters else 0)
+
+        sol_t, df_t, gs_t, ok_t = _try_ecfba_pool(
+            model, df_work, biomass_reaction, target_pool,
+            kcat_col=kcat_col, medium=medium, medium_upper_bound=medium_upper_bound,
+            solver_name=solver_name,
+        )
+        if ok_t:
+            log(f"  Target pool feasible after bootstrap round {rnd + 1}: biomass={sol_t:.4f}")
+            df_FBA = df_t
+            gs = gs or gs_t
+            break
+        log(f"    Target pool still infeasible after round {rnd + 1} (seed biomass={biomasses[-1] if biomasses else 0:.4f})")
+
+    if not ok_t:
+        log("  WARNING: target pool still infeasible after bootstrap; returning seed-pool result")
+        return kcat_dict, top_targets, df_work, all_iters, all_biomasses, df_FBA
+
+    sa_kwargs['gene_sequences_dict'] = gs or sa_kwargs['gene_sequences_dict']
+    log(f"  Stage 2: annealing at target pool {target_pool:.5f} toward biomass_goal={objective_value:.4f}")
+    kcat_dict, top_targets, df_new, iters, biomasses, df_FBA = simulated_annealing(
+        processed_data=df_work,
+        objective_value=objective_value,
+        enzyme_fraction=target_pool,
+        max_iterations=max_iterations,
+        max_unchanged_iterations=max_unchanged_iterations,
+        stop_at_goal=True,
+        **sa_kwargs,
+    )
+    # Report progression at the experimental pool, not the seed pool.
+    all_iters = list(iters) if iters else [0]
+    all_biomasses = list(biomasses) if biomasses else [sol_t or 0.0]
+    return kcat_dict, top_targets, df_new, all_iters, all_biomasses, df_FBA
 
 
 def sweep_maintenance_parameters(

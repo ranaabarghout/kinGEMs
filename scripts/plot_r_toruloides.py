@@ -12,16 +12,16 @@ from kinGEMs.plots import plot_r_toruloides_case_study
 #-------Baseline experiments using high enzyme upper bound (no sigma and f factors)------
 
 # Glucose experiments
-GEXP_RUN_ID = "rhto_20260813_3056"
-GLIM_RUN_ID = "rhto_20260813_8023"
+GEXP_RUN_ID = "rhto_20260814_1440"
+GLIM_RUN_ID = "rhto_20260814_5840"
 
 # Acetate experiments
-AEXP_RUN_ID = "rhto_20260813_2496"
-ALIM_RUN_ID = "rhto_20260813_2575"
+AEXP_RUN_ID = "rhto_20260814_4348"
+ALIM_RUN_ID = "rhto_20260814_9995"
 
 # Xylose experiments
-XEXP_RUN_ID = "rhto_20260813_5682"
-XLIM_RUN_ID = "rhto_20260813_3923"
+XEXP_RUN_ID = "rhto_20260814_4023"
+XLIM_RUN_ID = "rhto_20260814_3869"
 
 #-------Experiments using sigma and f factors------
 

@@ -868,25 +868,50 @@ def create_descriptive_filename(objective_reaction, enzyme_upper_bound, maximiza
         return filename
 
 
+def resolve_kcat_column(processed_df, kcat_col=None):
+    """Pick the kcat column used for enzyme constraints.
+
+    Preference: ``kcat_updated`` (tuned values) > explicit ``kcat_col`` >
+    ``kcat`` > ``kcat_mean``.
+    """
+    if 'kcat_updated' in processed_df.columns:
+        return 'kcat_updated'
+    if kcat_col is not None:
+        if kcat_col not in processed_df.columns:
+            raise ValueError(
+                f"kcat_col '{kcat_col}' not found in processed_df columns: "
+                f"{list(processed_df.columns)}"
+            )
+        return kcat_col
+    if 'kcat' in processed_df.columns:
+        return 'kcat'
+    if 'kcat_mean' in processed_df.columns:
+        return 'kcat_mean'
+    raise ValueError(
+        "No kcat column found (need kcat_updated, kcat_col, kcat, or kcat_mean)"
+    )
+
+
 def run_optimization_with_dataframe(model, processed_df, objective_reaction, objective_coeffs = None,
                     enzyme_upper_bound=0.125, enzyme_ratio=True, maximization=True,
                     multi_enzyme_off=False, isoenzymes_off=False,
                     promiscuous_off=False, complexes_off=False,
                     output_dir=None, save_results=True, print_reaction_conditions=True, verbose=True,
                     solver_name='glpk', medium=None, medium_upper_bound=False, edit_ngam=False, ngam_rxn_id='ATPM',
-                    num_solutions=1, solution_pool_gap=0.0):
+                    num_solutions=1, solution_pool_gap=0.0, kcat_col=None):
     """
     Run enzyme-constrained flux balance analysis using a processed dataframe.
 
     If a reaction has multiple substrates (identified via Reaction_partners or CMPD_SMILES),
-    selects the substrate with the highest average kcat_mean value for that reaction.
+    selects the substrate with the highest average kcat value for that reaction.
 
     Parameters
     ----------
     model : cobra.Model or str
         COBRA model object or path to model file
     processed_df : pandas.DataFrame
-        DataFrame containing Reactions, Single_gene, SEQ, and kcat_mean columns.
+        DataFrame containing Reactions, Single_gene, SEQ, and a kcat column
+        (kcat_mean / kcat_min / kcat_max, or kcat_updated after annealing).
         Optional columns: Reaction_partners, CMPD_SMILES (for substrate selection)
     objective_reaction : str
         Reaction ID to maximize/minimize
@@ -922,6 +947,9 @@ def run_optimization_with_dataframe(model, processed_df, objective_reaction, obj
     solution_pool_gap : float, optional
         Maximum relative gap from optimal objective for alternative solutions (default: 0.0).
         E.g., 0.01 means solutions within 1% of optimal are acceptable.
+    kcat_col : str, optional
+        Column to use as the initial kcat source (e.g. 'kcat_mean', 'kcat_max').
+        Ignored when 'kcat_updated' is present (tuned values take precedence).
 
     Returns
     -------
@@ -931,7 +959,7 @@ def run_optimization_with_dataframe(model, processed_df, objective_reaction, obj
     """
 
     # Check if required columns exist in processed_df
-    required_cols = ['Reactions', 'Single_gene', 'SEQ', 'kcat_mean']
+    required_cols = ['Reactions', 'Single_gene', 'SEQ']
     missing_cols = [col for col in required_cols if col not in processed_df.columns]
     if missing_cols:
         raise ValueError(f"Missing required columns in processed_df: {missing_cols}")
@@ -940,14 +968,9 @@ def run_optimization_with_dataframe(model, processed_df, objective_reaction, obj
     kcat_dict = {}
     gene_sequences_dict = {}
 
-    # Determine which kcat column to use (prefer 'kcat_updated' > 'kcat' > 'kcat_mean')
-    if 'kcat_updated' in processed_df.columns:
-        kcat_col = 'kcat_updated'
-    elif 'kcat' in processed_df.columns:
-        kcat_col = 'kcat'
-    else:
-        kcat_col = 'kcat_mean'
-        print("  [KCAT DEBUG] Using 'kcat_mean' column for optimization")
+    kcat_col = resolve_kcat_column(processed_df, kcat_col=kcat_col)
+    if verbose:
+        print(f"  [KCAT] Using '{kcat_col}' column for optimization")
 
     if verbose:
         # Show some example values to verify which column is being used
