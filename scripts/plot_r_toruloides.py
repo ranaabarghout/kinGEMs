@@ -9,21 +9,18 @@ from kinGEMs.modeling.tuning import apply_model_edits
 from kinGEMs.plots import plot_r_toruloides_case_study
 
 
-#-------Baseline experiments using high enzyme upper bound (no sigma and f factors)------
-
 # Glucose experiments
 GEXP_RUN_ID = "rhto_20260814_1440"
 GLIM_RUN_ID = "rhto_20260814_5840"
 
 # Acetate experiments
-AEXP_RUN_ID = "rhto_20260814_4348"
+AEXP_RUN_ID = "rhto_20260815_6288"
 ALIM_RUN_ID = "rhto_20260814_9995"
 
 # Xylose experiments
 XEXP_RUN_ID = "rhto_20260814_4023"
-XLIM_RUN_ID = "rhto_20260814_3869"
+XLIM_RUN_ID = "rhto_20260815_1563"
 
-#-------Experiments using sigma and f factors------
 
 
 # Project root
@@ -47,7 +44,6 @@ AEXP_PATH = os.path.join(RESULTS_ROOT, AEXP_RUN_ID, "df_FBA.csv")
 ALIM_PATH = os.path.join(RESULTS_ROOT, ALIM_RUN_ID, "df_FBA.csv")
 XEXP_PATH = os.path.join(RESULTS_ROOT, XEXP_RUN_ID, "df_FBA.csv")
 XLIM_PATH = os.path.join(RESULTS_ROOT, XLIM_RUN_ID, "df_FBA.csv")
-
 
 
 panel_a_reactions = {
@@ -80,12 +76,14 @@ def load_edited_rhto_model(model_path, config_path):
         apply_model_edits(model, edits, verbose=False)
     return model
 
+# Measured substrate uptake rates (mmol/gDW/h)
 GEXP_SUBS_UPTAKE = 2.489
 GLIM_SUBS_UPTAKE = 0.41
-XEXP_SUBS_UPTAKE = 6.1
-XLIM_SUBS_UPTAKE = 1.97
-AEXP_SUBS_UPTAKE = 1.86
-ALIM_SUBS_UPTAKE = 0.43
+XEXP_SUBS_UPTAKE = 1.86
+XLIM_SUBS_UPTAKE = 0.4345
+AEXP_SUBS_UPTAKE = 6.1
+ALIM_SUBS_UPTAKE = 1.9706
+
 
 if __name__ == "__main__":
     rhto_model = load_edited_rhto_model(MODEL_PATH, XY_CONFIG_PATH)
