@@ -5573,7 +5573,6 @@ _RHTO_V2_MARKERS = [
     ("PDH", "r_0961", "Acetyl-CoA"),
     ("ICL", "r_0662", "Glyoxylate"),
     ("MLS", "r_0716", "Glyoxylate"),
-    ("ME", "t_0027", "Glyoxylate"),
     ("ACS", "r_0112", "Glyoxylate"),
     ("XR", "r_1093", "Xylose"),
     ("DAD4", "t_0883", "Xylose"),
@@ -5682,7 +5681,7 @@ def plot_r_toruloides_case_study_v2(
     """
     Two-panel case-study figure v2 for *R. toruloides*.
 
-    Panel A — NADPH allocation (GDH1 vs FAS1-2) on glucose and xylose,
+    Panel A — NADPH allocation (GDH1 vs FAS1-2) on glucose only,
     using cytosolic NADPH consumption that excludes reverse-running NADPH
     producers.
 
@@ -5755,14 +5754,10 @@ def plot_r_toruloides_case_study_v2(
     panel_a_keys = [
         ("glucose", "exp"),
         ("glucose", "nlim"),
-        ("xylose", "exp"),
-        ("xylose", "nlim"),
     ]
     panel_a_labels = [
-        "Glucose\nexp",
-        "Glucose\nNlim",
-        "Xylose\nexp",
-        "Xylose\nNlim",
+        "Exponential",
+        "N-limited",
     ]
     gdh_pct, fas_pct = [], []
     gdh_abs, fas_abs = [], []
@@ -5797,7 +5792,7 @@ def plot_r_toruloides_case_study_v2(
 
     # --- Figure --------------------------------------------------------------
     fig, (ax_a, ax_hm) = plt.subplots(
-        1, 2, figsize=figsize, gridspec_kw={"width_ratios": [1.0, 1.65]}
+        1, 2, figsize=figsize, gridspec_kw={"width_ratios": [0.85, 1.8]}
     )
 
     x = np.arange(len(panel_a_labels))
@@ -5812,6 +5807,10 @@ def plot_r_toruloides_case_study_v2(
     )
     ax_a.set_xticks(x)
     ax_a.set_xticklabels(panel_a_labels)
+    ax_a.set_xlabel(
+        "Growth phase (glucose)",
+        fontsize=FONT_SIZES["axis_label"],
+    )
     ax_a.set_ylabel(
         "% of NADPH consumption",
         fontsize=FONT_SIZES["axis_label"],
@@ -5829,7 +5828,6 @@ def plot_r_toruloides_case_study_v2(
     ax_a.grid(True, axis="y", alpha=0.3)
     ax_a.spines["top"].set_visible(False)
     ax_a.spines["right"].set_visible(False)
-    ax_a.axvline(1.5, color="#bbbbbb", linewidth=1.0, linestyle="--", zorder=0)
 
     for bars in (bars_gdh, bars_fas):
         for bar in bars:
@@ -5889,6 +5887,13 @@ def plot_r_toruloides_case_study_v2(
     ax_hm.set_ylabel("")
 
     # Group separators and labels
+    _GROUP_SHORT = {
+        "oxPPP / XPK": "oxPPP/XPK",
+        "Acetyl-CoA": "acetyl-CoA",
+        "Glyoxylate": "glyoxylate",
+        "Xylose": "xylose",
+        "Trade-off": "trade-off",
+    }
     boundaries = []
     idx = 0
     seen = []
@@ -5900,6 +5905,25 @@ def plot_r_toruloides_case_study_v2(
         idx += 1
     for b in boundaries:
         ax_hm.axvline(b, color="#555555", linewidth=1.0, linestyle="-", zorder=3)
+    # Close the last group span for midpoint labels
+    group_spans = []
+    for i, (g, start) in enumerate(seen):
+        end = seen[i + 1][1] if i + 1 < len(seen) else n_cols
+        group_spans.append((g, start, end))
+    for g, start, end in group_spans:
+        mid = 0.5 * (start + end - 1)
+        ax_hm.text(
+            mid,
+            -0.28,
+            _GROUP_SHORT.get(g, g),
+            transform=ax_hm.get_xaxis_transform(),
+            ha="center",
+            va="top",
+            fontsize=FONT_SIZES["annotation"] - 2,
+            fontweight="bold",
+            color="#333333",
+            clip_on=False,
+        )
 
     for i in range(n_rows):
         for j in range(n_cols):
@@ -5929,32 +5953,26 @@ def plot_r_toruloides_case_study_v2(
     if any(leak_flags):
         leak_note = (
             "* glucose uptake via r_1714_reverse > 0.05 mmol/gDW/h. "
-            "Grey = intended substrate unused. "
+            "Grey = intended substrate unused."
         )
-    # ax_hm.text(
-    #     0.0, -0.38,
-    #     leak_note
-    #     + "Measured uptakes (config): "
-    #     + ", ".join(
-    #         f"{lab} {measured_uptake[(src, ph)]:.3g}"
-    #         for lab, src, ph, _ in _RHTO_V2_ROWS
-    #     ),
-    #     transform=ax_hm.transAxes,
-    #     ha="left",
-    #     va="top",
-    #     fontsize=FONT_SIZES["annotation"] - 3,
-    #     color="#555555",
-    #     wrap=True,
-    # )
+        ax_hm.text(
+            0.0, -0.42,
+            leak_note,
+            transform=ax_hm.transAxes,
+            ha="left",
+            va="top",
+            fontsize=FONT_SIZES["annotation"] - 3,
+            color="#555555",
+        )
 
     fig.suptitle(
-        r"R. toruloides metabolic trade-offs across carbon sources",
+        r"$\mathit{R.\ toruloides}$ metabolic trade-offs across carbon sources",
         fontsize=FONT_SIZES["title"],
         fontweight="bold",
         y=1.01,
     )
     fig.tight_layout()
-    fig.subplots_adjust(bottom=0.22, wspace=0.28)
+    fig.subplots_adjust(bottom=0.26, wspace=0.28)
 
     if output_path:
         _safe_ensure_dir_for_file(output_path)
