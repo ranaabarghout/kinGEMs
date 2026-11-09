@@ -441,7 +441,12 @@ def run_pipeline_core(
     raw_data_dir = os.path.join(data_dir, "raw")
     interim_data_dir = os.path.join(data_dir, "interim", model_name)
     processed_data_dir = os.path.join(data_dir, "processed", model_name)
-    CPIPred_data_dir = os.path.join(data_dir, "interim", "CPI-Pred predictions")
+    cpipred_predictions_dir = config.get(
+        'cpipred_predictions_dir',
+        os.path.join(data_dir, "interim", "CPI-Pred predictions")
+    )
+    if not os.path.isabs(cpipred_predictions_dir):
+        cpipred_predictions_dir = os.path.abspath(os.path.join(project_root, cpipred_predictions_dir))
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(interim_data_dir, exist_ok=True)
     os.makedirs(processed_data_dir, exist_ok=True)
@@ -522,7 +527,13 @@ def run_pipeline_core(
     if not force_regenerate and os.path.exists(processed_data_output):
         processed_data = pd.read_csv(processed_data_output)
     else:
-        predictions_csv_path = find_predictions_file(model_name, CPIPred_data_dir)
+        predictions_csv_path = config.get('cpipred_predictions_file')
+        if predictions_csv_path:
+            if not os.path.isabs(predictions_csv_path):
+                predictions_csv_path = os.path.abspath(os.path.join(project_root, predictions_csv_path))
+        else:
+            predictions_csv_path = find_predictions_file(model_name, cpipred_predictions_dir)
+
         processed_data = process_kcat_predictions(
             merged_df=merged_data,
             predictions_csv_path=predictions_csv_path,
@@ -745,7 +756,11 @@ def run_pipeline_core(
         gam_range = maintenance_config.get('gam_range', None)
         biomass_goal = sa_config.get('biomass_goal', cobra_biomass)
 
-        log(f"  Post-hoc sensitivity (does not retarget growth or overwrite pre-applied GAM/NGAM)")
+        maintenance_applied_before = config.get('apply_maintenance_before_ecfba', False)
+        if maintenance_applied_before:
+            log("  Post-hoc sensitivity (does not overwrite pre-applied GAM/NGAM)")
+        else:
+            log(f"  Target: match biomass_goal ({biomass_goal:.4f}); closest combo is applied for FVA")
         log(f"  NGAM range: {ngam_range if ngam_range else 'default'}")
         log(f"  GAM range: {gam_range if gam_range else 'constant'}")
 
@@ -768,22 +783,22 @@ def run_pipeline_core(
         maintenance_results.to_csv(os.path.join(output_dir, 'maintenance_sweep_results.csv'), index=False)
         log(f"  Maintenance sweep completed: {len(maintenance_results)} parameter combinations tested")
 
-        # Report the combo closest to target as a diagnostic only. Do not apply it
-        # when experimental GAM/NGAM were already set before enzyme-constrained FBA.
+        # Apply the combo closest to target, unless experimental GAM/NGAM were
+        # already set before enzyme-constrained FBA (then it is a diagnostic only).
         if len(maintenance_results) > 0 and maintenance_results['biomass'].max() > 0:
             maintenance_results['distance_to_goal'] = abs(maintenance_results['biomass'] - biomass_goal)
             best_idx = maintenance_results['distance_to_goal'].idxmin()
             sweep_ngam = float(maintenance_results.loc[best_idx, 'ngam'])
             sweep_gam = float(maintenance_results.loc[best_idx, 'gam'])
             sweep_biomass = float(maintenance_results.loc[best_idx, 'biomass'])
-            log(f"  Sweep combo closest to biomass_goal (diagnostic, not applied):")
+            status = "diagnostic, not applied" if maintenance_applied_before else "applied"
+            log(f"  Sweep combo closest to biomass_goal ({status}):")
             log(f"    - NGAM: {sweep_ngam:.2f} mmol/gDW/h")
             log(f"    - GAM: {sweep_gam:.2f} mmol ATP/gDW")
             log(f"    - Biomass: {sweep_biomass:.4f}")
             log(f"    - Target: {biomass_goal:.4f}")
             log(f"    - Deviation: {abs(sweep_biomass - biomass_goal):.4f}")
 
-            maintenance_applied_before = config.get('apply_maintenance_before_ecfba', False)
             if not maintenance_applied_before:
                 optimal_ngam = sweep_ngam
                 optimal_gam = sweep_gam
@@ -1470,7 +1485,8 @@ def main():
                 biomass_goal = pipeline_results.final_ec_biomass
             maint_df['distance_to_goal'] = abs(maint_df['biomass'] - float(biomass_goal))
             best_row = maint_df.loc[maint_df['distance_to_goal'].idxmin()]
-            print(f"  Sweep combo closest to biomass_goal {float(biomass_goal):.4f} (not applied):")
+            status = "not applied" if maintenance_applied_before else "applied"
+            print(f"  Sweep combo closest to biomass_goal {float(biomass_goal):.4f} ({status}):")
             print(f"    NGAM={float(best_row['ngam']):.2f}, GAM={float(best_row['gam']):.2f}, "
                   f"biomass={float(best_row['biomass']):.4f}")
     print(f"\nResults directory: {tuning_results_dir}")

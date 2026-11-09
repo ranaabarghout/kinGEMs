@@ -27,7 +27,7 @@ CONFIG="configs/BiGG_models/iAPECO1_1312.json"
 echo "Starting run at: $(date)"
 echo ""
 
-python scripts/run_pipeline.py configs/BiGG_models/iAPECO1_1312.json
+python scripts/run_pipeline.py configs/BiGG_models/iAPECO1_1312.json --force
 EXIT_CODE=$?
 
 echo ""

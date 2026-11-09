@@ -207,3 +207,7 @@ scripts/scripts_archive/
 
 # All results
 results/
+
+# Logs & Jobs
+logs/
+slurm_jobs/

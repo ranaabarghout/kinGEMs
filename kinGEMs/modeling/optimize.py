@@ -226,6 +226,8 @@ def run_optimization(
 
     # 1a) Apply medium conditions if provided (supports scalar or [lb, ub] per reaction)
     if medium is not None:
+        # Bounds are set atomically (rxn.bounds) inside apply_medium_to_model, which
+        # also covers master's fix for the cobra lb<=ub error on closed channels.
         apply_medium_to_model(mod, medium, medium_upper_bound=medium_upper_bound, verbose=verbose)
 
     # Optionally edit NGAM (ATPM) lower bound and re-optimize
