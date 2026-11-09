@@ -17,6 +17,7 @@ __version__ = '0.1.0'
 # Import core functionality for easier access
 from .dataset import (
     convert_to_irreversible,
+    extract_metabolite_annotations,
     load_model,
     map_metabolites,
     prepare_model_data,
@@ -29,6 +30,7 @@ from .plots import plot_annealing_progress, plot_enzyme_usage, plot_flux_distrib
 __all__ = [
     # Dataset functions
     'map_metabolites',
+    'extract_metabolite_annotations',
     'retrieve_sequences',
     'load_model',
     'convert_to_irreversible',

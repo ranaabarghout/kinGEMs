@@ -66,8 +66,15 @@ from kinGEMs.plots import (
     plot_kcat_annealing_comparison,
     plot_kcat_annealing_comparison_by_subsystem,
 )
-from kinGEMs.modeling.optimize import run_optimization_with_dataframe
-from kinGEMs.modeling.tuning import simulated_annealing, sweep_maintenance_parameters
+from kinGEMs.modeling.optimize import apply_medium_to_model, run_optimization_with_dataframe
+from kinGEMs.modeling.tuning import (
+    anneal_with_pool_bootstrap,
+    apply_biomass_composition,
+    apply_gam_scaling,
+    apply_model_edits,
+    find_gam_components,
+    sweep_maintenance_parameters,
+)
 
 # Suppress warnings and configure logging
 warnings.filterwarnings('ignore')
@@ -204,6 +211,96 @@ def clean_annotations(model):
                     new_ann[k] = v
             rxn.annotation = new_ann
     return model
+
+
+ALLOWED_KCAT_VALUES = ('kcat_mean', 'kcat_min', 'kcat_max')
+
+
+def select_kcat_source_column(processed_data, config, log=print):
+    """Copy config['kcat_value'] into processed_data['kcat'] and return the column name."""
+    kcat_source = config.get('kcat_value', 'kcat_mean')
+    if kcat_source not in ALLOWED_KCAT_VALUES:
+        log(f"  Warning: kcat_value '{kcat_source}' is not one of {ALLOWED_KCAT_VALUES}; using kcat_mean")
+        kcat_source = 'kcat_mean'
+    if kcat_source not in processed_data.columns:
+        fallback = 'kcat_mean' if 'kcat_mean' in processed_data.columns else None
+        if fallback is None and 'kcat_y' in processed_data.columns:
+            fallback = 'kcat_y'
+        if fallback is None:
+            raise ValueError(
+                f"kcat_value '{kcat_source}' not in processed data columns: {list(processed_data.columns)}"
+            )
+        log(f"  Warning: column '{kcat_source}' missing; falling back to '{fallback}'")
+        kcat_source = fallback
+    processed_data['kcat'] = processed_data[kcat_source]
+    n_valid = int(processed_data[kcat_source].notna().sum())
+    log(f"  Using kcat_value='{kcat_source}' ({n_valid} non-null values)")
+    sample = processed_data.loc[processed_data[kcat_source].notna(), ['Reactions', 'Single_gene', kcat_source]].head(3)
+    for _, row in sample.iterrows():
+        log(f"    {row['Reactions']}_{row['Single_gene']}: {kcat_source}={row[kcat_source]:.3e} s^-1")
+    return kcat_source
+
+
+def apply_fixed_maintenance(model, config, biomass_reaction, log=print):
+    """Apply experimental NGAM/GAM to the model before enzyme-constrained FBA.
+
+    Returns (ngam_value, gam_value) actually applied, or (None, None) if skipped.
+    """
+    if not config.get('apply_maintenance_before_ecfba', False):
+        return None, None
+    ngam_rxn_id = config.get('ngam_rxn_id', 'ATPM')
+    gam_reaction_id = config.get('gam_reaction', None)
+    ngam_value = config.get('ngam', None)
+    gam_value = config.get('gam', None)
+    applied_ngam, applied_gam = None, None
+
+    if ngam_value is not None:
+        try:
+            ngam_rxn = model.reactions.get_by_id(ngam_rxn_id)
+            old_lb = ngam_rxn.lower_bound
+            ngam_rxn.lower_bound = float(ngam_value)
+            applied_ngam = float(ngam_value)
+            log(f"  Applied NGAM ({ngam_rxn_id}): {old_lb:.4g} -> {applied_ngam:.4g} mmol/gDW/h")
+        except KeyError:
+            log(f"  Warning: NGAM reaction '{ngam_rxn_id}' not found")
+
+    if gam_value is not None and float(gam_value) > 0:
+        success, current_gam = apply_gam_scaling(
+            model,
+            target_gam=float(gam_value),
+            biomass_reaction=biomass_reaction,
+            gam_reaction_id=gam_reaction_id,
+            verbose=False,
+        )
+        if success:
+            applied_gam = float(gam_value)
+            log(f"  Applied GAM ({gam_reaction_id or biomass_reaction}): {current_gam:.2f} -> {applied_gam:.2f} mmol ATP/gDW")
+        else:
+            log("  Warning: Could not locate ATP maintenance block for GAM scaling")
+    return applied_ngam, applied_gam
+
+
+def log_ecfba_infeasibility(model, config, biomass_reaction, enzyme_upper_bound,
+                            kcat_source, cobra_biomass, log=print):
+    """Print a diagnostic report when enzyme-constrained FBA is infeasible."""
+    ngam_rxn_id = config.get('ngam_rxn_id', 'ATPM')
+    gam_reaction_id = config.get('gam_reaction', None)
+    ngam_lb = None
+    try:
+        ngam_lb = model.reactions.get_by_id(ngam_rxn_id).lower_bound
+    except KeyError:
+        pass
+    _, _, _, current_gam = find_gam_components(
+        model, biomass_reaction, gam_reaction_id, verbose=False
+    )
+    log("  kinGEMs biomass: infeasible")
+    log("  Enzyme-constrained FBA infeasibility report:")
+    log(f"    enzyme_upper_bound: {enzyme_upper_bound:.5f} g/gDW")
+    log(f"    kcat column: {kcat_source}")
+    log(f"    NGAM ({ngam_rxn_id}) lower bound: {ngam_lb}")
+    log(f"    GAM ({gam_reaction_id or biomass_reaction}): {current_gam}")
+    log(f"    COBRApy (no enzyme constraints) biomass: {cobra_biomass}")
+    log("    Simulated annealing will bootstrap from a larger enzyme pool if possible.")
 
 
 def simulate_enzyme_rate(base_model, processed_df, biomass_reaction, blocked_cpds,
@@ -444,11 +541,7 @@ def run_pipeline_core(
         )
     log(f"  Processed data: {len(processed_data)} rows")
 
-    # Ensure kcat column exists
-    if 'kcat_mean' in processed_data.columns and 'kcat' not in processed_data.columns:
-        processed_data['kcat'] = processed_data['kcat_mean']
-    elif 'kcat_y' in processed_data.columns and 'kcat' not in processed_data.columns:
-        processed_data['kcat'] = processed_data['kcat_y']
+    kcat_source = select_kcat_source_column(processed_data, config, log=log)
 
     # Annotate model
     model = annotate_model_with_kcat_and_gpr(model=model, df=processed_data)
@@ -458,26 +551,56 @@ def run_pipeline_core(
 
     # === Step 4: Optimization ===
     log("=== Step 4: Running optimization ===")
+    log(f"  Enzyme pool (enzyme_upper_bound): {enzyme_upper_bound:.5f} g/gDW")
 
-    # Apply medium constraints
+    # Optional network edits (e.g. Rekena xylose D-arabinitol pathway) must run
+    # before medium so new exchanges exist to receive bounds.
+    model_edits = config.get('model_edits')
+    if model_edits:
+        log("  Applying model edits")
+        edit_result = apply_model_edits(model, model_edits, verbose=False)
+        for met_id in edit_result["added_metabolites"]:
+            log(f"    + metabolite {met_id}")
+        for rxn_id in edit_result["added_reactions"]:
+            log(f"    + reaction {rxn_id}")
+        for rxn_id in edit_result["knocked_out"]:
+            log(f"    knocked out {rxn_id}")
+        for skipped_id in edit_result["skipped"]:
+            log(f"    already present {skipped_id}")
+        model = convert_to_irreversible(model)
+
+    # Apply medium constraints (supports scalar or per-reaction [lb, ub] pairs)
     if medium is not None:
-        mode = "fixed fluxes" if medium_upper_bound else "max uptake rates"
-        log(f"  Applying medium conditions ({mode})")
-        for rxn_id, flux_value in medium.items():
-            try:
-                rxn = model.reactions.get_by_id(rxn_id)
-                rxn.lower_bound = flux_value
-                if medium_upper_bound:
-                    rxn.upper_bound = flux_value
-            except KeyError:
-                log(f"    Warning: Reaction '{rxn_id}' not found")
+        log("  Applying medium conditions")
+        apply_medium_to_model(model, medium, medium_upper_bound=medium_upper_bound, verbose=False)
+
+    # Apply condition-specific biomass composition (rescales pseudo-metabolite
+    # stoichiometry of the biomass pseudoreaction, rhto-GEM).
+    biomass_composition = config.get('biomass_composition')
+    if biomass_composition:
+        gam_rxn_id = config.get('gam_reaction') or biomass_reaction
+        multipliers = biomass_composition.get('multipliers', {})
+        if multipliers:
+            log(f"  Applying biomass composition on {gam_rxn_id}")
+            changes = apply_biomass_composition(
+                model,
+                biomass_pseudoreaction=gam_rxn_id,
+                multipliers=multipliers,
+                verbose=False,
+            )
+            for met_id, (old, new) in changes.items():
+                log(f"    {met_id}: {old:.4g} -> {new:.4g}")
+
+    applied_ngam, applied_gam = apply_fixed_maintenance(
+        model, config, biomass_reaction, log=log
+    )
 
     cobra_solution = model.optimize()
-    cobra_biomass = cobra_solution.objective_value
+    cobra_biomass = cobra_solution.objective_value if cobra_solution is not None else 0.0
     log(f"  COBRApy biomass: {cobra_biomass:.4f}")
 
     # Enzyme-constrained optimization
-    solution_value, df_FBA, gene_sequences_dict, _ = run_optimization_with_dataframe(
+    opt_result = run_optimization_with_dataframe(
         model=model,
         processed_df=processed_data,
         objective_reaction=biomass_reaction,
@@ -495,23 +618,40 @@ def run_pipeline_core(
         solver_name=solver_name,
         medium=medium,
         medium_upper_bound=medium_upper_bound,
+        kcat_col=kcat_source,
     )
-    log(f"  kinGEMs biomass: {solution_value:.4f}")
+    if not isinstance(opt_result, tuple) or len(opt_result) < 3:
+        solution_value, df_FBA, gene_sequences_dict = None, None, {}
+    else:
+        solution_value, df_FBA, gene_sequences_dict = opt_result[0], opt_result[1], opt_result[2] or {}
+
+    if solution_value is None or solution_value <= 0:
+        log_ecfba_infeasibility(
+            model, config, biomass_reaction, enzyme_upper_bound,
+            kcat_source, cobra_biomass, log=log,
+        )
+    else:
+        log(f"  kinGEMs biomass: {solution_value:.4f}")
 
     _time_optimization_s = time.time() - _t_step_start - _time_data_prep_s
     log(f"  Optimization (step 4) took {_time_optimization_s:.1f}s")
     _t_sa_start = time.time()
 
-    # === Step 5: Simulated Annealing ===
+    # === Step 5: Simulated Annealing (with pool bootstrap if needed) ===
     log("=== Step 5: Running simulated annealing ===")
-    kcat_dict, top_targets, df_new, iterations, biomasses, df_FBA = simulated_annealing(
+    bootstrap_cfg = config.get('pool_bootstrap', {}) or {}
+    kcat_dict, top_targets, df_new, iterations, biomasses, df_FBA = anneal_with_pool_bootstrap(
         model=model,
         processed_data=processed_data,
         biomass_reaction=biomass_reaction,
         objective_value=sa_config.get('biomass_goal', 0.5),
         gene_sequences_dict=gene_sequences_dict,
+        target_pool=enzyme_upper_bound,
         output_dir=output_dir,
-        enzyme_fraction=enzyme_upper_bound,
+        kcat_col=kcat_source,
+        medium=medium,
+        medium_upper_bound=medium_upper_bound,
+        solver_name=solver_name,
         n_top_enzymes=sa_config.get('n_top_enzymes', 65),
         temperature=sa_config.get('temperature', 1.0),
         cooling_rate=sa_config.get('cooling_rate', 0.95),
@@ -520,8 +660,12 @@ def run_pipeline_core(
         max_unchanged_iterations=sa_config.get('max_unchanged_iterations', 5),
         change_threshold=sa_config.get('change_threshold', 0.009),
         verbose=sa_config.get('verbose', False),
-        medium=medium,
-        medium_upper_bound=medium_upper_bound
+        hi_pool=bootstrap_cfg.get('hi_pool', 0.25),
+        search_iterations=bootstrap_cfg.get('search_iterations', 8),
+        stage1_chunk_iterations=bootstrap_cfg.get('stage1_chunk_iterations', 10),
+        stage1_max_rounds=bootstrap_cfg.get('stage1_max_rounds', 15),
+        log=log,
+        initial_biomass=solution_value if solution_value is not None else 0.0,
     )
 
     improvement = (biomasses[-1] - biomasses[0]) / biomasses[0] * 100 if biomasses[0] > 0 else 0
@@ -596,22 +740,27 @@ def run_pipeline_core(
     except Exception as e:
         log(f"  Warning: Could not generate per-subsystem kcat comparison plot: {e}")
 
-    # === Step 5b: Maintenance Parameter Sweep (if enabled) ===
-    optimal_ngam = None
-    optimal_gam = None
-    fva_model = model  # Default to base model
+    # === Step 5b: Maintenance Parameter Sweep (optional post-hoc sensitivity) ===
+    optimal_ngam = applied_ngam
+    optimal_gam = applied_gam
+    fva_model = model  # Default to base model (already has pre-applied GAM/NGAM if set)
 
     enable_maintenance_sweep = config.get('enable_maintenance_sweep', False)
     if enable_maintenance_sweep:
         from copy import deepcopy
-        log("=== Step 5b: Maintenance Parameters Sweep ===")
+        log("=== Step 5b: Maintenance Parameters Sweep (sensitivity) ===")
         maintenance_config = config.get('maintenance_sweep', {})
         ngam_rxn_id = config.get('ngam_rxn_id', 'ATPM')
+        gam_reaction_id = config.get('gam_reaction', None)
         ngam_range = maintenance_config.get('ngam_range', None)
         gam_range = maintenance_config.get('gam_range', None)
         biomass_goal = sa_config.get('biomass_goal', cobra_biomass)
 
-        log(f"  Target: Match target biomass ({biomass_goal:.4f})")
+        maintenance_applied_before = config.get('apply_maintenance_before_ecfba', False)
+        if maintenance_applied_before:
+            log("  Post-hoc sensitivity (does not overwrite pre-applied GAM/NGAM)")
+        else:
+            log(f"  Target: match biomass_goal ({biomass_goal:.4f}); closest combo is applied for FVA")
         log(f"  NGAM range: {ngam_range if ngam_range else 'default'}")
         log(f"  GAM range: {gam_range if gam_range else 'constant'}")
 
@@ -627,88 +776,54 @@ def run_pipeline_core(
             medium=medium,
             medium_upper_bound=medium_upper_bound,
             biomass_goal=biomass_goal,
+            gam_reaction_id=gam_reaction_id,
             verbose=maintenance_config.get('verbose', False)
         )
 
         maintenance_results.to_csv(os.path.join(output_dir, 'maintenance_sweep_results.csv'), index=False)
         log(f"  Maintenance sweep completed: {len(maintenance_results)} parameter combinations tested")
 
-        # Find optimal parameters closest to target
+        # Apply the combo closest to target, unless experimental GAM/NGAM were
+        # already set before enzyme-constrained FBA (then it is a diagnostic only).
         if len(maintenance_results) > 0 and maintenance_results['biomass'].max() > 0:
             maintenance_results['distance_to_goal'] = abs(maintenance_results['biomass'] - biomass_goal)
             best_idx = maintenance_results['distance_to_goal'].idxmin()
-
-            optimal_ngam = float(maintenance_results.loc[best_idx, 'ngam'])
-            optimal_gam = float(maintenance_results.loc[best_idx, 'gam'])
-            optimal_biomass = float(maintenance_results.loc[best_idx, 'biomass'])
-
-            log(f"  Optimal maintenance parameters found:")
-            log(f"    - NGAM: {optimal_ngam:.2f} mmol/gDW/h")
-            log(f"    - GAM: {optimal_gam:.2f} mmol ATP/gDW")
-            log(f"    - Biomass: {optimal_biomass:.4f}")
+            sweep_ngam = float(maintenance_results.loc[best_idx, 'ngam'])
+            sweep_gam = float(maintenance_results.loc[best_idx, 'gam'])
+            sweep_biomass = float(maintenance_results.loc[best_idx, 'biomass'])
+            status = "diagnostic, not applied" if maintenance_applied_before else "applied"
+            log(f"  Sweep combo closest to biomass_goal ({status}):")
+            log(f"    - NGAM: {sweep_ngam:.2f} mmol/gDW/h")
+            log(f"    - GAM: {sweep_gam:.2f} mmol ATP/gDW")
+            log(f"    - Biomass: {sweep_biomass:.4f}")
             log(f"    - Target: {biomass_goal:.4f}")
-            log(f"    - Deviation: {abs(optimal_biomass - biomass_goal):.4f}")
+            log(f"    - Deviation: {abs(sweep_biomass - biomass_goal):.4f}")
 
-            # Apply optimal parameters to model for FVA
-            fva_model = deepcopy(model)
-            fva_model.solver = solver_name  # Ensure solver is set after deepcopy
-
-            # Apply NGAM
-            try:
-                ngam_rxn = fva_model.reactions.get_by_id(ngam_rxn_id)
-                ngam_rxn.lower_bound = float(optimal_ngam)
-                log(f"    ✓ Applied NGAM: {optimal_ngam:.2f}")
-            except KeyError:
-                log(f"    Warning: NGAM reaction '{ngam_rxn_id}' not found")
-
-            # Apply GAM (if > 0)
-            if optimal_gam > 0:
+            if not maintenance_applied_before:
+                optimal_ngam = sweep_ngam
+                optimal_gam = sweep_gam
+                fva_model = deepcopy(model)
+                fva_model.solver = solver_name
                 try:
-                    biomass_rxn = fva_model.reactions.get_by_id(biomass_reaction)
-                    atp_met_ids = ['atp_c', 'ATP_c', 'cpd00002_c0']
-
-                    current_gam = None
-                    atp_met = None
-                    for met_id in atp_met_ids:
-                        try:
-                            met = fva_model.metabolites.get_by_id(met_id)
-                            if met in biomass_rxn.metabolites:
-                                current_gam = abs(biomass_rxn.metabolites[met])
-                                atp_met = met
-                                break
-                        except KeyError:
-                            continue
-
-                    if current_gam and atp_met and current_gam > 0:
-                        scale = optimal_gam / current_gam
-                        current_mets = biomass_rxn.metabolites.copy()
-
-                        met_mappings = {
-                            'h2o': ['h2o_c', 'H2O_c', 'cpd00001_c0'],
-                            'adp': ['adp_c', 'ADP_c', 'cpd00008_c0'],
-                            'pi': ['pi_c', 'Pi_c', 'cpd00009_c0'],
-                            'h': ['h_c', 'H_c', 'cpd00067_c0']
-                        }
-
-                        mets_to_scale = [atp_met]
-                        for met_type, possible_ids in met_mappings.items():
-                            for met_id in possible_ids:
-                                try:
-                                    met = fva_model.metabolites.get_by_id(met_id)
-                                    if met in current_mets:
-                                        mets_to_scale.append(met)
-                                        break
-                                except KeyError:
-                                    continue
-
-                        for met in mets_to_scale:
-                            old_coef = current_mets[met]
-                            biomass_rxn.add_metabolites({met: old_coef * (scale - 1.0)}, combine=True)
-
-                        log(f"    ✓ Applied GAM: scaled from {current_gam:.2f} to {optimal_gam:.2f}")
-
+                    ngam_rxn = fva_model.reactions.get_by_id(ngam_rxn_id)
+                    ngam_rxn.lower_bound = float(optimal_ngam)
+                    log(f"    Applied sweep NGAM: {optimal_ngam:.2f}")
                 except KeyError:
-                    log(f"    Warning: Biomass reaction '{biomass_reaction}' not found")
+                    log(f"    Warning: NGAM reaction '{ngam_rxn_id}' not found")
+                if optimal_gam > 0:
+                    success, current_gam = apply_gam_scaling(
+                        fva_model,
+                        target_gam=optimal_gam,
+                        biomass_reaction=biomass_reaction,
+                        gam_reaction_id=gam_reaction_id,
+                        verbose=False
+                    )
+                    if success:
+                        log(f"    Applied sweep GAM: scaled from {current_gam:.2f} to {optimal_gam:.2f}")
+                    else:
+                        log("    Warning: Could not locate ATP maintenance block for GAM scaling")
+            else:
+                log("    Pre-applied experimental GAM/NGAM kept on the model (sweep not applied).")
         else:
             log("    Warning: No feasible solutions found in maintenance sweep")
 
@@ -779,8 +894,10 @@ def run_pipeline_core(
         n_rxn_gene_pairs=len(processed_data),
         n_unique_proteins=_n_unique_proteins,
         n_unique_substrates=_n_unique_substrates,
-        cobra_biomass=round(float(cobra_biomass), 6),
-        initial_ec_biomass=round(float(solution_value), 6),
+        cobra_biomass=round(float(cobra_biomass or 0.0), 6),
+        initial_ec_biomass=round(float(solution_value), 6) if solution_value else (
+            round(float(biomasses[0]), 6) if biomasses else 0.0
+        ),
         final_ec_biomass=round(float(biomasses[-1]), 6) if biomasses else 0.0,
         sa_iterations=len(biomasses),
     )
@@ -1138,6 +1255,7 @@ def main():
     enable_biolog = config.get('enable_biolog_validation', False)
     solver_name = config.get('solver', 'glpk')
     ngam_rxn_id = config.get('ngam_rxn_id', 'ATPM')
+    gam_reaction_id = config.get('gam_reaction', None)
     results_subdir = config.get('results_subdir', None)  # Optional subdirectory for results
 
     # Detect model type
@@ -1218,9 +1336,13 @@ def main():
     # Assign kcats first
     model_with_kcats = assign_kcats_to_model(model, df_new)
 
-    # Apply optimal maintenance parameters to the model copy if found from sweep
-    if optimal_ngam is not None and optimal_gam is not None:
-        print(f"  Applying optimal maintenance parameters to final model:")
+    # Apply maintenance to the saved model only when it was NOT already applied
+    # before enzyme-constrained FBA (sweep results would otherwise overwrite
+    # the experimental GAM/NGAM used for prediction).
+    maintenance_applied_before = config.get('apply_maintenance_before_ecfba', False)
+    if (not maintenance_applied_before
+            and optimal_ngam is not None and optimal_gam is not None):
+        print(f"  Applying maintenance parameters to final model:")
         print(f"    - Setting NGAM ({ngam_rxn_id}) lower bound to {optimal_ngam:.2f}")
         try:
             ngam_rxn = model_with_kcats.reactions.get_by_id(ngam_rxn_id)
@@ -1228,59 +1350,22 @@ def main():
         except KeyError:
             print(f"    Warning: NGAM reaction '{ngam_rxn_id}' not found")
 
-        # Apply GAM scaling (only if GAM > 0 to avoid creating invalid reactions)
+        # Apply GAM scaling (only if GAM > 0 to avoid creating invalid reactions).
+        # Targets the GAM-bearing reaction (e.g. r_4041), not necessarily the
+        # growth objective (e.g. r_2111).
         if optimal_gam > 0:
             print(f"    - Scaling GAM to {optimal_gam:.2f} mmol ATP/gDW")
-            try:
-                biomass_rxn = model_with_kcats.reactions.get_by_id(biomass_reaction)
-                atp_met_ids = ['atp_c', 'ATP_c', 'cpd00002_c0']
-
-                # Find ATP and get current GAM
-                current_gam = None
-                atp_met = None
-                for met_id in atp_met_ids:
-                    try:
-                        met = model_with_kcats.metabolites.get_by_id(met_id)
-                        if met in biomass_rxn.metabolites:
-                            current_gam = abs(biomass_rxn.metabolites[met])
-                            atp_met = met
-                            break
-                    except KeyError:
-                        continue
-
-                if current_gam and atp_met:
-                    scale = optimal_gam / current_gam
-                    current_mets = biomass_rxn.metabolites.copy()
-
-                    # Scale ATP maintenance block (ATP, H2O, ADP, Pi, H+)
-                    met_mappings = {
-                        'h2o': ['h2o_c', 'H2O_c', 'cpd00001_c0'],
-                        'adp': ['adp_c', 'ADP_c', 'cpd00008_c0'],
-                        'pi': ['pi_c', 'Pi_c', 'cpd00009_c0'],
-                        'h': ['h_c', 'H_c', 'cpd00067_c0']
-                    }
-
-                    mets_to_scale = [atp_met]
-                    for met_type, possible_ids in met_mappings.items():
-                        for met_id in possible_ids:
-                            try:
-                                met = model_with_kcats.metabolites.get_by_id(met_id)
-                                if met in current_mets:
-                                    mets_to_scale.append(met)
-                                    break
-                            except KeyError:
-                                continue
-
-                    for met in mets_to_scale:
-                        old_coef = current_mets[met]
-                        biomass_rxn.add_metabolites({met: old_coef * (scale - 1.0)}, combine=True)
-
-                    print(f"    ✓ GAM scaled from {current_gam:.2f} to {optimal_gam:.2f}")
-                else:
-                    print(f"    Warning: Could not find ATP in biomass reaction for GAM scaling")
-
-            except KeyError:
-                print(f"    Warning: Biomass reaction '{biomass_reaction}' not found")
+            success, current_gam = apply_gam_scaling(
+                model_with_kcats,
+                target_gam=optimal_gam,
+                biomass_reaction=biomass_reaction,
+                gam_reaction_id=gam_reaction_id,
+                verbose=False
+            )
+            if success:
+                print(f"    ✓ GAM scaled from {current_gam:.2f} to {optimal_gam:.2f}")
+            else:
+                print("    Warning: Could not locate ATP maintenance block for GAM scaling")
         else:
             print(f"    ⚠️  Skipping GAM scaling: GAM=0 would create an invalid biomass reaction")
             print(f"       Keeping original GAM value in the saved model")
@@ -1308,6 +1393,7 @@ def main():
         'model_name': model_name,
         'organism': organism,
         'enzyme_upper_bound': float(enzyme_upper_bound),
+        'kcat_value': config.get('kcat_value', 'kcat_mean'),
         # SA performance
         'initial_biomass': _ib,
         'final_biomass': _fb,
@@ -1316,6 +1402,7 @@ def main():
         # Maintenance sweep
         'optimal_ngam': float(optimal_ngam) if optimal_ngam is not None else None,
         'optimal_gam': float(optimal_gam) if optimal_gam is not None else None,
+        'apply_maintenance_before_ecfba': bool(config.get('apply_maintenance_before_ecfba', False)),
         'ngam_rxn_id': ngam_rxn_id,
         'biomass_reaction': biomass_reaction,
         # Model structure
@@ -1385,22 +1472,23 @@ def main():
         print(f"Annealing iterations: {_pr.sa_iterations}")
 
     if optimal_ngam is not None:
-        print(f"\nOptimal maintenance parameters (applied to final model):")
+        print(f"\nMaintenance parameters on the predictive model:")
         print(f"  NGAM: {optimal_ngam:.2f} mmol/gDW/h")
         print(f"  GAM: {optimal_gam:.2f} mmol ATP/gDW")
 
-        # Read optimal biomass from maintenance sweep results
+        # Report sweep combo closest to the experimental biomass goal (diagnostic).
         maint_results_path = os.path.join(tuning_results_dir, "maintenance_sweep_results.csv")
+        biomass_goal = config.get('simulated_annealing', {}).get('biomass_goal')
         if os.path.exists(maint_results_path):
             maint_df = pd.read_csv(maint_results_path)
-            maint_df['distance_to_goal'] = abs(maint_df['biomass'] - maint_df['biomass'].max())
+            if biomass_goal is None:
+                biomass_goal = pipeline_results.final_ec_biomass
+            maint_df['distance_to_goal'] = abs(maint_df['biomass'] - float(biomass_goal))
             best_row = maint_df.loc[maint_df['distance_to_goal'].idxmin()]
-            optimal_biomass = float(best_row['biomass'])
-            print(f"  Final biomass with optimal maintenance: {optimal_biomass:.4f}")
-            _initial_biomass = pipeline_results.initial_ec_biomass
-            if _initial_biomass > 0:
-                total_improvement = (optimal_biomass - _initial_biomass) / _initial_biomass * 100
-                print(f"  Total improvement (annealing + maintenance): {total_improvement:.1f}%")
+            status = "not applied" if maintenance_applied_before else "applied"
+            print(f"  Sweep combo closest to biomass_goal {float(biomass_goal):.4f} ({status}):")
+            print(f"    NGAM={float(best_row['ngam']):.2f}, GAM={float(best_row['gam']):.2f}, "
+                  f"biomass={float(best_row['biomass']):.4f}")
     print(f"\nResults directory: {tuning_results_dir}")
     print(f"Final model: {model_output_path}")
     print("="*70)

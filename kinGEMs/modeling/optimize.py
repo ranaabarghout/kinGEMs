@@ -89,6 +89,79 @@ def _parse_gpr_to_dnf(tokens):
     return unique
 
 
+def apply_medium_to_model(model, medium, medium_upper_bound=False, verbose=False):
+    """
+    Apply medium constraints to a COBRA model, supporting per-reaction bounds.
+
+    Each medium entry maps an exchange reaction id to one of:
+      - scalar ``v``: sets ``lower_bound = v`` (and ``upper_bound = v`` if
+        ``medium_upper_bound`` is True). Backward-compatible with the original
+        single-value behaviour.
+      - ``[lb, ub]`` (list/tuple): sets both bounds explicitly.
+      - ``{"lb": lb, "ub": ub}`` (dict): sets whichever bounds are provided
+        (missing bound is left unchanged).
+
+    Explicit ``[lb, ub]`` pairs let you, per reaction:
+      - FIX a measured net exchange:        ``[-2.489, -2.489]``
+      - cap an uptake but allow less:       ``[-2.489, 0]``
+      - allow free secretion (output):      ``[0, 1000]``
+      - block a reaction:                   ``[0, 0]``
+    instead of relying on the single global ``medium_upper_bound`` flag (which
+    forced *every* entry to be either one-sided or fully fixed — the latter turning
+    a "-1000 = unlimited" sentinel into a forced uptake of exactly 1000).
+
+    If ``{rxn_id}_reverse`` exists (kinGEMs irreversible split), signed yeast-GEM
+    bounds are translated onto the pair instead of being written back onto the
+    forward copy: secretion on the forward reaction, uptake on ``_reverse``.
+    Blocking ``[0, 0]`` therefore zeros both copies and closes the glucose-leak
+    path through ``r_1714_reverse``.
+    """
+    if not medium:
+        return
+    for rxn_id, spec in medium.items():
+        try:
+            rxn = model.reactions.get_by_id(rxn_id)
+        except KeyError:
+            print(f"  Warning: medium reaction '{rxn_id}' not found in model")
+            continue
+
+        if isinstance(spec, (list, tuple)) and len(spec) == 2:
+            lb, ub = float(spec[0]), float(spec[1])
+        elif isinstance(spec, dict):
+            lb = float(spec['lb']) if spec.get('lb') is not None else rxn.lower_bound
+            ub = float(spec['ub']) if spec.get('ub') is not None else rxn.upper_bound
+        else:
+            v = float(spec)
+            lb = v
+            ub = v if medium_upper_bound else max(v, rxn.upper_bound)
+
+        if lb > ub:
+            lb, ub = ub, lb  # guard against inverted bounds
+
+        reverse_id = f"{rxn_id}_reverse"
+        if reverse_id in model.reactions:
+            # Signed convention: negative = uptake, positive = secretion.
+            # Do not re-apply signed bounds on an already-split forward copy.
+            secretion_lb = max(0.0, lb)
+            secretion_ub = max(0.0, ub)
+            uptake_lb = max(0.0, -ub)
+            uptake_ub = max(0.0, -lb)
+            if secretion_lb > secretion_ub:
+                secretion_lb, secretion_ub = secretion_ub, secretion_lb
+            if uptake_lb > uptake_ub:
+                uptake_lb, uptake_ub = uptake_ub, uptake_lb
+            rxn.bounds = (secretion_lb, secretion_ub)
+            rev = model.reactions.get_by_id(reverse_id)
+            rev.bounds = (uptake_lb, uptake_ub)
+            if verbose:
+                print(f"  Set {rxn_id}: bounds=({secretion_lb}, {secretion_ub})")
+                print(f"  Set {reverse_id}: bounds=({uptake_lb}, {uptake_ub})")
+        else:
+            rxn.bounds = (lb, ub)
+            if verbose:
+                print(f"  Set {rxn_id}: bounds=({lb}, {ub})")
+
+
 def run_optimization(
     model,
     kcat_dict,
@@ -151,31 +224,11 @@ def run_optimization(
     else:
         mod = model
 
-    # 1a) Apply medium conditions if provided
+    # 1a) Apply medium conditions if provided (supports scalar or [lb, ub] per reaction)
     if medium is not None:
-        for rxn_id, flux_value in medium.items():
-            try:
-                rxn = mod.reactions.get_by_id(rxn_id)
-                if medium_upper_bound:
-                    # Set both bounds atomically (rxn.bounds tuple setter) rather than
-                    # lower_bound then upper_bound sequentially: setting lower_bound
-                    # alone first raises cobra's lb<=ub ValueError whenever flux_value
-                    # exceeds the reaction's *current* (pre-medium) upper_bound -- e.g.
-                    # opening a channel that defaults closed (ub=0), such as an
-                    # alternate carbon source's uptake reaction after
-                    # convert_to_irreversible. lb==ub==flux_value is always a valid
-                    # state on its own, so setting it atomically sidesteps the
-                    # intermediate invalid state entirely.
-                    rxn.bounds = (flux_value, flux_value)
-                else:
-                    rxn.lower_bound = flux_value
-                if verbose:
-                    if medium_upper_bound:
-                        print(f"  Fixed {rxn_id}: lower={flux_value}, upper={flux_value}")
-                    else:
-                        print(f"  Set {rxn_id}: lower={flux_value}, upper={rxn.upper_bound}")
-            except KeyError:
-                print(f"  Warning: Reaction provided '{rxn_id}' was not found in model")
+        # Bounds are set atomically (rxn.bounds) inside apply_medium_to_model, which
+        # also covers master's fix for the cobra lb<=ub error on closed channels.
+        apply_medium_to_model(mod, medium, medium_upper_bound=medium_upper_bound, verbose=verbose)
 
     # Optionally edit NGAM (ATPM) lower bound and re-optimize
     ngam_growth_rate = None
@@ -843,25 +896,50 @@ def create_descriptive_filename(objective_reaction, enzyme_upper_bound, maximiza
         return filename
 
 
+def resolve_kcat_column(processed_df, kcat_col=None):
+    """Pick the kcat column used for enzyme constraints.
+
+    Preference: ``kcat_updated`` (tuned values) > explicit ``kcat_col`` >
+    ``kcat`` > ``kcat_mean``.
+    """
+    if 'kcat_updated' in processed_df.columns:
+        return 'kcat_updated'
+    if kcat_col is not None:
+        if kcat_col not in processed_df.columns:
+            raise ValueError(
+                f"kcat_col '{kcat_col}' not found in processed_df columns: "
+                f"{list(processed_df.columns)}"
+            )
+        return kcat_col
+    if 'kcat' in processed_df.columns:
+        return 'kcat'
+    if 'kcat_mean' in processed_df.columns:
+        return 'kcat_mean'
+    raise ValueError(
+        "No kcat column found (need kcat_updated, kcat_col, kcat, or kcat_mean)"
+    )
+
+
 def run_optimization_with_dataframe(model, processed_df, objective_reaction, objective_coeffs = None,
                     enzyme_upper_bound=0.125, enzyme_ratio=True, maximization=True,
                     multi_enzyme_off=False, isoenzymes_off=False,
                     promiscuous_off=False, complexes_off=False,
                     output_dir=None, save_results=True, print_reaction_conditions=True, verbose=True,
                     solver_name='glpk', medium=None, medium_upper_bound=False, edit_ngam=False, ngam_rxn_id='ATPM',
-                    num_solutions=1, solution_pool_gap=0.0):
+                    num_solutions=1, solution_pool_gap=0.0, kcat_col=None):
     """
     Run enzyme-constrained flux balance analysis using a processed dataframe.
 
     If a reaction has multiple substrates (identified via Reaction_partners or CMPD_SMILES),
-    selects the substrate with the highest average kcat_mean value for that reaction.
+    selects the substrate with the highest average kcat value for that reaction.
 
     Parameters
     ----------
     model : cobra.Model or str
         COBRA model object or path to model file
     processed_df : pandas.DataFrame
-        DataFrame containing Reactions, Single_gene, SEQ, and kcat_mean columns.
+        DataFrame containing Reactions, Single_gene, SEQ, and a kcat column
+        (kcat_mean / kcat_min / kcat_max, or kcat_updated after annealing).
         Optional columns: Reaction_partners, CMPD_SMILES (for substrate selection)
     objective_reaction : str
         Reaction ID to maximize/minimize
@@ -897,6 +975,9 @@ def run_optimization_with_dataframe(model, processed_df, objective_reaction, obj
     solution_pool_gap : float, optional
         Maximum relative gap from optimal objective for alternative solutions (default: 0.0).
         E.g., 0.01 means solutions within 1% of optimal are acceptable.
+    kcat_col : str, optional
+        Column to use as the initial kcat source (e.g. 'kcat_mean', 'kcat_max').
+        Ignored when 'kcat_updated' is present (tuned values take precedence).
 
     Returns
     -------
@@ -906,7 +987,7 @@ def run_optimization_with_dataframe(model, processed_df, objective_reaction, obj
     """
 
     # Check if required columns exist in processed_df
-    required_cols = ['Reactions', 'Single_gene', 'SEQ', 'kcat_mean']
+    required_cols = ['Reactions', 'Single_gene', 'SEQ']
     missing_cols = [col for col in required_cols if col not in processed_df.columns]
     if missing_cols:
         raise ValueError(f"Missing required columns in processed_df: {missing_cols}")
@@ -915,14 +996,9 @@ def run_optimization_with_dataframe(model, processed_df, objective_reaction, obj
     kcat_dict = {}
     gene_sequences_dict = {}
 
-    # Determine which kcat column to use (prefer 'kcat_updated' > 'kcat' > 'kcat_mean')
-    if 'kcat_updated' in processed_df.columns:
-        kcat_col = 'kcat_updated'
-    elif 'kcat' in processed_df.columns:
-        kcat_col = 'kcat'
-    else:
-        kcat_col = 'kcat_mean'
-        print("  [KCAT DEBUG] Using 'kcat_mean' column for optimization")
+    kcat_col = resolve_kcat_column(processed_df, kcat_col=kcat_col)
+    if verbose:
+        print(f"  [KCAT] Using '{kcat_col}' column for optimization")
 
     if verbose:
         # Show some example values to verify which column is being used

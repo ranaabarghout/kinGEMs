@@ -13,13 +13,14 @@ import warnings
 from Bio.Data.IUPACData import protein_letters
 from Bio.SeqUtils import molecular_weight
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
+from cobra import Metabolite, Reaction
 import matplotlib.pyplot as plt
 import pandas as pd
 
 from ..config import ensure_dir_exists
 from ..dataset import annotate_model_with_kcat_and_gpr
 from ..plots import plot_annealing_progress
-from .optimize import run_optimization_with_dataframe
+from .optimize import resolve_kcat_column, run_optimization_with_dataframe
 
 warnings.filterwarnings('ignore')
 import logging
@@ -32,6 +33,437 @@ except ImportError:
     pass
 
 
+# Metabolite ID candidates for the growth-associated maintenance (GAM) ATP
+# hydrolysis block across common namespaces:
+#   BiGG (atp_c ...), ModelSEED (cpd00002_c0 ...), yeast/rhto-GEM (s_0434 ...)
+ATP_MET_IDS = ['atp_c', 'ATP_c', 'cpd00002_c0', 's_0434']
+MAINTENANCE_MET_IDS = {
+    'h2o': ['h2o_c', 'H2O_c', 'cpd00001_c0', 's_0803'],
+    'adp': ['adp_c', 'ADP_c', 'cpd00008_c0', 's_0394'],
+    'pi':  ['pi_c', 'Pi_c', 'cpd00009_c0', 's_1322'],
+    'h':   ['h_c', 'H_c', 'cpd00067_c0', 's_0794'],
+}
+
+
+def find_gam_components(model, biomass_reaction, gam_reaction_id=None, verbose=False):
+    """
+    Locate the reaction that carries the growth-associated maintenance (GAM) ATP
+    cost, plus the ATP metabolite and the associated maintenance metabolites
+    (H2O, ADP, Pi, H+).
+
+    Some GEMs (e.g. yeast-GEM / rhto-GEM) split growth into a 'growth' reaction
+    (the objective, e.g. r_2111) that contains no ATP, and a separate 'biomass
+    pseudoreaction' (e.g. r_4041) that actually carries the GAM ATP hydrolysis.
+    This helper finds the reaction that truly contains the ATP maintenance block
+    so GAM scaling targets the right one.
+
+    Parameters
+    ----------
+    model : cobra.Model
+    biomass_reaction : str
+        The objective/growth reaction id (checked first if no explicit GAM id).
+    gam_reaction_id : str, optional
+        Explicit id of the reaction carrying GAM (e.g. 'r_4041'). If provided it
+        takes precedence.
+    verbose : bool, optional
+
+    Returns
+    -------
+    (gam_rxn, atp_met, maintenance_mets, original_gam)
+        gam_rxn : cobra.Reaction or None
+        atp_met : cobra.Metabolite or None
+        maintenance_mets : dict {type: cobra.Metabolite}
+        original_gam : float or None  (absolute ATP coefficient)
+    """
+    def _atp_in(rxn):
+        for met in rxn.metabolites:
+            if met.id in ATP_MET_IDS:
+                return met
+        return None
+
+    candidate_rxn_ids = []
+    if gam_reaction_id:
+        candidate_rxn_ids.append(gam_reaction_id)
+    if biomass_reaction:
+        candidate_rxn_ids.append(biomass_reaction)
+
+    gam_rxn = None
+    atp_met = None
+    for rid in candidate_rxn_ids:
+        try:
+            rxn = model.reactions.get_by_id(rid)
+        except KeyError:
+            continue
+        met = _atp_in(rxn)
+        if met is not None:
+            gam_rxn, atp_met = rxn, met
+            break
+
+    # Fallback: scan for a biomass-like reaction containing the ATP hydrolysis block
+    if gam_rxn is None:
+        for rxn in model.reactions:
+            met = _atp_in(rxn)
+            if met is None:
+                continue
+            met_ids = {m.id for m in rxn.metabolites}
+            has_adp = any(i in met_ids for i in MAINTENANCE_MET_IDS['adp'])
+            has_pi = any(i in met_ids for i in MAINTENANCE_MET_IDS['pi'])
+            looks_biomass = ('biomass' in rxn.id.lower()) or ('biomass' in (rxn.name or '').lower())
+            if has_adp and has_pi and looks_biomass:
+                gam_rxn, atp_met = rxn, met
+                break
+
+    if gam_rxn is None or atp_met is None:
+        if verbose:
+            print("  [GAM] Could not locate a reaction containing the ATP maintenance block")
+        return None, None, {}, None
+
+    original_gam = abs(gam_rxn.metabolites[atp_met])
+
+    maintenance_mets = {}
+    for met_type, ids in MAINTENANCE_MET_IDS.items():
+        for met in gam_rxn.metabolites:
+            if met.id in ids:
+                maintenance_mets[met_type] = met
+                break
+
+    if verbose:
+        print(f"  [GAM] Reaction: {gam_rxn.id} | ATP met: {atp_met.id} | GAM: {original_gam:.4f}")
+
+    return gam_rxn, atp_met, maintenance_mets, original_gam
+
+
+def apply_gam_scaling(model, target_gam, biomass_reaction, gam_reaction_id=None, verbose=False):
+    """
+    Scale the GAM ATP hydrolysis block of `model` (in place) to `target_gam`
+    (mmol ATP/gDW). The whole block (ATP, H2O, ADP, Pi, H+) is scaled together so
+    the reaction stays mass/charge balanced.
+
+    Returns
+    -------
+    (success, original_gam)
+        success : bool
+        original_gam : float or None
+    """
+    gam_rxn, atp_met, maintenance_mets, original_gam = find_gam_components(
+        model, biomass_reaction, gam_reaction_id, verbose=verbose
+    )
+    if gam_rxn is None or not original_gam:
+        return False, original_gam
+
+    scale = target_gam / original_gam
+    current = gam_rxn.metabolites.copy()
+    for met in [atp_met] + list(maintenance_mets.values()):
+        old_coef = current.get(met)
+        if old_coef is None:
+            continue
+        gam_rxn.add_metabolites({met: old_coef * (scale - 1.0)}, combine=True)
+
+    if verbose:
+        print(f"  [GAM] Scaled {gam_rxn.id} ATP from {original_gam:.2f} to {target_gam:.2f}")
+    return True, original_gam
+
+
+# Rekena et al. 2023 (PLoS Comput Biol) / edit_rhtoGEM.m alternative xylose
+# assimilation pathway. 
+_XYLOSE_ARABINITOL_METABOLITES = [
+    {
+        "id": "s_D-arabinitol_c",
+        "name": "D-arabinitol",
+        "compartment": "c",
+        "formula": "C5H12O5",
+        "charge": 0,
+    },
+    {
+        "id": "s_D-arabinitol_e",
+        "name": "D-arabinitol",
+        "compartment": "e",
+        "formula": "C5H12O5",
+        "charge": 0,
+    },
+    {
+        "id": "s_D-ribulose",
+        "name": "D-ribulose",
+        "compartment": "c",
+        "formula": "C5H10O5",
+        "charge": 0,
+    },
+]
+
+_XYLOSE_ARABINITOL_REACTIONS = [
+    {
+        "id": "t_0883",
+        "name": "D-arabinitol 4-dehydrogenase",
+        "metabolites": {
+            "s_0580": -1,
+            "s_1203": -1,
+            "s_0794": -1,
+            "s_D-arabinitol_c": 1,
+            "s_1198": 1,
+        },
+        "lower_bound": -1000,
+        "upper_bound": 1000,
+        "gene_reaction_rule": "RHTO_07844",
+    },
+    {
+        "id": "r_4339",
+        "name": "D-arabinitol transport",
+        "metabolites": {"s_D-arabinitol_c": -1, "s_D-arabinitol_e": 1},
+        "lower_bound": -1000,
+        "upper_bound": 1000,
+        "gene_reaction_rule": "",
+    },
+    {
+        "id": "r_4340",
+        "name": "D-arabinitol exchange",
+        "metabolites": {"s_D-arabinitol_e": -1},
+        "lower_bound": 0,
+        "upper_bound": 1000,
+        "gene_reaction_rule": "",
+    },
+    {
+        "id": "t_0884",
+        "name": "D-arabinitol 2-dehydrogenase/D-ribulose reductase",
+        "metabolites": {
+            "s_D-ribulose": -1,
+            "s_1212": -1,
+            "s_0794": -1,
+            "s_D-arabinitol_c": 1,
+            "s_1207": 1,
+        },
+        "lower_bound": -1000,
+        "upper_bound": 1000,
+        "gene_reaction_rule": "RHTO_00373",
+    },
+    {
+        "id": "t_0885",
+        "name": "D-ribulokinase",
+        "metabolites": {
+            "s_0434": -1,
+            "s_D-ribulose": -1,
+            "s_0394": 1,
+            "s_0577": 1,
+            "s_0794": 1,
+        },
+        "lower_bound": 0,
+        "upper_bound": 1000,
+        "gene_reaction_rule": "RHTO_00950",
+    },
+]
+
+
+def _iter_model_edit_metabolites(edits):
+    mets = []
+    if edits.get("add_xylose_arabinitol_pathway"):
+        mets.extend(_XYLOSE_ARABINITOL_METABOLITES)
+    mets.extend(edits.get("metabolites") or [])
+    return mets
+
+
+def _iter_model_edit_reactions(edits):
+    rxns = []
+    if edits.get("add_xylose_arabinitol_pathway"):
+        rxns.extend(_XYLOSE_ARABINITOL_REACTIONS)
+    rxns.extend(edits.get("reactions") or [])
+    return rxns
+
+
+def apply_model_edits(model, edits, verbose=False):
+    """
+    Add metabolites/reactions and knock out reactions specified in a config.
+
+    ``edits`` is the ``model_edits`` object from a pipeline JSON config:
+
+    - ``add_xylose_arabinitol_pathway`` (bool): insert Rekena's D-arabinitol /
+      D-ribulose xylose path (``t_0883``, ``t_0884``, ``t_0885``, transport
+      ``r_4339``, exchange ``r_4340``).
+    - ``metabolites`` / ``reactions``: extra entries with the same schema as
+      the preset (``id``, ``name``, ``compartment`` / ``metabolites`` dict,
+      optional ``lower_bound``, ``upper_bound``, ``gene_reaction_rule``).
+    - ``knock_out_reactions``: reaction ids to block (also blocks
+      ``{id}_reverse`` if present after irreversible conversion).
+
+    Existing metabolite/reaction ids are left unchanged (idempotent). Call this
+    *before* ``apply_medium_to_model`` so medium bounds on ``r_4340`` apply,
+    and re-run ``convert_to_irreversible`` afterwards so new reversible
+    reactions are split.
+
+    Returns
+    -------
+    dict
+        ``{"added_metabolites": [...], "added_reactions": [...],
+        "skipped": [...], "knocked_out": [...]}``
+    """
+    if not edits:
+        return {
+            "added_metabolites": [],
+            "added_reactions": [],
+            "skipped": [],
+            "knocked_out": [],
+        }
+
+    added_mets = []
+    added_rxns = []
+    skipped = []
+
+    new_mets = []
+    for spec in _iter_model_edit_metabolites(edits):
+        met_id = spec["id"]
+        if met_id in model.metabolites:
+            skipped.append(met_id)
+            continue
+        met = Metabolite(
+            met_id,
+            name=spec.get("name", met_id),
+            compartment=spec.get("compartment", "c"),
+            formula=spec.get("formula"),
+            charge=spec.get("charge", 0),
+        )
+        new_mets.append(met)
+        added_mets.append(met_id)
+    if new_mets:
+        model.add_metabolites(new_mets)
+
+    new_rxns = []
+    for spec in _iter_model_edit_reactions(edits):
+        rxn_id = spec["id"]
+        if rxn_id in model.reactions:
+            skipped.append(rxn_id)
+            continue
+        rxn = Reaction(rxn_id)
+        rxn.name = spec.get("name", rxn_id)
+        rxn.lower_bound = float(spec.get("lower_bound", 0))
+        rxn.upper_bound = float(spec.get("upper_bound", 1000))
+        gpr = spec.get("gene_reaction_rule") or ""
+        if gpr:
+            rxn.gene_reaction_rule = gpr
+        stoich = {}
+        for met_id, coef in (spec.get("metabolites") or {}).items():
+            if met_id not in model.metabolites:
+                raise KeyError(
+                    f"model_edits reaction '{rxn_id}' refers to unknown "
+                    f"metabolite '{met_id}'"
+                )
+            stoich[model.metabolites.get_by_id(met_id)] = float(coef)
+        rxn.add_metabolites(stoich)
+        new_rxns.append(rxn)
+        added_rxns.append(rxn_id)
+    if new_rxns:
+        model.add_reactions(new_rxns)
+
+    knocked_out = []
+    for rxn_id in edits.get("knock_out_reactions") or []:
+        for kid in (rxn_id, f"{rxn_id}_reverse"):
+            if kid not in model.reactions:
+                continue
+            model.reactions.get_by_id(kid).knock_out()
+            knocked_out.append(kid)
+
+    if verbose:
+        if added_mets:
+            print(f"  [model_edits] added metabolites: {', '.join(added_mets)}")
+        if added_rxns:
+            print(f"  [model_edits] added reactions: {', '.join(added_rxns)}")
+        if knocked_out:
+            print(f"  [model_edits] knocked out: {', '.join(knocked_out)}")
+        if skipped:
+            print(f"  [model_edits] already present: {', '.join(skipped)}")
+
+    return {
+        "added_metabolites": added_mets,
+        "added_reactions": added_rxns,
+        "skipped": skipped,
+        "knocked_out": knocked_out,
+    }
+
+
+# Alias map from macromolecule names to SBML metabolite ids used
+# by rhto-GEM biomass pseudoreaction.
+BIOMASS_PSEUDO_METS = {
+    "protein":      ["s_3717"],
+    "lipid":        ["s_1096"],
+    "carbohydrate": ["s_3718"],
+    "rna":          ["s_3719"],
+    "dna":          ["s_3720"],
+}
+
+
+def apply_biomass_composition(model, biomass_pseudoreaction, multipliers, verbose=False):
+    """
+    Rescale pseudo-metabolite stoichiometry of the biomass pseudoreaction in place.
+
+    ``multipliers`` maps a macromolecule name (case-insensitive; see
+    ``BIOMASS_PSEUDO_METS``) or a raw metabolite id already present in the
+    reaction to a positive float. The current stoichiometric coefficient of
+    each targeted pseudo-metabolite is multiplied by that factor via
+    ``rxn.add_metabolites({met: new_coef}, combine=False)``.
+
+    Parameters
+    ----------
+    model : cobra.Model
+    biomass_pseudoreaction : str
+        Reaction id (e.g. ``r_4041`` in rhto-GEM) that consumes the protein /
+        lipid / carbohydrate / RNA / DNA pseudo-metabolites.
+    multipliers : dict[str, float]
+        Keys are macromolecule names (``"protein"``, ``"lipid"``, ...) or raw
+        metabolite ids. Values are positive scaling factors.
+    verbose : bool, optional
+        If True, print each change.
+
+    Returns
+    -------
+    dict[str, tuple[float, float]]
+        ``{met_id: (old_coefficient, new_coefficient)}`` for every metabolite
+        that was rescaled.
+    """
+    if not multipliers:
+        return {}
+
+    if biomass_pseudoreaction not in model.reactions:
+        raise KeyError(
+            f"Biomass pseudoreaction '{biomass_pseudoreaction}' not found in model"
+        )
+    rxn = model.reactions.get_by_id(biomass_pseudoreaction)
+    rxn_met_ids = {m.id for m in rxn.metabolites}
+
+    changes: dict[str, tuple[float, float]] = {}
+    for key, mult in multipliers.items():
+        try:
+            mult_f = float(mult)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                f"biomass_composition multiplier for '{key}' is not a number: {mult!r}"
+            ) from exc
+        if mult_f <= 0:
+            raise ValueError(
+                f"biomass_composition multiplier for '{key}' must be > 0, got {mult_f}"
+            )
+
+        key_lower = key.lower()
+        if key_lower in BIOMASS_PSEUDO_METS:
+            candidate_ids = BIOMASS_PSEUDO_METS[key_lower]
+        else:
+            candidate_ids = [key]
+
+        met_id = next((mid for mid in candidate_ids if mid in rxn_met_ids), None)
+        if met_id is None:
+            raise KeyError(
+                f"None of the candidate metabolite ids {candidate_ids} for "
+                f"'{key}' are present in reaction {biomass_pseudoreaction}"
+            )
+
+        met = model.metabolites.get_by_id(met_id)
+        old_coef = rxn.metabolites[met]
+        new_coef = old_coef * mult_f
+        rxn.add_metabolites({met: new_coef}, combine=False)
+        changes[met_id] = (float(old_coef), float(new_coef))
+        if verbose:
+            print(
+                f"  [biomass] {biomass_pseudoreaction}: {key} ({met_id}) "
+                f"{old_coef:.6g} -> {new_coef:.6g}  (x{mult_f:.4g})"
+            )
+
+    return changes
 
 
 def simulated_annealing(
@@ -53,14 +485,17 @@ def simulated_annealing(
     medium=None,
     medium_upper_bound=False,
     edit_ngam=False,
-    ngam_rxn_id='ATPM'
+    ngam_rxn_id='ATPM',
+    kcat_col=None,
+    solver_name='glpk',
+    stop_at_goal=True,
 ):
     """
     Use simulated annealing to tune kcat values for improved biomass production.
 
-    This function preserves original kcat_mean values for proper neighbor calculation
-    and creates a kcat_updated column to track tuned values. The optimization function
-    automatically uses kcat_updated when available.
+    Origin kcats come from ``kcat_col`` (default ``kcat_mean``). Neighbor bounds
+    stay relative to that origin. Tuned values are written to ``kcat_updated``,
+    which the optimizer prefers when present.
 
     Parameters
     ----------
@@ -98,12 +533,24 @@ def simulated_annealing(
         Growth medium composition
     medium_upper_bound : bool or float, optional
         Upper bound for medium exchanges (default: False)
+    kcat_col : str, optional
+        Column used as the origin kcat (e.g. 'kcat_mean', 'kcat_max').
+        Neighbor bounds stay relative to this origin. Tuned values live in
+        'kcat_updated'. If None, uses kcat_mean when present.
+    solver_name : str, optional
+        Pyomo solver name (default: 'glpk')
+    stop_at_goal : bool, optional
+        If True (default), stop when biomass reaches ``objective_value``.
+        Set False during pool bootstrap so kcats keep increasing.
 
     Returns
     -------
     tuple
         (kcat_dict, top_targets, best_df, iterations, biomasses, df_FBA)
     """
+    origin_col = kcat_col if (kcat_col and kcat_col in processed_data.columns) else 'kcat_mean'
+    if origin_col not in processed_data.columns:
+        origin_col = resolve_kcat_column(processed_data, kcat_col=kcat_col)
 
     def acceptance_probability(old_biomass, new_biomass, temperature):
         # For MAXIMIZATION: always accept if new > old, probabilistically accept if new < old
@@ -156,7 +603,7 @@ def simulated_annealing(
         # Preserve original kcat_mean and kcat_std - only update kcat_updated column
         # Create kcat_updated column if it doesn't exist
         if 'kcat_updated' not in updated_df.columns:
-            updated_df['kcat_updated'] = updated_df['kcat_mean'].copy()
+            updated_df['kcat_updated'] = updated_df[origin_col].copy()
 
         # Get old value for debug output
         old_value = updated_df.loc[cond, 'kcat_updated'].iloc[0] if cond.sum() > 0 else None
@@ -208,7 +655,9 @@ def simulated_annealing(
         medium=medium,
         medium_upper_bound=medium_upper_bound,
         edit_ngam=edit_ngam,
-        ngam_rxn_id=ngam_rxn_id
+        ngam_rxn_id=ngam_rxn_id,
+        kcat_col=origin_col,
+        solver_name=solver_name,
     )
 
     # Check if initial optimization failed
@@ -225,13 +674,17 @@ def simulated_annealing(
     enzyme_df['enzyme_mass'] = enzyme_df['Value'] * enzyme_df['MW'] * 1e-3
 
     top_n = enzyme_df.nlargest(n_top_enzymes, 'enzyme_mass')
-    top_targets = (
-        top_n[['Index','enzyme_mass']]
-        .rename(columns={'Index':'Single_gene'})
+    keep_cols = ['Reactions', 'Single_gene', 'enzyme_mass', origin_col]
+    if 'kcat_std' in processed_data.columns:
+        keep_cols.append('kcat_std')
+    if 'kcat_updated' in processed_data.columns and 'kcat_updated' not in keep_cols:
+        keep_cols.append('kcat_updated')
+    merged = (
+        top_n[['Index', 'enzyme_mass']]
+        .rename(columns={'Index': 'Single_gene'})
         .merge(processed_data, on='Single_gene')
-        [['Reactions','Single_gene','enzyme_mass','kcat_mean','kcat_std']]
-        .reset_index(drop=True)
     )
+    top_targets = merged[[c for c in keep_cols if c in merged.columns]].reset_index(drop=True)
 
     # Check for duplicates BEFORE deduplication
     duplicates = top_targets.duplicated(subset=['Reactions', 'Single_gene'], keep=False)
@@ -244,28 +697,26 @@ def simulated_annealing(
         for idx, row in top_targets.head(5).iterrows():
             print(f"    {row['Reactions']:15s} {row['Single_gene']:10s} mass={row['enzyme_mass']:.4f}")
 
-    # print(f"\n[ANNEALING DEBUG] Top 5 target enzymes:")
-    # print(top_targets.head()[['Reactions', 'Single_gene', 'enzyme_mass', 'kcat_mean']])
-    # print(f"[ANNEALING DEBUG] Total targets: {len(top_targets)}")
-
-    # Verify these reactions/genes exist in processed_data
-    for idx, row in top_targets.head(3).iterrows():
-        rxn, gene = row['Reactions'], row['Single_gene']
-        matches = processed_data[(processed_data['Reactions']==rxn) & (processed_data['Single_gene']==gene)]
-        # print(f"[DEBUG] {rxn}_{gene}: found {len(matches)} matches in processed_data, kcat_mean={matches['kcat_mean'].iloc[0] if len(matches)>0 else 'NOT FOUND'}")
-
     largest_rxn_id  = top_targets['Reactions'].tolist()
     largest_gene_id = top_targets['Single_gene'].tolist()
-    # Keep original kcat_mean values for neighbor calculation (never changes)
-    original_kcats = top_targets['kcat_mean'].tolist()
-    # Track current tuned values (starts same as original, gets updated)
-    current_solution = top_targets['kcat_mean'].tolist()
-    stds             = top_targets['kcat_std'].fillna(0.1).tolist()
+    if not largest_rxn_id:
+        print("⚠️  ERROR: No enzyme targets found after ranking by mass.")
+        return {}, top_targets, processed_data, [0], [biomass if biomass else 0.0], df_FBA
+    # Origin kcats for neighbor bounds (never changes)
+    original_kcats = top_targets[origin_col].tolist()
+    # Current tuned values: resume from kcat_updated when continuing a bootstrap round
+    if 'kcat_updated' in top_targets.columns:
+        current_solution = top_targets['kcat_updated'].fillna(top_targets[origin_col]).tolist()
+    else:
+        current_solution = top_targets[origin_col].tolist()
+    if 'kcat_std' in top_targets.columns:
+        stds = top_targets['kcat_std'].fillna(0.1).tolist()
+    else:
+        stds = [0.1] * len(top_targets)
 
     df_new = processed_data.copy()
-    # Initialize kcat_updated column with original kcat_mean values
     if 'kcat_updated' not in df_new.columns:
-        df_new['kcat_updated'] = df_new['kcat_mean'].copy()
+        df_new['kcat_updated'] = df_new[origin_col].copy()
 
     current_biomass = biomass
     best_solution   = current_solution[:]
@@ -280,7 +731,7 @@ def simulated_annealing(
     # ANNEALING
     while (temperature > min_temperature
            and iteration < max_iterations
-           and current_biomass < objective_value):
+           and (not stop_at_goal or current_biomass < objective_value)):
         if verbose:
             print(f"\n--- Iteration {iteration} ---")
             print(f"Current biomass = {current_biomass:.6e}")
@@ -353,7 +804,9 @@ def simulated_annealing(
             medium=medium,
             medium_upper_bound=medium_upper_bound,
             edit_ngam=edit_ngam,
-            ngam_rxn_id=ngam_rxn_id
+            ngam_rxn_id=ngam_rxn_id,
+            kcat_col=origin_col,
+            solver_name=solver_name,
         )
 
         # Handle optimization failures
@@ -467,6 +920,290 @@ def simulated_annealing(
     return kcat_dict, top_targets, best_df, iterations, biomasses, df_FBA
 
 
+def _try_ecfba_pool(
+    model,
+    processed_df,
+    biomass_reaction,
+    pool,
+    kcat_col=None,
+    medium=None,
+    medium_upper_bound=False,
+    solver_name='glpk',
+):
+    """Run one enzyme-constrained FBA; return (biomass, df_FBA, gene_seq, feasible)."""
+    result = run_optimization_with_dataframe(
+        model=model,
+        processed_df=processed_df,
+        objective_reaction=biomass_reaction,
+        enzyme_upper_bound=pool,
+        output_dir=None,
+        save_results=False,
+        verbose=False,
+        medium=medium,
+        medium_upper_bound=medium_upper_bound,
+        kcat_col=kcat_col,
+        solver_name=solver_name,
+    )
+    if not isinstance(result, tuple) or len(result) < 3:
+        return None, pd.DataFrame(), {}, False
+    biomass, df_FBA, gene_seq = result[0], result[1], result[2]
+    feasible = biomass is not None and biomass > 0
+    return biomass, df_FBA, gene_seq or {}, feasible
+
+
+def find_min_feasible_pool(
+    model,
+    processed_df,
+    biomass_reaction,
+    target_pool,
+    hi_pool=1.0,
+    kcat_col=None,
+    medium=None,
+    medium_upper_bound=False,
+    solver_name='glpk',
+    n_iter=8,
+    skip_target=False,
+    log=print,
+):
+    """Binary-search the smallest enzyme pool in [target_pool, hi] with biomass > 0.
+
+    Returns
+    -------
+    (seed_pool, biomass, df_FBA, gene_seq)
+        seed_pool is None if even hi_pool is infeasible.
+    """
+    if not skip_target:
+        sol, df_FBA, gene_seq, feasible = _try_ecfba_pool(
+            model, processed_df, biomass_reaction, target_pool,
+            kcat_col=kcat_col, medium=medium, medium_upper_bound=medium_upper_bound,
+            solver_name=solver_name,
+        )
+        if feasible:
+            log(f"    pool={target_pool:.5f} -> feasible {sol:.4f}")
+            return target_pool, sol, df_FBA, gene_seq
+        log(f"    pool={target_pool:.5f} -> infeasible")
+    else:
+        log(f"    pool={target_pool:.5f} -> infeasible (already tested)")
+    hi = max(float(hi_pool), float(target_pool))
+    expand_candidates = [0.25, 0.5, 1.0]
+    sol_hi, df_hi, gene_hi, ok_hi = _try_ecfba_pool(
+        model, processed_df, biomass_reaction, hi,
+        kcat_col=kcat_col, medium=medium, medium_upper_bound=medium_upper_bound,
+        solver_name=solver_name,
+    )
+    log(f"    pool={hi:.5f} -> {'feasible ' + f'{sol_hi:.4f}' if ok_hi else 'infeasible'}")
+    if not ok_hi:
+        for cand in expand_candidates:
+            if cand <= hi + 1e-12:
+                continue
+            hi = cand
+            sol_hi, df_hi, gene_hi, ok_hi = _try_ecfba_pool(
+                model, processed_df, biomass_reaction, hi,
+                kcat_col=kcat_col, medium=medium, medium_upper_bound=medium_upper_bound,
+                solver_name=solver_name,
+            )
+            log(f"    pool={hi:.5f} -> {'feasible ' + f'{sol_hi:.4f}' if ok_hi else 'infeasible'}")
+            if ok_hi:
+                break
+        if not ok_hi:
+            return None, None, pd.DataFrame(), {}
+
+    lo = float(target_pool)
+    best_pool, best_sol, best_df, best_gs = hi, sol_hi, df_hi, gene_hi
+    for _ in range(int(n_iter)):
+        mid = (lo + hi) / 2.0
+        sol, df, gs, ok = _try_ecfba_pool(
+            model, processed_df, biomass_reaction, mid,
+            kcat_col=kcat_col, medium=medium, medium_upper_bound=medium_upper_bound,
+            solver_name=solver_name,
+        )
+        log(f"    pool={mid:.5f} -> {'feasible ' + f'{sol:.4f}' if ok else 'infeasible'}")
+        if ok:
+            best_pool, best_sol, best_df, best_gs = mid, sol, df, gs
+            hi = mid
+        else:
+            lo = mid
+    return best_pool, best_sol, best_df, best_gs
+
+
+def anneal_with_pool_bootstrap(
+    model,
+    processed_data,
+    biomass_reaction,
+    objective_value,
+    gene_sequences_dict,
+    target_pool,
+    output_dir=None,
+    kcat_col=None,
+    medium=None,
+    medium_upper_bound=False,
+    solver_name='glpk',
+    n_top_enzymes=65,
+    temperature=1.0,
+    cooling_rate=0.95,
+    min_temperature=0.01,
+    max_iterations=100,
+    max_unchanged_iterations=5,
+    change_threshold=0.001,
+    verbose=False,
+    hi_pool=0.25,
+    search_iterations=8,
+    stage1_chunk_iterations=10,
+    stage1_max_rounds=15,
+    log=print,
+    initial_biomass=None,
+):
+    """Run SA at ``target_pool``, bootstrapping from a larger pool if needed.
+
+    When ecFBA at the experimental pool is infeasible:
+      1. binary-search a seed pool that yields biomass > 0
+      2. anneal at that seed (without stopping at biomass_goal) until a
+         re-solve at ``target_pool`` becomes feasible
+      3. continue SA at ``target_pool`` until ``objective_value``
+    """
+    empty = ({}, pd.DataFrame(), processed_data, [0], [0.0], pd.DataFrame())
+
+    if initial_biomass is not None:
+        sol = initial_biomass
+        feasible = sol is not None and sol > 0
+        gene_seq = gene_sequences_dict or {}
+        df_FBA = pd.DataFrame()
+    else:
+        sol, df_FBA, gene_seq, feasible = _try_ecfba_pool(
+            model, processed_data, biomass_reaction, target_pool,
+            kcat_col=kcat_col, medium=medium, medium_upper_bound=medium_upper_bound,
+            solver_name=solver_name,
+        )
+    gs = gene_sequences_dict or gene_seq
+    if not gs and 'Single_gene' in processed_data.columns and 'SEQ' in processed_data.columns:
+        gs = processed_data.dropna(subset=['SEQ']).groupby('Single_gene')['SEQ'].first().to_dict()
+
+    sa_kwargs = dict(
+        model=model,
+        biomass_reaction=biomass_reaction,
+        gene_sequences_dict=gs,
+        output_dir=output_dir,
+        n_top_enzymes=n_top_enzymes,
+        temperature=temperature,
+        cooling_rate=cooling_rate,
+        min_temperature=min_temperature,
+        change_threshold=change_threshold,
+        verbose=verbose,
+        medium=medium,
+        medium_upper_bound=medium_upper_bound,
+        kcat_col=kcat_col,
+        solver_name=solver_name,
+    )
+    sa_kwargs_stage1 = dict(sa_kwargs)
+    sa_kwargs_stage1['output_dir'] = None
+
+    if feasible:
+        log(f"  Target pool {target_pool:.5f} feasible (biomass={sol:.4f}); annealing in place")
+        return simulated_annealing(
+            processed_data=processed_data,
+            objective_value=objective_value,
+            enzyme_fraction=target_pool,
+            max_iterations=max_iterations,
+            max_unchanged_iterations=max_unchanged_iterations,
+            stop_at_goal=True,
+            **sa_kwargs,
+        )
+
+    log(f"  Target pool {target_pool:.5f} infeasible; searching for a seed pool...")
+    # Prefer a comfortably feasible pool (hi_pool) as the SA seed. The
+    # *minimum* feasible pool sits on a near-zero growth cliff and is a poor
+    # starting point for annealing. Still log the min-feasible diagnostic.
+    seed_pool, seed_sol, seed_df, seed_gs = None, None, pd.DataFrame(), {}
+    hi = max(float(hi_pool), float(target_pool))
+    sol_hi, df_hi, gs_hi, ok_hi = _try_ecfba_pool(
+        model, processed_data, biomass_reaction, hi,
+        kcat_col=kcat_col, medium=medium, medium_upper_bound=medium_upper_bound,
+        solver_name=solver_name,
+    )
+    if ok_hi:
+        seed_pool, seed_sol, seed_df, seed_gs = hi, sol_hi, df_hi, gs_hi
+        log(f"    pool={hi:.5f} -> feasible {sol_hi:.4f} (using as SA seed)")
+    else:
+        log(f"    pool={hi:.5f} -> infeasible; expanding search")
+        seed_pool, seed_sol, seed_df, seed_gs = find_min_feasible_pool(
+            model=model,
+            processed_df=processed_data,
+            biomass_reaction=biomass_reaction,
+            target_pool=target_pool,
+            hi_pool=hi,
+            kcat_col=kcat_col,
+            medium=medium,
+            medium_upper_bound=medium_upper_bound,
+            solver_name=solver_name,
+            n_iter=search_iterations,
+            skip_target=True,
+            log=log,
+        )
+    if seed_pool is None:
+        log("  ERROR: No feasible enzyme pool found (tried up to hi_pool). Cannot bootstrap SA.")
+        return empty
+
+    gs = gs or seed_gs
+    sa_kwargs['gene_sequences_dict'] = gs
+    log(f"  Seed pool: {seed_pool:.5f} (biomass={seed_sol:.4f})")
+
+    df_work = processed_data.copy()
+    all_iters = [0]
+    all_biomasses = [seed_sol]
+    kcat_dict, top_targets, df_FBA = {}, pd.DataFrame(), seed_df
+    iter_offset = 0
+    ok_t = False
+    sol_t = None
+
+    for rnd in range(int(stage1_max_rounds)):
+        log(f"  Bootstrap round {rnd + 1}/{stage1_max_rounds}: SA at seed pool {seed_pool:.5f}")
+        kcat_dict, top_targets, df_work, iters, biomasses, df_FBA = simulated_annealing(
+            processed_data=df_work,
+            objective_value=1e9,
+            enzyme_fraction=seed_pool,
+            max_iterations=int(stage1_chunk_iterations),
+            max_unchanged_iterations=int(stage1_chunk_iterations),
+            stop_at_goal=False,
+            **sa_kwargs_stage1,
+        )
+        shifted = [i + iter_offset for i in iters]
+        all_iters.extend(shifted[1:] if shifted else [])
+        all_biomasses.extend(biomasses[1:] if biomasses else [])
+        iter_offset += (iters[-1] if iters else 0)
+
+        sol_t, df_t, gs_t, ok_t = _try_ecfba_pool(
+            model, df_work, biomass_reaction, target_pool,
+            kcat_col=kcat_col, medium=medium, medium_upper_bound=medium_upper_bound,
+            solver_name=solver_name,
+        )
+        if ok_t:
+            log(f"  Target pool feasible after bootstrap round {rnd + 1}: biomass={sol_t:.4f}")
+            df_FBA = df_t
+            gs = gs or gs_t
+            break
+        log(f"    Target pool still infeasible after round {rnd + 1} (seed biomass={biomasses[-1] if biomasses else 0:.4f})")
+
+    if not ok_t:
+        log("  WARNING: target pool still infeasible after bootstrap; returning seed-pool result")
+        return kcat_dict, top_targets, df_work, all_iters, all_biomasses, df_FBA
+
+    sa_kwargs['gene_sequences_dict'] = gs or sa_kwargs['gene_sequences_dict']
+    log(f"  Stage 2: annealing at target pool {target_pool:.5f} toward biomass_goal={objective_value:.4f}")
+    kcat_dict, top_targets, df_new, iters, biomasses, df_FBA = simulated_annealing(
+        processed_data=df_work,
+        objective_value=objective_value,
+        enzyme_fraction=target_pool,
+        max_iterations=max_iterations,
+        max_unchanged_iterations=max_unchanged_iterations,
+        stop_at_goal=True,
+        **sa_kwargs,
+    )
+    # Report progression at the experimental pool, not the seed pool.
+    all_iters = list(iters) if iters else [0]
+    all_biomasses = list(biomasses) if biomasses else [sol_t or 0.0]
+    return kcat_dict, top_targets, df_new, all_iters, all_biomasses, df_FBA
+
+
 def sweep_maintenance_parameters(
     model,
     processed_data,
@@ -479,6 +1216,7 @@ def sweep_maintenance_parameters(
     medium=None,
     medium_upper_bound=False,
     biomass_goal=None,
+    gam_reaction_id=None,
     verbose=False
 ):
     """
@@ -530,51 +1268,15 @@ def sweep_maintenance_parameters(
     if ngam_range is None:
         ngam_range = [0, 1, 2, 3.15, 5, 7, 10, 15, 20]  # 3.15 is typical E. coli value
 
-    # Get original GAM value from biomass reaction
-    biomass_rxn = model.reactions.get_by_id(biomass_reaction)
-    original_gam = None
-    atp_met_ids = ['atp_c', 'ATP_c', 'cpd00002_c0']  # Common ATP IDs
-    atp_met = None
-
-    for met_id in atp_met_ids:
-        try:
-            met = model.metabolites.get_by_id(met_id)
-            if met in biomass_rxn.metabolites:
-                original_gam = abs(biomass_rxn.metabolites[met])
-                atp_met = met
-                if verbose:
-                    print(f"  Found GAM coefficient: {original_gam:.2f} mmol ATP/gDW")
-                    print(f"  ATP metabolite ID: {met_id}")
-                break
-        except KeyError:
-            continue
-
+    # Locate the reaction that actually carries the GAM ATP cost. In yeast-GEM /
+    # rhto-GEM this is the biomass pseudoreaction (e.g. r_4041), NOT the growth
+    # objective (e.g. r_2111) which contains no ATP.
+    gam_rxn, atp_met, maintenance_mets, original_gam = find_gam_components(
+        model, biomass_reaction, gam_reaction_id, verbose=verbose
+    )
+    gam_rxn_id_resolved = gam_rxn.id if gam_rxn is not None else gam_reaction_id
     if original_gam is None and verbose:
-        print("  Warning: Could not find ATP in biomass reaction - GAM adjustment disabled")
-
-    # Identify related metabolites in ATP maintenance block
-    # GAM reaction: ATP + H2O -> ADP + Pi + H
-    maintenance_mets = {}
-    if atp_met is not None:
-        # Try to find the related metabolites
-        met_mappings = {
-            'h2o': ['h2o_c', 'H2O_c', 'cpd00001_c0'],
-            'adp': ['adp_c', 'ADP_c', 'cpd00008_c0'],
-            'pi': ['pi_c', 'Pi_c', 'cpd00009_c0'],
-            'h': ['h_c', 'H_c', 'cpd00067_c0']
-        }
-
-        for met_type, possible_ids in met_mappings.items():
-            for met_id in possible_ids:
-                try:
-                    met = model.metabolites.get_by_id(met_id)
-                    if met in biomass_rxn.metabolites:
-                        maintenance_mets[met_type] = met
-                        if verbose:
-                            print(f"    Found {met_type}: {met_id}")
-                        break
-                except KeyError:
-                    continue
+        print("  Warning: Could not find ATP maintenance block - GAM adjustment disabled")
 
     # If no GAM range specified, use original value
     if gam_range is None:
@@ -607,45 +1309,15 @@ def sweep_maintenance_parameters(
             test_ngam_rxn = test_model.reactions.get_by_id(ngam_rxn_id)
             test_ngam_rxn.lower_bound = ngam_val
 
-            # Set GAM if specified
-            if gam_val is not None and original_gam is not None and atp_met is not None:
-                test_biomass = test_model.reactions.get_by_id(biomass_reaction)
-
-                # Scale the entire ATP maintenance block proportionally
-                # GAM reaction: ATP + H2O -> ADP + Pi + H
-                scale = gam_val / original_gam
-
-                # Get current coefficients
-                current_mets = test_biomass.metabolites.copy()
-
-                # Find ATP metabolite in the test model
-                test_atp_met = None
-                for met_id in atp_met_ids:
-                    try:
-                        test_atp_met = test_model.metabolites.get_by_id(met_id)
-                        if test_atp_met in current_mets:
-                            break
-                    except KeyError:
-                        continue
-
-                if test_atp_met is not None:
-                    # Scale ATP and related maintenance metabolites
-                    mets_to_scale = [test_atp_met]
-
-                    # Add related metabolites if they exist
-                    for met_type, met in maintenance_mets.items():
-                        try:
-                            test_met = test_model.metabolites.get_by_id(met.id)
-                            if test_met in current_mets:
-                                mets_to_scale.append(test_met)
-                        except KeyError:
-                            continue
-
-                    # Scale all metabolites in the ATP maintenance block
-                    for met in mets_to_scale:
-                        old_coef = current_mets[met]
-                        # Add the difference: new_coef - old_coef = old_coef * (scale - 1)
-                        test_biomass.add_metabolites({met: old_coef * (scale - 1.0)}, combine=True)
+            # Set GAM if specified (scales the GAM-bearing reaction, e.g. r_4041)
+            if gam_val is not None and original_gam:
+                apply_gam_scaling(
+                    test_model,
+                    target_gam=gam_val,
+                    biomass_reaction=biomass_reaction,
+                    gam_reaction_id=gam_rxn_id_resolved,
+                    verbose=False
+                )
 
             # Run optimization
             try:

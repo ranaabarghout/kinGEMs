@@ -76,6 +76,7 @@ TAXONOMY_IDS = {
     
     # Eukaryotes - Fungi
     'Yeast': 4932,  # Saccharomyces cerevisiae S288C
+    'R toruloides': 5286,  # R toruloides
     
     # Eukaryotes - Mammals
     'Human': 9606,  # Homo sapiens
