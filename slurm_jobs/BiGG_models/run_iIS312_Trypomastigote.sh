@@ -27,7 +27,7 @@ CONFIG="configs/BiGG_models/iIS312_Trypomastigote.json"
 echo "Starting run at: $(date)"
 echo ""
 
-python scripts/run_pipeline.py configs/BiGG_models/iIS312_Trypomastigote.json
+python scripts/run_pipeline.py configs/BiGG_models/iIS312_Trypomastigote.json --force
 EXIT_CODE=$?
 
 echo ""

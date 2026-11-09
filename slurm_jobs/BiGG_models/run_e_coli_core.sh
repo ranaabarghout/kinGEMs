@@ -27,7 +27,7 @@ CONFIG="configs/BiGG_models/e_coli_core.json"
 echo "Starting run at: $(date)"
 echo ""
 
-python scripts/run_pipeline.py configs/BiGG_models/e_coli_core.json
+python scripts/run_pipeline.py configs/BiGG_models/e_coli_core.json --force
 EXIT_CODE=$?
 
 echo ""

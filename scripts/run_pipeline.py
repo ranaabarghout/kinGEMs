@@ -344,7 +344,12 @@ def run_pipeline_core(
     raw_data_dir = os.path.join(data_dir, "raw")
     interim_data_dir = os.path.join(data_dir, "interim", model_name)
     processed_data_dir = os.path.join(data_dir, "processed", model_name)
-    CPIPred_data_dir = os.path.join(data_dir, "interim", "CPI-Pred predictions")
+    cpipred_predictions_dir = config.get(
+        'cpipred_predictions_dir',
+        os.path.join(data_dir, "interim", "CPI-Pred predictions")
+    )
+    if not os.path.isabs(cpipred_predictions_dir):
+        cpipred_predictions_dir = os.path.abspath(os.path.join(project_root, cpipred_predictions_dir))
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(interim_data_dir, exist_ok=True)
     os.makedirs(processed_data_dir, exist_ok=True)
@@ -425,7 +430,13 @@ def run_pipeline_core(
     if not force_regenerate and os.path.exists(processed_data_output):
         processed_data = pd.read_csv(processed_data_output)
     else:
-        predictions_csv_path = find_predictions_file(model_name, CPIPred_data_dir)
+        predictions_csv_path = config.get('cpipred_predictions_file')
+        if predictions_csv_path:
+            if not os.path.isabs(predictions_csv_path):
+                predictions_csv_path = os.path.abspath(os.path.join(project_root, predictions_csv_path))
+        else:
+            predictions_csv_path = find_predictions_file(model_name, cpipred_predictions_dir)
+
         processed_data = process_kcat_predictions(
             merged_df=merged_data,
             predictions_csv_path=predictions_csv_path,

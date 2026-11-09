@@ -4,9 +4,11 @@
     <img src="https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter" />
 </a>
 
-**Automated enzyme-constrained genome-scale model reconstruction with kinetic parameter prediction.**
+**Automated enzyme-constrained genome-scale model reconstruction from deep-learning predicted kinetic parameter.**
 
-kinGEMs combines CPI-Pred kinetic parameter prediction with genome-scale metabolic models to create enzyme-constrained models with optimized kcat values through simulated annealing.
+kinGEMs utilizes CPI-Pred kinetic parameter prediction for constraining genome-scale metabolic models to create enzyme-constrained models with optimized kcat values through uncertainty-informed stochastic tuning.
+
+![kinGEMs abstract](docs/kinGEMs_graphical_abstract.png)
 
 ---
 
